@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+env:
+  GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,10 +16,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          path: HorizonSuite
 
       - name: WoW Packager
         uses: BigWigsMods/packager@v2.5.1
-        with:
-          args: -d
-        working-directory: HorizonSuite
