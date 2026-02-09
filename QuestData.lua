@@ -106,6 +106,17 @@ local function GetQuestTypeAtlas(questID, category)
 end
 
 local function GetQuestZoneName(questID)
+    -- For world quests / task quests, prefer the task-quest APIs which usually carry a uiMapID.
+    if C_TaskQuest and C_TaskQuest.GetQuestInfoByQuestID then
+        local info = C_TaskQuest.GetQuestInfoByQuestID(questID)
+        local mapID = info and (info.mapID or info.uiMapID)
+        if mapID and C_Map and C_Map.GetMapInfo then
+            local mapInfo = C_Map.GetMapInfo(mapID)
+            if mapInfo and mapInfo.name then
+                return mapInfo.name
+            end
+        end
+    end
     if C_QuestLog.GetNextWaypoint then
         local mapID = C_QuestLog.GetNextWaypoint(questID)
         if mapID and C_Map and C_Map.GetMapInfo then
@@ -195,8 +206,14 @@ local function ReadTrackedQuests()
     local filterByZone = addon.GetDB("filterByZone", false)
     for i = 1, numWatches do
         local questID = C_QuestLog.GetQuestIDForQuestWatchIndex(i)
-        if not filterByZone or nearbySet[questID] then
-            addQuest(questID)
+        if questID then
+            -- When \"Filter by current zone\" is enabled, we *still* want tracked WORLD quests
+            -- to remain visible while you're in the broader zone (even if the child map
+            -- changes and they momentarily fall out of nearbySet).
+            local isWorld = C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(questID)
+            if (not filterByZone or nearbySet[questID] or isWorld) then
+                addQuest(questID)
+            end
         end
     end
 

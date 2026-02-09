@@ -421,10 +421,15 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
 
     elseif event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
         A.zoneJustChanged = true
+        -- Clear \"recently untracked\" markers on any zone change so untracked WQs can reappear
+        -- naturally the next time they are discovered.
         if A.recentlyUntrackedWorldQuests then
             wipe(A.recentlyUntrackedWorldQuests)
         end
-        if A.zoneTaskQuestCache then
+        -- Only wipe the world-quest cache when we truly move to a different area (continent/instance),
+        -- not when moving between child maps of the same zone. This helps keep WQs from disappearing
+        -- when you move between subzones until the map is reopened.
+        if event == "ZONE_CHANGED_NEW_AREA" and A.zoneTaskQuestCache then
             wipe(A.zoneTaskQuestCache)
         end
         ScheduleRefresh()

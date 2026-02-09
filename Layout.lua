@@ -23,31 +23,26 @@ local function PopulateEntry(entry, questData)
     local showItemBtn = hasItem and addon.GetDB("showQuestItemButtons", true)
     local showQuestIcons = addon.GetDB("showQuestTypeIcons", true)
     local hasIcon = questData.questTypeAtlas and showQuestIcons
-    local showTrackedOtherZone = questData.isTracked and not questData.isNearby
+    -- Off-map WORLD quest that is tracked (only world quests, not normal quests).
+    local isOffMapWorld = (questData.category == "WORLD") and questData.isTracked and not questData.isNearby
 
     local textWidth = addon.GetPanelWidth() - addon.PADDING * 2 - (addon.CONTENT_RIGHT_PADDING or 0)
     if showItemBtn then
         textWidth = textWidth - addon.ITEM_BTN_SIZE - addon.ITEM_BTN_OFFSET
     end
 
+    -- All titles share the same X offset; we are no longer indenting off-map quests.
     local titleLeftOffset = 0
-    if showTrackedOtherZone and entry.trackedFromOtherZoneIcon then
-        local iconSz = addon.TRACKED_OTHER_ZONE_ICON_SIZE or 12
-        titleLeftOffset = iconSz + (addon.QUEST_TYPE_ICON_GAP or 4)
-        textWidth = textWidth - titleLeftOffset
-        pcall(entry.trackedFromOtherZoneIcon.SetAtlas, entry.trackedFromOtherZoneIcon, "Tracking")
-        entry.trackedFromOtherZoneIcon:Show()
-    else
-        if entry.trackedFromOtherZoneIcon then
-            entry.trackedFromOtherZoneIcon:Hide()
-        end
-    end
 
     if hasIcon then
         entry.questTypeIcon:SetAtlas(questData.questTypeAtlas)
         entry.questTypeIcon:Show()
     else
         entry.questTypeIcon:Hide()
+    end
+    -- Ensure any legacy off-map icon (if present on the frame) is hidden; we now rely on color/text only.
+    if entry.trackedFromOtherZoneIcon then
+        entry.trackedFromOtherZoneIcon:Hide()
     end
 
     entry.titleText:ClearAllPoints()
@@ -107,6 +102,10 @@ local function PopulateEntry(entry, questData)
         hideHighlightBorders()
     end
 
+    -- For tracked WORLD quests that are not on the current map (off-map world quests),
+    -- add a subtle tinted background so they stand out, without affecting normal quests.
+    -- No special highlight for off-map quests; only the active (super-tracked) quest uses the highlight styles above.
+
     if showItemBtn then
         entry.itemLink = questData.itemLink
         entry.itemBtn.icon:SetTexture(questData.itemTexture)
@@ -130,8 +129,13 @@ local function PopulateEntry(entry, questData)
 
     local prevAnchor = entry.titleText
     if addon.GetDB("showZoneLabels", true) and questData.zoneName and not questData.isNearby then
-        entry.zoneText:SetText(questData.zoneName)
-        entry.zoneShadow:SetText(questData.zoneName)
+        local zoneLabel = questData.zoneName
+        -- For off-map WORLD quests, prefix the zone with a clear marker so they are easy to spot.
+        if isOffMapWorld then
+            zoneLabel = ("[Off-map] %s"):format(zoneLabel)
+        end
+        entry.zoneText:SetText(zoneLabel)
+        entry.zoneShadow:SetText(zoneLabel)
         local zoneColor = addon.GetDB("zoneColor", nil)
         if not zoneColor or #zoneColor < 3 then zoneColor = addon.ZONE_COLOR end
         entry.zoneText:SetTextColor(zoneColor[1], zoneColor[2], zoneColor[3], 1)
