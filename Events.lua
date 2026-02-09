@@ -185,8 +185,10 @@ local function UpdateWQMapIndicator(fromDelayed, mapID, playerMapID)
     local label = fromDelayed and " (0.5s)" or " (now)"
     local mapCount = GetCachedWQCount(mapID)
     local playerCount = playerMapID and GetCachedWQCount(playerMapID) or 0
-    f.text:SetText(format("HS WQ: map %s -> %d  player %s -> %d%s",
-        tostring(mapID or "?"), mapCount, tostring(playerMapID or "?"), playerCount, label))
+    local indicatorText = format("HS WQ m%s:%d p%s:%d%s",
+        tostring(mapID or "?"), mapCount, tostring(playerMapID or "?"), playerCount, label)
+    f.text:SetText(indicatorText)
+    if f.shadow then f.shadow:SetText(indicatorText) end
     f:Show()
 end
 
@@ -284,19 +286,47 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
             -- WQ map debug indicator: visible when world map is open.
             do
                 local f = CreateFrame("Frame", "HorizonSuiteWQMapIndicator", UIParent, "BackdropTemplate")
-                f:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 20, 20)
-                f:SetSize(380, 32)
+                f:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 14, 14)
+                f:SetSize(246, 20)
                 f:SetFrameStrata("FULLSCREEN_DIALOG")
                 f:SetFrameLevel(1000)
                 f:SetClampedToScreen(true)
                 local bg = f:CreateTexture(nil, "BACKGROUND")
                 bg:SetAllPoints()
-                bg:SetColorTexture(0.1, 0.1, 0.35, 0.95)
-                local text = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-                text:SetPoint("LEFT", f, "LEFT", 8, 0)
+                bg:SetColorTexture(0.10, 0.10, 0.15, 0.72)
+                local topBorder = f:CreateTexture(nil, "BORDER")
+                topBorder:SetColorTexture(0.35, 0.38, 0.45, 0.45)
+                topBorder:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
+                topBorder:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
+                topBorder:SetHeight(1)
+                local bottomBorder = f:CreateTexture(nil, "BORDER")
+                bottomBorder:SetColorTexture(0.35, 0.38, 0.45, 0.45)
+                bottomBorder:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
+                bottomBorder:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
+                bottomBorder:SetHeight(1)
+                local leftBorder = f:CreateTexture(nil, "BORDER")
+                leftBorder:SetColorTexture(0.35, 0.38, 0.45, 0.45)
+                leftBorder:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
+                leftBorder:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
+                leftBorder:SetWidth(1)
+                local rightBorder = f:CreateTexture(nil, "BORDER")
+                rightBorder:SetColorTexture(0.35, 0.38, 0.45, 0.45)
+                rightBorder:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
+                rightBorder:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
+                rightBorder:SetWidth(1)
+                local shadow = f:CreateFontString(nil, "BORDER")
+                shadow:SetFontObject(A.SectionFont or GameFontNormalSmall)
+                shadow:SetPoint("LEFT", f, "LEFT", 6 + (A.SHADOW_OX or 2), (A.SHADOW_OY or -2))
+                shadow:SetJustifyH("LEFT")
+                shadow:SetTextColor(0, 0, 0, A.SHADOW_A or 0.8)
+                local text = f:CreateFontString(nil, "OVERLAY")
+                text:SetFontObject(A.SectionFont or GameFontNormalSmall)
+                text:SetPoint("LEFT", f, "LEFT", 6, 0)
                 text:SetJustifyH("LEFT")
-                text:SetTextColor(1, 0.95, 0.75, 1)
-                text:SetText("HS WQ: (close)")
+                text:SetTextColor(0.55, 0.65, 0.75, 1)
+                text:SetText("HS WQ")
+                shadow:SetText("HS WQ")
+                f.shadow = shadow
                 f.text = text
                 f:Hide()
                 f._elapsed = 0
@@ -318,7 +348,8 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
                 WorldMapFrame._HSIndicatorHooked = true
                 WorldMapFrame:HookScript("OnShow", function()
                     if A.WQMapIndicator and A.WQMapIndicator.text then
-                        A.WQMapIndicator.text:SetText("HS WQ: (map open...)")
+                        A.WQMapIndicator.text:SetText("HS WQ scanning...")
+                        if A.WQMapIndicator.shadow then A.WQMapIndicator.shadow:SetText("HS WQ scanning...") end
                         A.WQMapIndicator:Show()
                     end
                     local function tick()
@@ -339,7 +370,8 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
                 end)
                 if WorldMapFrame:IsVisible() then
                     if A.WQMapIndicator and A.WQMapIndicator.text then
-                        A.WQMapIndicator.text:SetText("HS WQ: (map open...)")
+                        A.WQMapIndicator.text:SetText("HS WQ scanning...")
+                        if A.WQMapIndicator.shadow then A.WQMapIndicator.shadow:SetText("HS WQ scanning...") end
                         A.WQMapIndicator:Show()
                     end
                     local function tick()
@@ -375,7 +407,8 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
                 WorldMapFrame._HSIndicatorHooked = true
                 WorldMapFrame:HookScript("OnShow", function()
                     if A.WQMapIndicator and A.WQMapIndicator.text then
-                        A.WQMapIndicator.text:SetText("HS WQ: (map open...)")
+                        A.WQMapIndicator.text:SetText("HS WQ scanning...")
+                        if A.WQMapIndicator.shadow then A.WQMapIndicator.shadow:SetText("HS WQ scanning...") end
                         A.WQMapIndicator:Show()
                     end
                     local function tick()
@@ -396,7 +429,8 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
                 end)
                 if WorldMapFrame:IsVisible() then
                     if A.WQMapIndicator and A.WQMapIndicator.text then
-                        A.WQMapIndicator.text:SetText("HS WQ: (map open...)")
+                        A.WQMapIndicator.text:SetText("HS WQ scanning...")
+                        if A.WQMapIndicator.shadow then A.WQMapIndicator.shadow:SetText("HS WQ scanning...") end
                         A.WQMapIndicator:Show()
                     end
                     C_Timer.After(0.1, function()

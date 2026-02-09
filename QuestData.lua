@@ -40,9 +40,9 @@ local function GetQuestCategory(questID)
     if C_QuestLog.IsQuestCalling and C_QuestLog.IsQuestCalling(questID) then
         return "CALLING"
     end
-    if C_QuestLog.GetQuestTagInfo then
-        local tagInfo = C_QuestLog.GetQuestTagInfo(questID)
-        if tagInfo and tagInfo.tagID == 271 then
+    if C_QuestInfoSystem and C_QuestInfoSystem.GetQuestClassification then
+        local qc = C_QuestInfoSystem.GetQuestClassification(questID)
+        if qc == Enum.QuestClassification.Campaign then
             return "CAMPAIGN"
         end
     end

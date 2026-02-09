@@ -537,7 +537,7 @@ local OptionCategories = {
                     { dbKey = "highlightColor", name = "Highlight", default = HIGHLIGHT_COLOR_DEFAULT, tooltip = "Super-tracked quest bar or background." },
                 },
             },
-            { type = "colorGroup", name = "Section header colors", dbKey = "sectionColors", keys = addon.GROUP_ORDER, defaultMap = addon.SECTION_COLORS, labelMap = addon.SECTION_LABELS, tooltip = "Colors for category labels (e.g. NEARBY, AVAILABLE IN ZONE)." },
+            { type = "colorGroup", name = "Section header colors", dbKey = "sectionColors", keys = addon.GROUP_ORDER, defaultMap = addon.SECTION_COLORS, labelMap = addon.SECTION_LABELS, tooltip = "Colors for category labels (e.g. CURRENT ZONE, AVAILABLE IN ZONE)." },
         },
     },
     {
