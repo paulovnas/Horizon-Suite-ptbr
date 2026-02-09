@@ -1,0 +1,138 @@
+--[[
+    Horizon Suite - Focus - Interactions
+    Mouse scripts on pool entries (click, tooltip, scroll).
+]]
+
+local addon = _G.ModernQuestTracker
+
+-- ============================================================================
+-- INTERACTIONS
+-- ============================================================================
+
+local DOUBLE_CLICK_WINDOW = 0.30
+local pool = addon.pool
+
+for i = 1, addon.POOL_SIZE do
+    local e = pool[i]
+    e:EnableMouse(true)
+    e._lastClickTime = 0
+    e._lastClickQuest = nil
+
+    e:SetScript("OnMouseDown", function(self, button)
+        if button == "LeftButton" then
+            if self.entryKey then
+                local vignetteGUID = self.entryKey:match("^vignette:(.+)$")
+                if vignetteGUID and C_SuperTrack and C_SuperTrack.SetSuperTrackedVignette then
+                    C_SuperTrack.SetSuperTrackedVignette(vignetteGUID)
+                end
+                if not WorldMapFrame or not WorldMapFrame:IsShown() then
+                    ToggleWorldMap()
+                end
+                return
+            end
+            if not self.questID then return end
+
+            if self.isTracked == false then
+                if C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(self.questID) and C_QuestLog.AddWorldQuestWatch then
+                    C_QuestLog.AddWorldQuestWatch(self.questID)
+                else
+                    C_QuestLog.AddQuestWatch(self.questID)
+                end
+                addon.ScheduleRefresh()
+                return
+            end
+
+            local now = GetTime()
+            if self._lastClickQuest == self.questID
+               and (now - self._lastClickTime) <= DOUBLE_CLICK_WINDOW then
+                self._lastClickTime = 0
+                self._lastClickQuest = nil
+                if QuestMapFrame_OpenToQuestDetails then
+                    QuestMapFrame_OpenToQuestDetails(self.questID)
+                elseif OpenQuestLog then
+                    C_QuestLog.SetSelectedQuest(self.questID)
+                    OpenQuestLog()
+                else
+                    C_QuestLog.SetSelectedQuest(self.questID)
+                    if not WorldMapFrame:IsShown() then
+                        ToggleWorldMap()
+                    end
+                end
+            else
+                self._lastClickTime = now
+                self._lastClickQuest = self.questID
+                if C_SuperTrack and C_SuperTrack.SetSuperTrackedQuestID then
+                    C_SuperTrack.SetSuperTrackedQuestID(self.questID)
+                end
+            end
+        elseif button == "RightButton" then
+            if self.entryKey then
+                local vignetteGUID = self.entryKey:match("^vignette:(.+)$")
+                if vignetteGUID and C_SuperTrack and C_SuperTrack.GetSuperTrackedVignette then
+                    if C_SuperTrack.GetSuperTrackedVignette() == vignetteGUID then
+                        C_SuperTrack.SetSuperTrackedVignette(nil)
+                    end
+                end
+                return
+            end
+            if self.questID then
+                if C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(self.questID) and addon.RemoveWorldQuestWatch then
+                    addon.RemoveWorldQuestWatch(self.questID)
+                elseif C_QuestLog.RemoveQuestWatch then
+                    C_QuestLog.RemoveQuestWatch(self.questID)
+                end
+            end
+            addon.ScheduleRefresh()
+        end
+    end)
+
+    e:SetScript("OnEnter", function(self)
+        if not self.questID and not self.entryKey then return end
+        local r, g, b = self.titleText:GetTextColor()
+        self._savedColor = { r, g, b }
+        self.titleText:SetTextColor(
+            math.min(r * 1.25, 1),
+            math.min(g * 1.25, 1),
+            math.min(b * 1.25, 1), 1)
+        if self.creatureID then
+            local link = ("unit:Creature-0-0-0-0-%d-0000000000"):format(self.creatureID)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            pcall(GameTooltip.SetHyperlink, GameTooltip, link)
+            local att = _G.AllTheThings
+            if att and att.Modules and att.Modules.Tooltip then
+                local attach = att.Modules.Tooltip.AttachTooltipSearchResults
+                local searchFn = att.SearchForObject or att.SearchForField
+                if attach and searchFn then
+                    pcall(attach, GameTooltip, searchFn, "npcID", self.creatureID)
+                end
+            end
+            GameTooltip:Show()
+        elseif self.questID then
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            pcall(GameTooltip.SetHyperlink, GameTooltip, "quest:" .. self.questID)
+            if self.isTracked == false then
+                GameTooltip:AddLine(" ")
+                GameTooltip:AddLine("Click to track", 0.5, 0.8, 1)
+            end
+            GameTooltip:Show()
+        elseif self.entryKey then
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(self.titleText:GetText() or "")
+            GameTooltip:Show()
+        end
+    end)
+
+    e:SetScript("OnLeave", function(self)
+        if self._savedColor then
+            local sc = self._savedColor
+            self.titleText:SetTextColor(sc[1], sc[2], sc[3], 1)
+            self._savedColor = nil
+        end
+        if GameTooltip:GetOwner() == self then
+            GameTooltip:Hide()
+        end
+    end)
+
+    e:EnableMouseWheel(true)
+    e:SetScript("OnMouseWheel", function(_, delta) addon.HandleScroll(delta) end)
+end

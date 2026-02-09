@@ -1,0 +1,5 @@
+<Bindings>
+  <Binding name="CLICK MQTCollapseButton:LeftButton" description="Collapse Tracker" category="Horizon Suite - Focus">
+    if _G.MQTCollapseButton and _G.MQTCollapseButton:GetScript("OnClick") then _G.MQTCollapseButton:GetScript("OnClick")() end
+  </Binding>
+</Bindings>

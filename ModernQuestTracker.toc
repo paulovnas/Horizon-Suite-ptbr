@@ -1,0 +1,22 @@
+## Interface: 120001, 120000
+## Title: Horizon Suite - Focus
+## Notes: Clean glassmorphism objective tracker for the Midnight era.
+## Author: Crystilac
+## Version: 0.5
+## SavedVariables: ModernQuestTrackerDB
+
+ModernQuestTracker.lua
+Core.lua
+WorldQuests.lua
+Rares.lua
+QuestData.lua
+EntryPool.lua
+FloatingQuestItem.lua
+MplusBlock.lua
+Layout.lua
+Animation.lua
+Blizzard.lua
+Events.lua
+Interactions.lua
+Slash.lua
+Options.lua
