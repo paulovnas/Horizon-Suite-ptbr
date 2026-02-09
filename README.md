@@ -1,6 +1,6 @@
 # Horizon Suite – Focus
 
-A clean, glassmorphism-style replacement for the default World of Warcraft objective tracker, built for the Midnight era. All settings are saved per character.
+A clean, modern-style replacement for the default World of Warcraft objective tracker, built for the Midnight era. All settings are saved per character.
 
 ---
 
@@ -32,9 +32,6 @@ A clean, glassmorphism-style replacement for the default World of Warcraft objec
 - **Rare bosses on the current map** (vignettes) can be shown in the tracker with “Available” as the objective.
 - **Rare-added sound** when a new rare appears (optional).
 - **Click rare** → super-track on map and open map; **right-click rare** → clear super-track.
-
-### Mythic+ block
-- **M+ block** (optional): when in a Mythic+ dungeon, shows timer, completion stage (e.g. 2/8), and affixes. Can be placed above or below the quest list.
 
 ### Floating quest item
 - **Floating quest item button** (optional): Extra Action–style button for the super-tracked quest’s item, or the first quest with an item. Configurable size, anchor (left/right/top/bottom of tracker), and offset. Works in combat via secure templates.
