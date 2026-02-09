@@ -1,3 +1,8 @@
-# Exclude CI/workflow files from the packaged addon
+# Package name must match TOC so folder name is consistent for installs/updates
+package-as: HorizonSuite
+
+# Exclude CI, config, and dotfiles from the packaged addon
 ignore:
   - .github
+  - .gitignore
+  - .pkgmeta
