@@ -642,10 +642,13 @@ local function FullLayout()
     addon.UpdateHeaderQuestCount(#quests)
 
     local totalContentH = math.max(-yOff, 1)
+    local prevScroll = addon.scrollOffset
     scrollChild:SetHeight(totalContentH)
 
-    addon.scrollOffset = 0
-    scrollFrame:SetVerticalScroll(0)
+    local frameH = scrollFrame:GetHeight() or 0
+    local maxScr = math.max(totalContentH - frameH, 0)
+    addon.scrollOffset = math.min(prevScroll, maxScr)
+    scrollFrame:SetVerticalScroll(addon.scrollOffset)
 
     local headerArea    = addon.PADDING + addon.HEADER_HEIGHT + addon.DIVIDER_HEIGHT + 6
     local visibleH      = math.min(totalContentH, addon.GetMaxContentHeight())

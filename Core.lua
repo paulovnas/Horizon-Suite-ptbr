@@ -84,7 +84,7 @@ addon.QUEST_COLORS = {
 
 addon.SECTION_SIZE      = 10
 addon.SECTION_SPACING   = 10
-addon.SECTION_COLOR_A   = 0.60
+addon.SECTION_COLOR_A   = 1
 addon.SECTION_POOL_SIZE = 8
 
 -- Default font path from the game (must be defined before font object creation)
@@ -133,7 +133,7 @@ addon.SECTION_COLORS = {
     COMPLETE  = { 0.20, 1.00, 0.40 },
 }
 
-addon.GROUP_ORDER = { "DUNGEON", "NEARBY", "AVAILABLE", "CAMPAIGN", "IMPORTANT", "LEGENDARY", "WORLD", "RARES", "COMPLETE", "DEFAULT" }
+addon.GROUP_ORDER = { "DUNGEON", "COMPLETE", "WORLD", "RARES", "NEARBY", "AVAILABLE", "CAMPAIGN", "IMPORTANT", "LEGENDARY", "DEFAULT" }
 
 addon.CATEGORY_TO_GROUP = {
     COMPLETE  = "COMPLETE",
@@ -413,6 +413,88 @@ MQT:SetScript("OnDragStop", function(self)
     self:SetUserPlaced(false)
     SavePanelPosition()
 end)
+
+-- Resize handle: drag bottom-right corner to change panel width and height
+local RESIZE_MIN, RESIZE_MAX = 180, 500
+local RESIZE_HEIGHT_MIN = addon.MIN_HEIGHT
+local headerAreaResize = addon.PADDING + addon.HEADER_HEIGHT + addon.DIVIDER_HEIGHT + 6
+local RESIZE_HEIGHT_MAX = headerAreaResize + 800 + addon.PADDING
+local RESIZE_CONTENT_HEIGHT_MIN, RESIZE_CONTENT_HEIGHT_MAX = 200, 800
+
+local resizeHandle = CreateFrame("Frame", nil, MQT)
+resizeHandle:SetSize(20, 20)
+resizeHandle:SetPoint("BOTTOMRIGHT", MQT, "BOTTOMRIGHT", 0, 0)
+resizeHandle:EnableMouse(true)
+resizeHandle:SetScript("OnEnter", function(self)
+    if GameTooltip then
+        GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT")
+        GameTooltip:SetText("Drag to resize", nil, nil, nil, nil, true)
+        GameTooltip:Show()
+    end
+end)
+resizeHandle:SetScript("OnLeave", function()
+    if GameTooltip then GameTooltip:Hide() end
+end)
+local isResizing = false
+local startWidth, startHeight, startMouseX, startMouseY
+resizeHandle:RegisterForDrag("LeftButton")
+local function ResizeOnUpdate(self, elapsed)
+    if not isResizing then return end
+    local scale = UIParent and UIParent:GetEffectiveScale() or 1
+    local curX = select(1, GetCursorPosition()) / scale
+    local curY = select(2, GetCursorPosition()) / scale
+    local deltaX = curX - startMouseX
+    local deltaY = curY - startMouseY
+    local newWidth = math.max(RESIZE_MIN, math.min(RESIZE_MAX, startWidth + deltaX))
+    local newHeight = math.max(RESIZE_HEIGHT_MIN, math.min(RESIZE_HEIGHT_MAX, startHeight - deltaY))
+    MQT:SetWidth(newWidth)
+    MQT:SetHeight(newHeight)
+    addon.targetHeight = newHeight
+    addon.currentHeight = newHeight
+    addon.EnsureDB()
+    HorizonSuiteDB.panelWidth = newWidth
+    local contentH = math.max(RESIZE_CONTENT_HEIGHT_MIN, math.min(RESIZE_CONTENT_HEIGHT_MAX, newHeight - headerAreaResize - addon.PADDING))
+    HorizonSuiteDB.maxContentHeight = contentH
+    if addon.ApplyDimensions then addon.ApplyDimensions() end
+end
+resizeHandle:SetScript("OnDragStart", function(self)
+    if HorizonSuiteDB and HorizonSuiteDB.lockPosition then return end
+    isResizing = true
+    startWidth = MQT:GetWidth()
+    startHeight = MQT:GetHeight()
+    local scale = UIParent and UIParent:GetEffectiveScale() or 1
+    startMouseX = select(1, GetCursorPosition()) / scale
+    startMouseY = select(2, GetCursorPosition()) / scale
+    self:SetScript("OnUpdate", ResizeOnUpdate)
+end)
+resizeHandle:SetScript("OnDragStop", function(self)
+    if not isResizing then return end
+    isResizing = false
+    self:SetScript("OnUpdate", nil)
+    addon.EnsureDB()
+    HorizonSuiteDB.panelWidth = MQT:GetWidth()
+    local h = MQT:GetHeight()
+    local contentH = math.max(RESIZE_CONTENT_HEIGHT_MIN, math.min(RESIZE_CONTENT_HEIGHT_MAX, h - headerAreaResize - addon.PADDING))
+    HorizonSuiteDB.maxContentHeight = contentH
+    if addon.ApplyDimensions then addon.ApplyDimensions() end
+    if addon.FullLayout and not InCombatLockdown() then addon.FullLayout() end
+end)
+
+-- Sleek L-shaped corner grip (two thin strips)
+local gripR, gripG, gripB, gripA = 0.55, 0.56, 0.6, 0.65
+local resizeLineH = resizeHandle:CreateTexture(nil, "OVERLAY")
+resizeLineH:SetSize(12, 2)
+resizeLineH:SetPoint("BOTTOMRIGHT", resizeHandle, "BOTTOMRIGHT", 0, 0)
+resizeLineH:SetColorTexture(gripR, gripG, gripB, gripA)
+local resizeLineV = resizeHandle:CreateTexture(nil, "OVERLAY")
+resizeLineV:SetSize(2, 12)
+resizeLineV:SetPoint("BOTTOMRIGHT", resizeHandle, "BOTTOMRIGHT", 0, 0)
+resizeLineV:SetColorTexture(gripR, gripG, gripB, gripA)
+
+function addon.UpdateResizeHandleVisibility()
+    resizeHandle:SetShown(not (HorizonSuiteDB and HorizonSuiteDB.lockPosition))
+end
+addon.UpdateResizeHandleVisibility()
 
 local function RestoreSavedPosition()
     if not HorizonSuiteDB or not HorizonSuiteDB.point then return end

@@ -168,12 +168,20 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
             print("|cFF00CCFFHorizon Suite - Focus:|r Options not loaded.")
         end
 
+    elseif cmd == "edit" then
+        if _G.ModernQuestTracker_ShowEditPanel then
+            _G.ModernQuestTracker_ShowEditPanel()
+        else
+            print("|cFF00CCFFHorizon Suite - Focus:|r Edit panel not loaded.")
+        end
+
     else
         print("|cFF00CCFFHorizon Suite - Focus Commands:|r")
         print("  /horizon            - Show this help")
         print("  /horizon toggle     - Enable / disable")
         print("  /horizon collapse   - Collapse / expand panel")
         print("  /horizon options    - Open options window")
+        print("  /horizon edit       - Open edit screen")
         print("  /horizon testsound  - Play the rare-added notification sound")
         print("  /horizon test       - Show with test data")
         print("  /horizon reset      - Reset to live data")

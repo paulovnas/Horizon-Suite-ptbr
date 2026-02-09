@@ -120,6 +120,9 @@ local function setDB(key, value)
     if TYPOGRAPHY_KEYS[key] and addon.UpdateFontObjectsFromDB then
         addon.UpdateFontObjectsFromDB()
     end
+    if key == "lockPosition" and addon.UpdateResizeHandleVisibility then
+        addon.UpdateResizeHandleVisibility()
+    end
     notifyMainAddon()
 end
 
@@ -211,6 +214,27 @@ closeBtn:SetScript("OnEnter", function()
 end)
 closeBtn:SetScript("OnLeave", function()
     closeLabel:SetTextColor(Def.TextColorLabel[1], Def.TextColorLabel[2], Def.TextColorLabel[3], Def.TextColorLabel[4] or 1)
+    if GameTooltip then GameTooltip:Hide() end
+end)
+
+local editBtn = CreateFrame("Button", nil, panel)
+editBtn:SetSize(44, 22)
+editBtn:SetPoint("TOPRIGHT", closeBtn, "TOPLEFT", -6, 0)
+local editLabel = editBtn:CreateFontString(nil, "OVERLAY")
+editLabel:SetFont(Def.FontPath, Def.LabelSize, "OUTLINE")
+editLabel:SetTextColor(Def.TextColorLabel[1], Def.TextColorLabel[2], Def.TextColorLabel[3], Def.TextColorLabel[4] or 1)
+editLabel:SetJustifyH("CENTER")
+editLabel:SetText("Edit")
+editLabel:SetPoint("CENTER", editBtn, "CENTER", 0, 0)
+editBtn:SetScript("OnClick", function()
+    if _G.ModernQuestTracker_ShowEditPanel then _G.ModernQuestTracker_ShowEditPanel() end
+end)
+editBtn:SetScript("OnEnter", function()
+    editLabel:SetTextColor(Def.TextColorHighlight[1], Def.TextColorHighlight[2], Def.TextColorHighlight[3], Def.TextColorHighlight[4] or 1)
+    if GameTooltip then GameTooltip:SetOwner(editBtn, "ANCHOR_BOTTOM"); GameTooltip:SetText("Open edit screen", nil, nil, nil, nil, true); GameTooltip:Show() end
+end)
+editBtn:SetScript("OnLeave", function()
+    editLabel:SetTextColor(Def.TextColorLabel[1], Def.TextColorLabel[2], Def.TextColorLabel[3], Def.TextColorLabel[4] or 1)
     if GameTooltip then GameTooltip:Hide() end
 end)
 
@@ -1142,6 +1166,7 @@ updateOptionsPanelFonts = function()
     titleShadow:SetFont(path, Def.HeaderSize, "OUTLINE")
     titleText:SetFont(path, Def.HeaderSize, "OUTLINE")
     closeLabel:SetFont(path, Def.LabelSize, "OUTLINE")
+    if editLabel then editLabel:SetFont(path, Def.LabelSize, "OUTLINE") end
     for _, btn in ipairs(tabButtons) do
         if btn.label then btn.label:SetFont(path, Def.LabelSize, "OUTLINE") end
     end
@@ -1198,6 +1223,99 @@ function _G.ModernQuestTracker_OptionsRequestClose()
     end)
 end
 
+-- Edit panel (scaffold: minimal popout, style matches options)
+local editPanelWidth, editPanelHeight = 480, 360
+local editPanel = CreateFrame("Frame", "ModernQuestTrackerEditPanel", UIParent)
+editPanel:SetSize(editPanelWidth, editPanelHeight)
+editPanel:SetFrameStrata("DIALOG")
+editPanel:SetClampedToScreen(true)
+local editBg = editPanel:CreateTexture(nil, "BACKGROUND")
+editBg:SetAllPoints(editPanel)
+editBg:SetColorTexture(Def.ContentBg[1], Def.ContentBg[2], Def.ContentBg[3], Def.ContentBg[4])
+local function editBorderEdge(point, relPoint, width, height, x, y)
+    local tex = editPanel:CreateTexture(nil, "BORDER")
+    tex:SetColorTexture(Def.BorderColor[1], Def.BorderColor[2], Def.BorderColor[3], Def.BorderColor[4])
+    tex:SetSize(width, height)
+    tex:SetPoint(point, editPanel, relPoint or point, x or 0, y or 0)
+    return tex
+end
+editBorderEdge("TOPLEFT", "TOPLEFT", editPanelWidth, Def.BorderEdge)
+editBorderEdge("BOTTOMLEFT", "BOTTOMLEFT", editPanelWidth, Def.BorderEdge)
+editBorderEdge("TOPLEFT", "TOPLEFT", Def.BorderEdge, editPanelHeight)
+editBorderEdge("TOPRIGHT", "TOPRIGHT", Def.BorderEdge, editPanelHeight)
+editPanel:SetMovable(true)
+editPanel:RegisterForDrag("LeftButton")
+local editTitleBar = CreateFrame("Frame", nil, editPanel)
+editTitleBar:SetPoint("TOPLEFT", editPanel, "TOPLEFT", 0, 0)
+editTitleBar:SetPoint("TOPRIGHT", editPanel, "TOPRIGHT", 0, 0)
+editTitleBar:SetHeight(Def.HeaderHeight)
+local editTitleBarBg = editTitleBar:CreateTexture(nil, "BACKGROUND")
+editTitleBarBg:SetAllPoints(editTitleBar)
+editTitleBarBg:SetColorTexture(Def.TitleBarBg[1], Def.TitleBarBg[2], Def.TitleBarBg[3], Def.TitleBarBg[4])
+editTitleBar:EnableMouse(true)
+editTitleBar:RegisterForDrag("LeftButton")
+editTitleBar:SetScript("OnDragStart", function() editPanel:StartMoving() end)
+editTitleBar:SetScript("OnDragStop", function()
+    editPanel:StopMovingOrSizing()
+    if HorizonSuiteDB then
+        local x, y = editPanel:GetCenter()
+        local uix, uiy = UIParent:GetCenter()
+        HorizonSuiteDB.editPanelLeft = x - uix
+        HorizonSuiteDB.editPanelTop = y - uiy
+    end
+end)
+local editTitleShadow = editTitleBar:CreateFontString(nil, "BORDER")
+editTitleShadow:SetFont(Def.FontPath, Def.HeaderSize, "OUTLINE")
+editTitleShadow:SetTextColor(0, 0, 0, Def.ShadowA)
+editTitleShadow:SetJustifyH("LEFT")
+editTitleShadow:SetText("EDIT")
+local editTitleText = editTitleBar:CreateFontString(nil, "OVERLAY")
+editTitleText:SetFont(Def.FontPath, Def.HeaderSize, "OUTLINE")
+SetTextColor(editTitleText, Def.TextColorTitleBar)
+editTitleText:SetJustifyH("LEFT")
+editTitleText:SetPoint("TOPLEFT", editTitleBar, "TOPLEFT", Def.Padding, -Def.Padding)
+editTitleText:SetText("EDIT")
+editTitleShadow:SetPoint("CENTER", editTitleText, "CENTER", Def.ShadowOx, Def.ShadowOy)
+local editCloseBtn = CreateFrame("Button", nil, editPanel)
+editCloseBtn:SetSize(44, 22)
+editCloseBtn:SetPoint("TOPRIGHT", editPanel, "TOPRIGHT", -Def.Padding, -Def.Padding)
+local editCloseLabel = editCloseBtn:CreateFontString(nil, "OVERLAY")
+editCloseLabel:SetFont(Def.FontPath, Def.LabelSize, "OUTLINE")
+editCloseLabel:SetTextColor(Def.TextColorLabel[1], Def.TextColorLabel[2], Def.TextColorLabel[3], Def.TextColorLabel[4] or 1)
+editCloseLabel:SetJustifyH("CENTER")
+editCloseLabel:SetText("Close")
+editCloseLabel:SetPoint("CENTER", editCloseBtn, "CENTER", 0, 0)
+editCloseBtn:SetScript("OnClick", function() editPanel:Hide() end)
+editCloseBtn:SetScript("OnEnter", function()
+    editCloseLabel:SetTextColor(Def.TextColorHighlight[1], Def.TextColorHighlight[2], Def.TextColorHighlight[3], Def.TextColorHighlight[4] or 1)
+    if GameTooltip then GameTooltip:SetOwner(editCloseBtn, "ANCHOR_BOTTOM"); GameTooltip:SetText("Close edit panel", nil, nil, nil, nil, true); GameTooltip:Show() end
+end)
+editCloseBtn:SetScript("OnLeave", function()
+    editCloseLabel:SetTextColor(Def.TextColorLabel[1], Def.TextColorLabel[2], Def.TextColorLabel[3], Def.TextColorLabel[4] or 1)
+    if GameTooltip then GameTooltip:Hide() end
+end)
+local editDivider = editPanel:CreateTexture(nil, "ARTWORK")
+editDivider:SetPoint("TOPLEFT", editTitleBar, "BOTTOMLEFT", 0, 0)
+editDivider:SetPoint("TOPRIGHT", editTitleBar, "BOTTOMRIGHT", 0, 0)
+editDivider:SetHeight(Def.DividerHeight)
+editDivider:SetColorTexture(Def.DividerColor[1], Def.DividerColor[2], Def.DividerColor[3], Def.DividerColor[4] or 1)
+local editBody = editPanel:CreateFontString(nil, "OVERLAY")
+editBody:SetFont(Def.FontPath, Def.LabelSize, "OUTLINE")
+SetTextColor(editBody, Def.TextColorSection)
+editBody:SetPoint("TOPLEFT", editPanel, "TOPLEFT", Def.Padding, -(Def.HeaderHeight + Def.DividerHeight + Def.Padding))
+editBody:SetText("Edit screen — add your content here.")
+editPanel:Hide()
+editPanel:SetScript("OnShow", function()
+    local db = HorizonSuiteDB
+    if db and db.editPanelLeft ~= nil and db.editPanelTop ~= nil then
+        editPanel:ClearAllPoints()
+        editPanel:SetPoint("CENTER", UIParent, "CENTER", db.editPanelLeft, db.editPanelTop)
+    else
+        editPanel:ClearAllPoints()
+        editPanel:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    end
+end)
+
 -- Expose for /horizon options and tracker gear button
 function _G.ModernQuestTracker_ShowOptions()
     local p = _G.ModernQuestTrackerOptionsPanel
@@ -1207,6 +1325,18 @@ function _G.ModernQuestTracker_ShowOptions()
             else p:Hide() end
         else
             p:Show()
+        end
+    end
+end
+
+-- Expose for Options Edit button and /horizon edit
+function _G.ModernQuestTracker_ShowEditPanel()
+    local ep = _G.ModernQuestTrackerEditPanel
+    if ep then
+        if ep:IsShown() then
+            ep:Hide()
+        else
+            ep:Show()
         end
     end
 end
