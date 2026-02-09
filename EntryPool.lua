@@ -106,14 +106,14 @@ local function CreateQuestEntry(parent, index)
     e.questTypeIcon:Hide()
 
     e.titleShadow = e:CreateFontString(nil, "BORDER")
-    e.titleShadow:SetFont(addon.FONT_PATH, addon.TITLE_SIZE, "OUTLINE")
+    e.titleShadow:SetFontObject(addon.TitleFont)
     e.titleShadow:SetTextColor(0, 0, 0, addon.SHADOW_A)
     e.titleShadow:SetJustifyH("LEFT")
     e.titleShadow:SetWordWrap(true)
     e.titleShadow:SetWidth(textW)
 
     e.titleText = e:CreateFontString(nil, "OVERLAY")
-    e.titleText:SetFont(addon.FONT_PATH, addon.TITLE_SIZE, "OUTLINE")
+    e.titleText:SetFontObject(addon.TitleFont)
     e.titleText:SetTextColor(1, 1, 1, 1)
     e.titleText:SetJustifyH("LEFT")
     e.titleText:SetWordWrap(true)
@@ -122,12 +122,12 @@ local function CreateQuestEntry(parent, index)
     e.titleShadow:SetPoint("CENTER", e.titleText, "CENTER", addon.SHADOW_OX, addon.SHADOW_OY)
 
     e.zoneShadow = e:CreateFontString(nil, "BORDER")
-    e.zoneShadow:SetFont(addon.FONT_PATH, addon.ZONE_SIZE, "OUTLINE")
+    e.zoneShadow:SetFontObject(addon.ZoneFont)
     e.zoneShadow:SetTextColor(0, 0, 0, addon.SHADOW_A)
     e.zoneShadow:SetJustifyH("LEFT")
 
     e.zoneText = e:CreateFontString(nil, "OVERLAY")
-    e.zoneText:SetFont(addon.FONT_PATH, addon.ZONE_SIZE, "OUTLINE")
+    e.zoneText:SetFontObject(addon.ZoneFont)
     e.zoneText:SetTextColor(addon.ZONE_COLOR[1], addon.ZONE_COLOR[2], addon.ZONE_COLOR[3], 1)
     e.zoneText:SetJustifyH("LEFT")
     e.zoneShadow:SetPoint("CENTER", e.zoneText, "CENTER", addon.SHADOW_OX, addon.SHADOW_OY)
@@ -137,14 +137,14 @@ local function CreateQuestEntry(parent, index)
     e.objectives = {}
     for j = 1, addon.MAX_OBJECTIVES do
         local objShadow = e:CreateFontString(nil, "BORDER")
-        objShadow:SetFont(addon.FONT_PATH, addon.OBJ_SIZE, "OUTLINE")
+        objShadow:SetFontObject(addon.ObjFont)
         objShadow:SetTextColor(0, 0, 0, addon.SHADOW_A)
         objShadow:SetJustifyH("LEFT")
         objShadow:SetWordWrap(true)
         objShadow:SetWidth(textW - addon.OBJ_INDENT)
 
         local objText = e:CreateFontString(nil, "OVERLAY")
-        objText:SetFont(addon.FONT_PATH, addon.OBJ_SIZE, "OUTLINE")
+        objText:SetFontObject(addon.ObjFont)
         objText:SetTextColor(addon.OBJ_COLOR[1], addon.OBJ_COLOR[2], addon.OBJ_COLOR[3], 1)
         objText:SetJustifyH("LEFT")
         objText:SetWordWrap(true)
@@ -188,12 +188,12 @@ local function CreateSectionHeader(parent)
     s:SetSize(addon.GetPanelWidth() - addon.PADDING * 2, addon.SECTION_SIZE + 4)
 
     s.shadow = s:CreateFontString(nil, "BORDER")
-    s.shadow:SetFont(addon.FONT_PATH, addon.SECTION_SIZE, "OUTLINE")
+    s.shadow:SetFontObject(addon.SectionFont)
     s.shadow:SetTextColor(0, 0, 0, addon.SHADOW_A)
     s.shadow:SetJustifyH("LEFT")
 
     s.text = s:CreateFontString(nil, "OVERLAY")
-    s.text:SetFont(addon.FONT_PATH, addon.SECTION_SIZE, "OUTLINE")
+    s.text:SetFontObject(addon.SectionFont)
     s.text:SetJustifyH("LEFT")
     s.text:SetPoint("BOTTOMLEFT", s, "BOTTOMLEFT", 0, 0)
     s.shadow:SetPoint("CENTER", s.text, "CENTER", addon.SHADOW_OX, addon.SHADOW_OY)
@@ -208,60 +208,52 @@ for i = 1, addon.SECTION_POOL_SIZE do
     sectionPool[i] = CreateSectionHeader(scrollChild)
 end
 
-local function ApplyTypography()
-    local fontPath   = addon.GetDB("fontPath", "Fonts\\FRIZQT__.ttf")
+local function UpdateFontObjectsFromDB()
+    local fontPath   = addon.GetDB("fontPath", addon.GetDefaultFontPath())
     local outline    = addon.GetDB("fontOutline", "OUTLINE")
     local headerSz   = tonumber(addon.GetDB("headerFontSize", 16)) or 16
     local titleSz    = tonumber(addon.GetDB("titleFontSize", 13)) or 13
     local objSz      = tonumber(addon.GetDB("objectiveFontSize", 11)) or 11
     local zoneSz     = tonumber(addon.GetDB("zoneFontSize", 10)) or 10
     local sectionSz  = tonumber(addon.GetDB("sectionFontSize", 10)) or 10
-    local shadowOx   = tonumber(addon.GetDB("shadowOffsetX", 2)) or 2
-    local shadowOy   = tonumber(addon.GetDB("shadowOffsetY", -2)) or -2
-    local shadowA    = tonumber(addon.GetDB("shadowAlpha", 0.8)) or 0.8
 
-    addon.headerShadow:SetFont(fontPath, headerSz, outline)
+    addon.HeaderFont:SetFont(fontPath, headerSz, outline)
+    addon.TitleFont:SetFont(fontPath, titleSz, outline)
+    addon.ObjFont:SetFont(fontPath, objSz, outline)
+    addon.ZoneFont:SetFont(fontPath, zoneSz, outline)
+    addon.SectionFont:SetFont(fontPath, sectionSz, outline)
+end
+
+local function ApplyTypography()
+    UpdateFontObjectsFromDB()
+
+    local shadowOx = tonumber(addon.GetDB("shadowOffsetX", 2)) or 2
+    local shadowOy = tonumber(addon.GetDB("shadowOffsetY", -2)) or -2
+    local shadowA  = tonumber(addon.GetDB("shadowAlpha", 0.8)) or 0.8
+
     addon.headerShadow:SetTextColor(0, 0, 0, shadowA)
     addon.headerShadow:SetPoint("CENTER", addon.headerText, "CENTER", shadowOx, shadowOy)
-    addon.headerText:SetFont(fontPath, headerSz, outline)
 
-    addon.countText:SetFont(fontPath, objSz, outline)
-    addon.countShadow:SetFont(fontPath, objSz, outline)
     addon.countShadow:SetTextColor(0, 0, 0, shadowA)
     addon.countShadow:SetPoint("CENTER", addon.countText, "CENTER", shadowOx, shadowOy)
-    addon.chevron:SetFont(fontPath, objSz, outline)
-    if addon.optionsLabel then addon.optionsLabel:SetFont(fontPath, objSz, outline) end
-    if addon.mplusTimerText then
-        addon.mplusTimerText:SetFont(fontPath, objSz, outline)
-        addon.mplusPctText:SetFont(fontPath, objSz, outline)
-        addon.mplusAffixesText:SetFont(fontPath, sectionSz, outline)
-    end
 
     for i = 1, addon.POOL_SIZE do
         local e = pool[i]
-        e.titleShadow:SetFont(fontPath, titleSz, outline)
         e.titleShadow:SetTextColor(0, 0, 0, shadowA)
         e.titleShadow:SetPoint("CENTER", e.titleText, "CENTER", shadowOx, shadowOy)
-        e.titleText:SetFont(fontPath, titleSz, outline)
-        e.zoneShadow:SetFont(fontPath, zoneSz, outline)
         e.zoneShadow:SetTextColor(0, 0, 0, shadowA)
         e.zoneShadow:SetPoint("CENTER", e.zoneText, "CENTER", shadowOx, shadowOy)
-        e.zoneText:SetFont(fontPath, zoneSz, outline)
         for j = 1, addon.MAX_OBJECTIVES do
             local obj = e.objectives[j]
-            obj.shadow:SetFont(fontPath, objSz, outline)
             obj.shadow:SetTextColor(0, 0, 0, shadowA)
             obj.shadow:SetPoint("CENTER", obj.text, "CENTER", shadowOx, shadowOy)
-            obj.text:SetFont(fontPath, objSz, outline)
         end
     end
 
     for i = 1, addon.SECTION_POOL_SIZE do
         local s = sectionPool[i]
-        s.shadow:SetFont(fontPath, sectionSz, outline)
         s.shadow:SetTextColor(0, 0, 0, shadowA)
         s.shadow:SetPoint("CENTER", s.text, "CENTER", shadowOx, shadowOy)
-        s.text:SetFont(fontPath, sectionSz, outline)
     end
 end
 
@@ -303,9 +295,10 @@ local function ClearEntry(entry, full)
     end
 end
 
-addon.pool         = pool
-addon.activeMap   = activeMap
-addon.sectionPool = sectionPool
-addon.ClearEntry   = ClearEntry
-addon.ApplyTypography = ApplyTypography
-addon.ApplyDimensions = ApplyDimensions
+addon.pool                   = pool
+addon.activeMap             = activeMap
+addon.sectionPool           = sectionPool
+addon.ClearEntry            = ClearEntry
+addon.ApplyTypography       = ApplyTypography
+addon.UpdateFontObjectsFromDB = UpdateFontObjectsFromDB
+addon.ApplyDimensions       = ApplyDimensions

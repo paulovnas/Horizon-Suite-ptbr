@@ -64,7 +64,7 @@ local Def = {
     CheckboxCheckColor = { 0.5, 0.6, 0.85, 1 },
 }
 -- Resolve from DB when available, else addon default (lowercase for dropdown consistency)
-Def.FontPath = (addon.GetDB and addon.GetDB("fontPath", "Fonts\\FRIZQT__.ttf")) or (addon.FONT_PATH or "Fonts\\FRIZQT__.ttf")
+Def.FontPath = (addon.GetDB and addon.GetDB("fontPath", addon.GetDefaultFontPath and addon.GetDefaultFontPath() or "Fonts\\FRIZQT__.TTF")) or (addon.FONT_PATH or (addon.GetDefaultFontPath and addon.GetDefaultFontPath()) or "Fonts\\FRIZQT__.TTF")
 Def.HeaderSize = addon.HEADER_SIZE or 16
 Def.ShadowOx = addon.SHADOW_OX or 2
 Def.ShadowOy = addon.SHADOW_OY or -2
@@ -99,6 +99,16 @@ local function notifyMainAddon()
     if _G.ModernQuestTracker_FullLayout and not InCombatLockdown() then _G.ModernQuestTracker_FullLayout() end
 end
 
+local TYPOGRAPHY_KEYS = {
+    fontPath = true,
+    headerFontSize = true,
+    titleFontSize = true,
+    objectiveFontSize = true,
+    zoneFontSize = true,
+    sectionFontSize = true,
+    fontOutline = true,
+}
+
 local updateOptionsPanelFonts  -- forward decl, set after panel built
 local function setDB(key, value)
     addon.EnsureDB()
@@ -106,6 +116,9 @@ local function setDB(key, value)
     if key == "fontPath" then
         Def.FontPath = value
         if updateOptionsPanelFonts then updateOptionsPanelFonts() end
+    end
+    if TYPOGRAPHY_KEYS[key] and addon.UpdateFontObjectsFromDB then
+        addon.UpdateFontObjectsFromDB()
     end
     notifyMainAddon()
 end
@@ -404,11 +417,12 @@ local function addNumericRowFor(parent, anchor, name, getVal, setVal, minV, maxV
     return lab, eb
 end
 
--- Dropdown via UIDropDownMenu_Initialize
+-- Dropdown via UIDropDownMenu_Initialize (optionsTable can be a function that returns { { name, value }, ... })
 local function InitDropdownMenu(frame, optionsTable, onSelect)
     if not UIDropDownMenu_Initialize or not UIDropDownMenu_CreateInfo or not UIDropDownMenu_AddButton then return end
     UIDropDownMenu_Initialize(frame, function(self, level, menuList)
-        for _, opt in ipairs(optionsTable or {}) do
+        local opts = (type(optionsTable) == "function" and optionsTable()) or optionsTable or {}
+        for _, opt in ipairs(opts) do
             local info = UIDropDownMenu_CreateInfo()
             if info then
                 info.text = opt[1]
@@ -432,13 +446,19 @@ local function ToggleDropdown(frame)
     ToggleDropDownMenu(1, nil, frame, frame, 0, 0)
 end
 
--- Font options (name -> path)
-local FONT_OPTIONS = {
-    { "Friz Quadrata (Default)", "Fonts\\FRIZQT__.ttf" },
-    { "Arial Narrow", "Fonts\\ARIALN.ttf" },
-    { "Morpheus", "Fonts\\MORPHEUS.ttf" },
-    { "Skurri", "Fonts\\skurri.ttf" },
-}
+-- Font options: Game Font + LibSharedMedia. Returns list with "Custom" entry if saved path not in list.
+local function GetFontDropdownOptions()
+    if addon.RefreshFontList then addon.RefreshFontList() end
+    local list = (addon.GetFontList and addon.GetFontList()) or {}
+    local saved = getDB("fontPath", (addon.GetDefaultFontPath and addon.GetDefaultFontPath()) or "Fonts\\FRIZQT__.TTF")
+    for _, o in ipairs(list) do
+        if o[2] == saved then return list end
+    end
+    local out = {}
+    for i = 1, #list do out[i] = list[i] end
+    out[#out + 1] = { "Custom", saved }
+    return out
+end
 
 -- Outline options
 local OUTLINE_OPTIONS = {
@@ -471,7 +491,7 @@ local OptionCategories = {
         name = "Appearance",
         options = {
             { type = "section", name = "Typography" },
-            { type = "dropdown", name = "Font", dbKey = "fontPath", options = nil, get = function() return getDB("fontPath", "Fonts\\FRIZQT__.ttf") end, set = function(v) setDB("fontPath", v) end },
+            { type = "dropdown", name = "Font", dbKey = "fontPath", options = GetFontDropdownOptions, get = function() return getDB("fontPath", (addon.GetDefaultFontPath and addon.GetDefaultFontPath()) or "Fonts\\FRIZQT__.TTF") end, set = function(v) setDB("fontPath", v) end },
             { type = "numeric", name = "Header size", dbKey = "headerFontSize", min = 8, max = 32, get = function() return getDB("headerFontSize", 16) end, set = function(v) setDB("headerFontSize", v) end },
             { type = "numeric", name = "Title size", dbKey = "titleFontSize", min = 8, max = 24, get = function() return getDB("titleFontSize", 13) end, set = function(v) setDB("titleFontSize", v) end },
             { type = "numeric", name = "Objective size", dbKey = "objectiveFontSize", min = 8, max = 20, get = function() return getDB("objectiveFontSize", 11) end, set = function(v) setDB("objectiveFontSize", v) end },
@@ -544,8 +564,7 @@ local OptionCategories = {
         },
     },
 }
--- Wire dropdown option tables into descriptors
-OptionCategories[1].options[2].options = FONT_OPTIONS   -- Font
+-- Wire dropdown option tables into descriptors (Font uses GetFontDropdownOptions function)
 OptionCategories[1].options[8].options = OUTLINE_OPTIONS -- Outline
 OptionCategories[3].options[8].options = HIGHLIGHT_OPTIONS   -- Active quest highlight
 
@@ -730,11 +749,15 @@ local function CreateDropdownRow(parent, descriptor)
     dd.descriptor = descriptor
     function dd:Refresh()
         local val = descriptor.get()
-        for _, opt in ipairs(descriptor.options or {}) do
+        local opts = (type(descriptor.options) == "function" and descriptor.options()) or descriptor.options or {}
+        for _, opt in ipairs(opts) do
             if opt[2] == val then
                 if UIDropDownMenu_SetText then UIDropDownMenu_SetText(self, opt[1]) end
-                break
+                return
             end
+        end
+        if UIDropDownMenu_SetText and addon.GetFontNameForPath then
+            UIDropDownMenu_SetText(self, addon.GetFontNameForPath(val))
         end
     end
     return dd
@@ -1123,7 +1146,7 @@ local ANIM_DUR = 0.2
 local easeOut = addon.easeOut or function(t) return 1 - (1 - t) * (1 - t) end
 
 panel:SetScript("OnShow", function()
-    Def.FontPath = addon.GetDB("fontPath", "Fonts\\FRIZQT__.ttf")
+    Def.FontPath = addon.GetDB("fontPath", (addon.GetDefaultFontPath and addon.GetDefaultFontPath()) or "Fonts\\FRIZQT__.TTF")
     if updateOptionsPanelFonts then updateOptionsPanelFonts() end
     local db = ModernQuestTrackerDB
     if db and db.optionsLeft ~= nil and db.optionsTop ~= nil then

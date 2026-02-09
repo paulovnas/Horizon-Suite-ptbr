@@ -10,7 +10,8 @@ local addon = _G.ModernQuestTracker
 -- CONFIGURATION
 -- ============================================================================
 
-addon.FONT_PATH       = "Fonts\\FRIZQT__.ttf"
+-- Default: use game font path so it works across locales/patches (set explicitly before font object creation)
+addon.FONT_PATH       = nil
 addon.HEADER_SIZE     = 16
 addon.TITLE_SIZE      = 13
 addon.OBJ_SIZE        = 11
@@ -79,6 +80,26 @@ addon.SECTION_SPACING   = 10
 addon.SECTION_COLOR_A   = 0.60
 addon.SECTION_POOL_SIZE = 8
 
+-- Default font path from the game (must be defined before font object creation)
+function addon.GetDefaultFontPath()
+    local path = GameFontNormal and GameFontNormal:GetFont()
+    if path and path ~= "" then return path end
+    return "Fonts\\FRIZQT__.TTF"
+end
+
+-- Master Font Objects (source of truth for display; updated from DB by UpdateFontObjectsFromDB)
+addon.FONT_PATH = addon.GetDefaultFontPath()
+addon.HeaderFont  = CreateFont("HorizonSuiteHeaderFont")
+addon.HeaderFont:SetFont(addon.FONT_PATH, addon.HEADER_SIZE, "OUTLINE")
+addon.TitleFont   = CreateFont("HorizonSuiteTitleFont")
+addon.TitleFont:SetFont(addon.FONT_PATH, addon.TITLE_SIZE, "OUTLINE")
+addon.ObjFont     = CreateFont("HorizonSuiteObjFont")
+addon.ObjFont:SetFont(addon.FONT_PATH, addon.OBJ_SIZE, "OUTLINE")
+addon.ZoneFont    = CreateFont("HorizonSuiteZoneFont")
+addon.ZoneFont:SetFont(addon.FONT_PATH, addon.ZONE_SIZE, "OUTLINE")
+addon.SectionFont = CreateFont("HorizonSuiteSectionFont")
+addon.SectionFont:SetFont(addon.FONT_PATH, addon.SECTION_SIZE, "OUTLINE")
+
 addon.SECTION_LABELS = {
     DUNGEON   = "IN THIS DUNGEON",
     NEARBY    = "NEARBY",
@@ -124,8 +145,54 @@ function addon.EnsureDB()
     if not ModernQuestTrackerDB then ModernQuestTrackerDB = {} end
 end
 
+-- Font list: "Game Font" first, then LibSharedMedia fonts if available
+local fontListNames, fontListPaths = {}, {}
+function addon.RefreshFontList()
+    table.wipe(fontListNames)
+    table.wipe(fontListPaths)
+    local gamePath = addon.GetDefaultFontPath()
+    fontListNames[1] = "Game Font"
+    fontListPaths[1] = gamePath
+    local LSM = (LibStub and LibStub:GetLibrary("LibSharedMedia-3.0", true)) or nil
+    if LSM and LSM.HashTable and LSM:HashTable("font") then
+        local t = {}
+        for name, path in pairs(LSM:HashTable("font")) do
+            t[#t + 1] = { name = name, path = path }
+        end
+        table.sort(t, function(a, b) return (a.name or "") < (b.name or "") end)
+        for _, f in ipairs(t) do
+            fontListNames[#fontListNames + 1] = f.name
+            fontListPaths[#fontListPaths + 1] = f.path
+        end
+    end
+end
+
+function addon.GetFontList()
+    if #fontListNames == 0 then addon.RefreshFontList() end
+    local list = {}
+    for i = 1, #fontListNames do
+        list[i] = { fontListNames[i], fontListPaths[i] }
+    end
+    return list
+end
+
+function addon.GetFontPathForIndex(index)
+    if #fontListPaths == 0 then addon.RefreshFontList() end
+    if not index or index < 1 or index > #fontListPaths then return addon.GetDefaultFontPath() end
+    return fontListPaths[index]
+end
+
+function addon.GetFontNameForPath(path)
+    if #fontListNames == 0 then addon.RefreshFontList() end
+    for i = 1, #fontListPaths do
+        if fontListPaths[i] == path then return fontListNames[i] end
+    end
+    return "Custom"
+end
+
+-- Legacy: static list used if no LSM; GetFontList() is the source of truth for the dropdown
 addon.FONT_LIST = {
-    { "Friz Quadrata (Default)", "Fonts\\FRIZQT__.ttf" },
+    { "Friz Quadrata (Default)", "Fonts\\FRIZQT__.TTF" },
     { "Arial Narrow", "Fonts\\ARIALN.ttf" },
     { "Morpheus", "Fonts\\MORPHEUS.ttf" },
     { "Skurri", "Fonts\\skurri.ttf" },
@@ -157,13 +224,13 @@ MQT:SetClampedToScreen(true)
 MQT:Hide()
 
 local headerShadow = MQT:CreateFontString(nil, "BORDER")
-headerShadow:SetFont(addon.FONT_PATH, addon.HEADER_SIZE, "OUTLINE")
+headerShadow:SetFontObject(addon.HeaderFont)
 headerShadow:SetTextColor(0, 0, 0, addon.SHADOW_A)
 headerShadow:SetJustifyH("LEFT")
 headerShadow:SetText("OBJECTIVES")
 
 local headerText = MQT:CreateFontString(nil, "OVERLAY")
-headerText:SetFont(addon.FONT_PATH, addon.HEADER_SIZE, "OUTLINE")
+headerText:SetFontObject(addon.HeaderFont)
 headerText:SetTextColor(addon.HEADER_COLOR[1], addon.HEADER_COLOR[2], addon.HEADER_COLOR[3], 1)
 headerText:SetJustifyH("LEFT")
 headerText:SetPoint("TOPLEFT", MQT, "TOPLEFT", addon.PADDING, -addon.PADDING)
@@ -171,19 +238,19 @@ headerText:SetText("OBJECTIVES")
 headerShadow:SetPoint("CENTER", headerText, "CENTER", addon.SHADOW_OX, addon.SHADOW_OY)
 
 local countText = MQT:CreateFontString(nil, "OVERLAY")
-countText:SetFont(addon.FONT_PATH, addon.OBJ_SIZE, "OUTLINE")
+countText:SetFontObject(addon.ObjFont)
 countText:SetTextColor(0.60, 0.65, 0.75, 1)
 countText:SetJustifyH("RIGHT")
 countText:SetPoint("TOPRIGHT", MQT, "TOPRIGHT", -addon.PADDING, -addon.PADDING - 3)
 
 local countShadow = MQT:CreateFontString(nil, "BORDER")
-countShadow:SetFont(addon.FONT_PATH, addon.OBJ_SIZE, "OUTLINE")
+countShadow:SetFontObject(addon.ObjFont)
 countShadow:SetTextColor(0, 0, 0, addon.SHADOW_A)
 countShadow:SetJustifyH("RIGHT")
 countShadow:SetPoint("CENTER", countText, "CENTER", addon.SHADOW_OX, addon.SHADOW_OY)
 
 local chevron = MQT:CreateFontString(nil, "OVERLAY")
-chevron:SetFont(addon.FONT_PATH, addon.OBJ_SIZE, "OUTLINE")
+chevron:SetFontObject(addon.ObjFont)
 chevron:SetTextColor(0.60, 0.65, 0.75, 1)
 chevron:SetJustifyH("RIGHT")
 chevron:SetPoint("RIGHT", countText, "LEFT", -6, 0)
@@ -191,7 +258,7 @@ chevron:SetText("-")
 
 local optionsBtn = CreateFrame("Button", nil, MQT)
 local optionsLabel = optionsBtn:CreateFontString(nil, "OVERLAY")
-optionsLabel:SetFont(addon.FONT_PATH, addon.OBJ_SIZE, "OUTLINE")
+optionsLabel:SetFontObject(addon.ObjFont)
 optionsLabel:SetTextColor(0.60, 0.65, 0.75, 1)
 optionsLabel:SetJustifyH("RIGHT")
 optionsLabel:SetText("Options")
