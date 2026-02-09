@@ -1,0 +1,250 @@
+--[[
+    Horizon Suite - Focus - Options Data
+    OptionCategories (General, Content, Style, Colors, Categories), getDB/setDB/notifyMainAddon, search index.
+]]
+
+if not HorizonSuiteDB then HorizonSuiteDB = {} end
+local addon = _G.ModernQuestTracker
+if not addon then return end
+
+-- ---------------------------------------------------------------------------
+-- DB helpers
+-- ---------------------------------------------------------------------------
+
+local TYPOGRAPHY_KEYS = {
+    fontPath = true,
+    headerFontSize = true,
+    titleFontSize = true,
+    objectiveFontSize = true,
+    zoneFontSize = true,
+    sectionFontSize = true,
+    fontOutline = true,
+}
+
+function OptionsData_GetDB(key, default)
+    if not HorizonSuiteDB then return default end
+    local v = HorizonSuiteDB[key]
+    if v == nil then return default end
+    return v
+end
+
+local updateOptionsPanelFontsRef
+function OptionsData_SetUpdateFontsRef(fn)
+    updateOptionsPanelFontsRef = fn
+end
+
+function OptionsData_SetDB(key, value)
+    addon.EnsureDB()
+    HorizonSuiteDB[key] = value
+    if key == "fontPath" and updateOptionsPanelFontsRef then
+        updateOptionsPanelFontsRef()
+    end
+    if TYPOGRAPHY_KEYS[key] and addon.UpdateFontObjectsFromDB then
+        addon.UpdateFontObjectsFromDB()
+    end
+    if key == "lockPosition" and addon.UpdateResizeHandleVisibility then
+        addon.UpdateResizeHandleVisibility()
+    end
+    OptionsData_NotifyMainAddon()
+end
+
+function OptionsData_NotifyMainAddon()
+    local applyTy = _G.ModernQuestTracker_ApplyTypography or addon.ApplyTypography
+    if applyTy then applyTy() end
+    if _G.ModernQuestTracker_ApplyDimensions then _G.ModernQuestTracker_ApplyDimensions() end
+    if _G.ModernQuestTracker_RequestRefresh then _G.ModernQuestTracker_RequestRefresh() end
+    if _G.ModernQuestTracker_FullLayout and not InCombatLockdown() then _G.ModernQuestTracker_FullLayout() end
+end
+
+-- ---------------------------------------------------------------------------
+-- Option value helpers (used in category descriptors)
+-- ---------------------------------------------------------------------------
+
+local function getDB(k, d) return OptionsData_GetDB(k, d) end
+local function setDB(k, v) return OptionsData_SetDB(k, v) end
+
+local defaultFontPath = (addon.GetDefaultFontPath and addon.GetDefaultFontPath()) or "Fonts\\FRIZQT__.TTF"
+
+local function GetFontDropdownOptions()
+    if addon.RefreshFontList then addon.RefreshFontList() end
+    local list = (addon.GetFontList and addon.GetFontList()) or {}
+    local saved = getDB("fontPath", defaultFontPath)
+    for _, o in ipairs(list) do
+        if o[2] == saved then return list end
+    end
+    local out = {}
+    for i = 1, #list do out[i] = list[i] end
+    out[#out + 1] = { "Custom", saved }
+    return out
+end
+
+local OUTLINE_OPTIONS = {
+    { "None", "" },
+    { "Outline", "OUTLINE" },
+    { "Thick Outline", "THICKOUTLINE" },
+}
+local HIGHLIGHT_OPTIONS = {
+    { "Bar (left edge)", "bar-left" },
+    { "Bar (right edge)", "bar-right" },
+    { "Highlight", "highlight" },
+}
+local MPLUS_POSITION_OPTIONS = {
+    { "Top", "top" },
+    { "Bottom", "bottom" },
+}
+local QUEST_COLOR_DEFAULTS = {
+    DEFAULT = { 0.90, 0.90, 0.90 },
+    CAMPAIGN = { 1.00, 0.82, 0.20 },
+    LEGENDARY = { 1.00, 0.50, 0.00 },
+    WORLD = { 0.60, 0.20, 1.00 },
+    COMPLETE = { 0.20, 1.00, 0.40 },
+    RARE = { 1.00, 0.55, 0.25 },
+}
+local COLOR_KEYS_ORDER = { "DEFAULT", "CAMPAIGN", "LEGENDARY", "WORLD", "COMPLETE", "RARE" }
+local ZONE_COLOR_DEFAULT = { 0.55, 0.65, 0.75 }
+local OBJ_COLOR_DEFAULT = { 0.78, 0.78, 0.78 }
+local OBJ_DONE_COLOR_DEFAULT = { 0.30, 0.80, 0.30 }
+local HIGHLIGHT_COLOR_DEFAULT = { 0.4, 0.7, 1 }
+
+local function getActiveQuestHighlight()
+    local v = getDB("activeQuestHighlight", "bar-left")
+    if v == "bar" then v = "bar-left" end
+    if v ~= "bar-left" and v ~= "bar-right" and v ~= "highlight" then return "bar-left" end
+    return v
+end
+
+-- ---------------------------------------------------------------------------
+-- OptionCategories: General, Content, Style, Colors, Categories
+-- ---------------------------------------------------------------------------
+
+local OptionCategories = {
+    {
+        key = "General",
+        name = "General",
+        options = {
+            { type = "section", name = "Panel behavior" },
+            { type = "toggle", name = "Lock position", desc = "Prevent dragging to reposition the tracker.", dbKey = "lockPosition", get = function() return (HorizonSuiteDB and HorizonSuiteDB.lockPosition) == true end, set = function(v) setDB("lockPosition", v) end },
+            { type = "toggle", name = "Grow upward", desc = "Anchor the tracker by its bottom edge so the list expands upward.", dbKey = "growUp", get = function() return getDB("growUp", false) end, set = function(v) setDB("growUp", v) end },
+            { type = "toggle", name = "Start collapsed", desc = "When enabled, the objectives panel starts collapsed (header only) until you expand it.", dbKey = "collapsed", get = function() return (HorizonSuiteDB and HorizonSuiteDB.collapsed) == true end, set = function(v) setDB("collapsed", v) end },
+            { type = "section", name = "Instance visibility" },
+            { type = "toggle", name = "Show in dungeon", desc = "Show the tracker while in a party dungeon.", dbKey = "showInDungeon", get = function() return getDB("showInDungeon", false) end, set = function(v) setDB("showInDungeon", v) end },
+            { type = "toggle", name = "Show in raid", desc = "Show the tracker while in a raid.", dbKey = "showInRaid", get = function() return getDB("showInRaid", false) end, set = function(v) setDB("showInRaid", v) end },
+            { type = "toggle", name = "Show in battleground", desc = "Show the tracker while in a battleground.", dbKey = "showInBattleground", get = function() return getDB("showInBattleground", false) end, set = function(v) setDB("showInBattleground", v) end },
+            { type = "toggle", name = "Show in arena", desc = "Show the tracker while in an arena.", dbKey = "showInArena", get = function() return getDB("showInArena", false) end, set = function(v) setDB("showInArena", v) end },
+            { type = "section", name = "Dimensions" },
+            { type = "slider", name = "Panel width", desc = "Width of the tracker in pixels.", dbKey = "panelWidth", min = 180, max = 500, get = function() return getDB("panelWidth", 260) end, set = function(v) setDB("panelWidth", math.max(180, math.min(500, v))) end },
+            { type = "slider", name = "Max content height", desc = "Maximum height of the scrollable content area.", dbKey = "maxContentHeight", min = 200, max = 800, get = function() return getDB("maxContentHeight", 480) end, set = function(v) setDB("maxContentHeight", math.max(200, math.min(800, v))) end },
+        },
+    },
+    {
+        key = "Content",
+        name = "Content",
+        options = {
+            { type = "section", name = "Header" },
+            { type = "toggle", name = "Show quest count", desc = "Show the tracked quest count in the header.", dbKey = "showQuestCount", get = function() return getDB("showQuestCount", true) end, set = function(v) setDB("showQuestCount", v) end },
+            { type = "toggle", name = "Show header divider", desc = "Show the line below the OBJECTIVES header.", dbKey = "showHeaderDivider", get = function() return getDB("showHeaderDivider", true) end, set = function(v) setDB("showHeaderDivider", v) end },
+            { type = "toggle", name = "Super-minimal mode", desc = "Hide the OBJECTIVES header for a pure text list.", dbKey = "hideObjectivesHeader", get = function() return getDB("hideObjectivesHeader", false) end, set = function(v) setDB("hideObjectivesHeader", v) end },
+            { type = "section", name = "List" },
+            { type = "toggle", name = "Show section headers", desc = "Show category labels above each group.", dbKey = "showSectionHeaders", get = function() return getDB("showSectionHeaders", true) end, set = function(v) setDB("showSectionHeaders", v) end },
+            { type = "toggle", name = "Show zone labels", desc = "Show the zone name under each quest title.", dbKey = "showZoneLabels", get = function() return getDB("showZoneLabels", true) end, set = function(v) setDB("showZoneLabels", v) end },
+            { type = "toggle", name = "Show quest type icons", desc = "Show quest type icon to the left of each title.", dbKey = "showQuestTypeIcons", get = function() return getDB("showQuestTypeIcons", false) end, set = function(v) setDB("showQuestTypeIcons", v) end },
+            { type = "dropdown", name = "Active quest highlight", desc = "How the super-tracked quest is highlighted.", dbKey = "activeQuestHighlight", options = HIGHLIGHT_OPTIONS, get = getActiveQuestHighlight, set = function(v) setDB("activeQuestHighlight", v) end },
+            { type = "toggle", name = "Show quest item buttons", desc = "Show the usable quest item button on the right of a quest.", dbKey = "showQuestItemButtons", get = function() return getDB("showQuestItemButtons", true) end, set = function(v) setDB("showQuestItemButtons", v) end },
+            { type = "section", name = "Filtering" },
+            { type = "toggle", name = "Only show quests in current zone", desc = "Hide tracked quests not in your current zone.", dbKey = "filterByZone", get = function() return getDB("filterByZone", false) end, set = function(v) setDB("filterByZone", v) end },
+            { type = "section", name = "Rare bosses" },
+            { type = "toggle", name = "Show rare bosses", desc = "Show rare boss vignettes in the list.", dbKey = "showRareBosses", get = function() return getDB("showRareBosses", true) end, set = function(v) setDB("showRareBosses", v) end },
+            { type = "toggle", name = "Rare added sound", desc = "Play a sound when a rare is added to the list.", dbKey = "rareAddedSound", get = function() return getDB("rareAddedSound", true) end, set = function(v) setDB("rareAddedSound", v) end },
+            { type = "section", name = "Floating quest item" },
+            { type = "toggle", name = "Show floating quest item", desc = "Show a quick-use button for the super-tracked quest's usable item.", dbKey = "showFloatingQuestItem", get = function() return getDB("showFloatingQuestItem", false) end, set = function(v) setDB("showFloatingQuestItem", v) end },
+            { type = "section", name = "Mythic+" },
+            { type = "toggle", name = "Show Mythic+ block", desc = "Show timer, completion %, and affixes when in a Mythic+ dungeon.", dbKey = "showMythicPlusBlock", get = function() return getDB("showMythicPlusBlock", false) end, set = function(v) setDB("showMythicPlusBlock", v) end },
+            { type = "dropdown", name = "M+ block position", desc = "Position of the Mythic+ block relative to the quest list.", dbKey = "mplusBlockPosition", options = MPLUS_POSITION_OPTIONS, get = function() return getDB("mplusBlockPosition", "top") end, set = function(v) setDB("mplusBlockPosition", v) end },
+        },
+    },
+    {
+        key = "Style",
+        name = "Style",
+        options = {
+            { type = "section", name = "Typography" },
+            { type = "dropdown", name = "Font", desc = "Font family for the tracker.", dbKey = "fontPath", options = GetFontDropdownOptions, get = function() return getDB("fontPath", defaultFontPath) end, set = function(v) setDB("fontPath", v) end, displayFn = addon.GetFontNameForPath },
+            { type = "slider", name = "Header size", desc = "Font size for the OBJECTIVES header.", dbKey = "headerFontSize", min = 8, max = 32, get = function() return getDB("headerFontSize", 16) end, set = function(v) setDB("headerFontSize", v) end },
+            { type = "slider", name = "Title size", desc = "Font size for quest titles.", dbKey = "titleFontSize", min = 8, max = 24, get = function() return getDB("titleFontSize", 13) end, set = function(v) setDB("titleFontSize", v) end },
+            { type = "slider", name = "Objective size", desc = "Font size for objective text.", dbKey = "objectiveFontSize", min = 8, max = 20, get = function() return getDB("objectiveFontSize", 11) end, set = function(v) setDB("objectiveFontSize", v) end },
+            { type = "slider", name = "Zone size", desc = "Font size for zone labels.", dbKey = "zoneFontSize", min = 8, max = 18, get = function() return getDB("zoneFontSize", 10) end, set = function(v) setDB("zoneFontSize", v) end },
+            { type = "slider", name = "Section size", desc = "Font size for section headers.", dbKey = "sectionFontSize", min = 8, max = 18, get = function() return getDB("sectionFontSize", 10) end, set = function(v) setDB("sectionFontSize", v) end },
+            { type = "dropdown", name = "Outline", desc = "Font outline style.", dbKey = "fontOutline", options = OUTLINE_OPTIONS, get = function() return getDB("fontOutline", "OUTLINE") end, set = function(v) setDB("fontOutline", v) end },
+            { type = "section", name = "Shadow" },
+            { type = "slider", name = "Shadow X", desc = "Horizontal shadow offset.", dbKey = "shadowOffsetX", min = -10, max = 10, get = function() return getDB("shadowOffsetX", 2) end, set = function(v) setDB("shadowOffsetX", v) end },
+            { type = "slider", name = "Shadow Y", desc = "Vertical shadow offset.", dbKey = "shadowOffsetY", min = -10, max = 10, get = function() return getDB("shadowOffsetY", -2) end, set = function(v) setDB("shadowOffsetY", v) end },
+            { type = "slider", name = "Shadow alpha", desc = "Shadow opacity (0–1).", dbKey = "shadowAlpha", min = 0, max = 1, get = function() return getDB("shadowAlpha", 0.8) end, set = function(v) setDB("shadowAlpha", v) end },
+            { type = "section", name = "Highlight" },
+            { type = "slider", name = "Highlight alpha", desc = "Opacity of the super-tracked quest highlight bar or background (0–1).", dbKey = "highlightAlpha", min = 0, max = 1, get = function() return tonumber(getDB("highlightAlpha", 0.25)) or 0.25 end, set = function(v) setDB("highlightAlpha", v) end },
+        },
+    },
+    {
+        key = "Colors",
+        name = "Colors",
+        options = {
+            { type = "section", name = "Quest type colors" },
+            { type = "colorMatrix", name = "Colors", dbKey = "questColors", keys = COLOR_KEYS_ORDER, defaultMap = QUEST_COLOR_DEFAULTS, resetSectionKeys = true,
+                overrides = {
+                    { dbKey = "zoneColor", name = "Zone label", default = ZONE_COLOR_DEFAULT, tooltip = "Zone name under quest title." },
+                    { dbKey = "objectiveColor", name = "Objective text", default = OBJ_COLOR_DEFAULT, tooltip = "Active objectives." },
+                    { dbKey = "objectiveDoneColor", name = "Completed objective", default = OBJ_DONE_COLOR_DEFAULT, tooltip = "Done objectives, ready to turn in." },
+                    { dbKey = "highlightColor", name = "Highlight", default = HIGHLIGHT_COLOR_DEFAULT, tooltip = "Super-tracked quest bar or background." },
+                },
+            },
+            { type = "colorGroup", name = "Section header colors", dbKey = "sectionColors", keys = function() return addon.GetGroupOrder() end, defaultMap = addon.SECTION_COLORS, labelMap = addon.SECTION_LABELS, tooltip = "Colors for category labels." },
+        },
+    },
+    {
+        key = "Categories",
+        name = "Categories",
+        options = {
+            { type = "section", name = "Focus order" },
+            { type = "reorderList", name = "Focus category order", labelMap = addon.SECTION_LABELS, get = function() return addon.GetGroupOrder() end, set = function(order) addon.SetGroupOrder(order) end, tooltip = "Drag to reorder categories in the Focus list." },
+            { type = "section", name = "Effects" },
+            { type = "toggle", name = "Animations", desc = "Enable cinematic slide and fade for quests.", dbKey = "animations", get = function() return getDB("animations", true) end, set = function(v) setDB("animations", v) end },
+            { type = "toggle", name = "Objective progress flash", desc = "Show a green flash when an objective is completed.", dbKey = "objectiveProgressFlash", get = function() return getDB("objectiveProgressFlash", true) end, set = function(v) setDB("objectiveProgressFlash", v) end },
+        },
+    },
+}
+
+-- ---------------------------------------------------------------------------
+-- Search index: flatten all options for search (name + desc)
+-- ---------------------------------------------------------------------------
+
+function OptionsData_BuildSearchIndex()
+    local index = {}
+    for _, cat in ipairs(OptionCategories) do
+        for _, opt in ipairs(cat.options) do
+            if opt.type ~= "section" then
+                local name = (opt.name or ""):lower()
+                local desc = (opt.desc or opt.tooltip or ""):lower()
+                local searchText = name .. " " .. desc
+                index[#index + 1] = {
+                    categoryKey = cat.key,
+                    categoryName = cat.name,
+                    option = opt,
+                    searchText = searchText,
+                }
+            end
+        end
+    end
+    return index
+end
+
+-- Export for panel
+addon.OptionsData_GetDB = OptionsData_GetDB
+addon.OptionsData_SetDB = OptionsData_SetDB
+addon.OptionsData_NotifyMainAddon = OptionsData_NotifyMainAddon
+addon.OptionsData_SetUpdateFontsRef = OptionsData_SetUpdateFontsRef
+addon.OptionCategories = OptionCategories
+addon.OptionsData_BuildSearchIndex = OptionsData_BuildSearchIndex
+addon.QUEST_COLOR_DEFAULTS = QUEST_COLOR_DEFAULTS
+addon.COLOR_KEYS_ORDER = COLOR_KEYS_ORDER
+addon.ZONE_COLOR_DEFAULT = ZONE_COLOR_DEFAULT
+addon.OBJ_COLOR_DEFAULT = OBJ_COLOR_DEFAULT
+addon.OBJ_DONE_COLOR_DEFAULT = OBJ_DONE_COLOR_DEFAULT
+addon.HIGHLIGHT_COLOR_DEFAULT = HIGHLIGHT_COLOR_DEFAULT

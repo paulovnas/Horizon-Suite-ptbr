@@ -19,4 +19,6 @@ Blizzard.lua
 Events.lua
 Interactions.lua
 Slash.lua
-Options.lua
+OptionsWidgets.lua
+OptionsData.lua
+OptionsPanel.lua
