@@ -1,0 +1,3 @@
+# Exclude CI/workflow files from the packaged addon
+ignore:
+  - .github
