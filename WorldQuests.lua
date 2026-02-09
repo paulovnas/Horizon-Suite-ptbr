@@ -1,18 +1,9 @@
 --[[
     Horizon Suite - Focus - World Quest Tracking
     Quests on map (GetNearbyQuestIDs), world/calling watch list, merge into tracker.
-    Uses same approach as WorldQuestTracker: query GetQuestsForPlayerByMapID for all known WQ zones, then filter to current zone.
 ]]
 
 local addon = _G.ModernQuestTracker
-
--- Zone map IDs that can have world quests (TWW + Dragonflight + other WQ zones; same concept as WorldQuestTracker.mapTables / WorldQuestZones).
--- Querying these when cache is empty lets the client return zone data. Add zones as needed (UiMapID from C_Map.GetBestMapForUnit("player")).
-local ZONE_MAP_IDS_WITH_WQS = {
-    [2214] = true, [2215] = true, [2213] = true, [2216] = true, [2248] = true, [2255] = true, [2256] = true, [2346] = true, [2371] = true, -- TWW
-    [2024] = true, [2025] = true, [2023] = true, [2022] = true, [2151] = true, [2133] = true, [2200] = true, -- Dragonflight
-    [4922] = true, -- Twilight Highlands (Eastern Kingdoms)
-}
 
 -- ============================================================================
 -- WORLD QUEST AND QUESTS-ON-MAP LOGIC
@@ -79,29 +70,22 @@ local function GetNearbyQuestIDs()
         if C_TaskQuest and C_TaskQuest.GetQuestsForPlayerByMapID then
             local taskPOIs = C_TaskQuest.GetQuestsForPlayerByMapID(checkMapID, checkMapID) or C_TaskQuest.GetQuestsForPlayerByMapID(checkMapID)
             if taskPOIs then
-                for _, poi in ipairs(taskPOIs) do
-                    local id = poi.questID or poi.questId
-                    if id then
-                        nearbySet[id] = true
-                        taskQuestOnlySet[id] = true
+                if #taskPOIs > 0 then
+                    for _, poi in ipairs(taskPOIs) do
+                        local id = (type(poi) == "table" and (poi.questID or poi.questId)) or (type(poi) == "number" and poi)
+                        if id then
+                            nearbySet[id] = true
+                            taskQuestOnlySet[id] = true
+                        end
                     end
                 end
-            end
-        end
-    end
-
-    -- Fallback when cache is empty: query known WQ zones (or at least player's zone). When cache is primed by OnMapChanged, rely on it.
-    local cacheHasZone = addon.zoneTaskQuestCache and addon.zoneTaskQuestCache[mapID] and next(addon.zoneTaskQuestCache[mapID])
-    if not cacheHasZone and C_TaskQuest and C_TaskQuest.GetQuestsForPlayerByMapID then
-        for zoneMapID, _ in pairs(ZONE_MAP_IDS_WITH_WQS) do
-            local taskPOIs = C_TaskQuest.GetQuestsForPlayerByMapID(zoneMapID, zoneMapID) or C_TaskQuest.GetQuestsForPlayerByMapID(zoneMapID)
-            if taskPOIs then
-                local isPlayerZone = (zoneMapID == mapID)
-                for _, poi in ipairs(taskPOIs) do
-                    local id = poi.questID or poi.questId
-                    if id then
-                        local poiMapID = poi.mapID or poi.mapId or zoneMapID
-                        if isPlayerZone or poiMapID == mapID then
+                for k, v in pairs(taskPOIs) do
+                    if type(k) == "number" and k > 0 then
+                        nearbySet[k] = true
+                        taskQuestOnlySet[k] = true
+                    elseif type(v) == "table" then
+                        local id = v.questID or v.questId
+                        if id then
                             nearbySet[id] = true
                             taskQuestOnlySet[id] = true
                         end
@@ -111,12 +95,17 @@ local function GetNearbyQuestIDs()
         end
     end
 
-    -- Use cached zone WQ IDs when the world map was opened for this zone (fallback).
-    if addon.zoneTaskQuestCache and addon.zoneTaskQuestCache[mapID] then
-        for id, _ in pairs(addon.zoneTaskQuestCache[mapID]) do
-            if id then
-                nearbySet[id] = true
-                taskQuestOnlySet[id] = true
+    -- Use cached zone WQ IDs (from map open or heartbeat) for player map and all checked maps.
+    if addon.zoneTaskQuestCache then
+        for _, checkMapID in ipairs(mapIDsToCheck) do
+            local cached = addon.zoneTaskQuestCache[checkMapID]
+            if cached then
+                for id, _ in pairs(cached) do
+                    if id then
+                        nearbySet[id] = true
+                        taskQuestOnlySet[id] = true
+                    end
+                end
             end
         end
     end
@@ -135,8 +124,8 @@ local function GetCurrentWorldQuestWatchSet()
     return set
 end
 
--- Returns watch-list WQs plus in-zone active world quests/callings so they appear in the objective list.
--- taskQuestOnlySet: quest IDs from C_TaskQuest.GetQuestsForPlayerByMapID (map icons not yet in log); show these even when IsWorldQuest/IsActive are false.
+-- Returns watch-list WQs plus in-zone *active* world quests/callings so they appear in the objective list.
+-- Filter out deprecated/expired WQs: only show if on watch list, or calling, or (world/task and currently active or in quest log).
 local function GetWorldAndCallingQuestIDsToShow(nearbySet, taskQuestOnlySet)
     local out = {}
     local seen = {}
@@ -162,7 +151,15 @@ local function GetWorldAndCallingQuestIDsToShow(nearbySet, taskQuestOnlySet)
                 local isCalling = C_QuestLog.IsQuestCalling and C_QuestLog.IsQuestCalling(questID)
                 local isActiveTask = C_TaskQuest and C_TaskQuest.IsActive and C_TaskQuest.IsActive(questID)
                 local fromTaskQuestMap = taskQuestOnlySet and taskQuestOnlySet[questID]
-                if isWorld or isCalling or isActiveTask or fromTaskQuestMap then
+                local inLog = C_QuestLog.GetLogIndexForQuestID and C_QuestLog.GetLogIndexForQuestID(questID)
+                -- Callings: always include. World/task: only if currently active or in quest log (avoids deprecated/expired WQs).
+                if isCalling then
+                    ids[#ids + 1] = questID
+                elseif isActiveTask then
+                    ids[#ids + 1] = questID
+                elseif isWorld and (inLog or isActiveTask) then
+                    ids[#ids + 1] = questID
+                elseif fromTaskQuestMap and isActiveTask then
                     ids[#ids + 1] = questID
                 end
             end
@@ -176,7 +173,8 @@ local function GetWorldAndCallingQuestIDsToShow(nearbySet, taskQuestOnlySet)
             local isWorld = C_QuestLog.IsWorldQuest(questID)
             local isCalling = C_QuestLog.IsQuestCalling and C_QuestLog.IsQuestCalling(questID)
             local fromTaskQuestMap = taskQuestOnlySet and taskQuestOnlySet[questID]
-            local forceCategory = (fromTaskQuestMap and not isWorld and not isCalling) and "WORLD" or nil
+            local isImportant = C_QuestLog.IsImportantQuest and C_QuestLog.IsImportantQuest(questID)
+            local forceCategory = (fromTaskQuestMap and not isWorld and not isCalling and not isImportant) and "WORLD" or nil
             out[#out + 1] = { questID = questID, isTracked = false, forceCategory = forceCategory }
         end
     end

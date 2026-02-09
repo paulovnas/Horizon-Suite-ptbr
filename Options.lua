@@ -447,7 +447,8 @@ local OUTLINE_OPTIONS = {
     { "Thick Outline", "THICKOUTLINE" },
 }
 local HIGHLIGHT_OPTIONS = {
-    { "Bar (left edge)", "bar" },
+    { "Bar (left edge)", "bar-left" },
+    { "Bar (right edge)", "bar-right" },
     { "Highlight", "highlight" },
 }
 local QUEST_COLOR_DEFAULTS = {
@@ -492,6 +493,7 @@ local OptionCategories = {
                     { dbKey = "highlightColor", name = "Highlight", default = HIGHLIGHT_COLOR_DEFAULT, tooltip = "Super-tracked quest bar or background." },
                 },
             },
+            { type = "colorGroup", name = "Section header colors", dbKey = "sectionColors", keys = addon.GROUP_ORDER, defaultMap = addon.SECTION_COLORS, labelMap = addon.SECTION_LABELS, tooltip = "Colors for category labels (e.g. NEARBY, AVAILABLE IN ZONE)." },
         },
     },
     {
@@ -516,8 +518,12 @@ local OptionCategories = {
             { type = "checkbox", name = "Show zone labels", dbKey = "showZoneLabels", tooltip = "Show the zone name under each quest title.", get = function() return getDB("showZoneLabels", true) end, set = function(v) setDB("showZoneLabels", v) end },
             { type = "checkbox", name = "Show quest type icons", dbKey = "showQuestTypeIcons", tooltip = "Show quest type icon to the left of each title.", get = function() return getDB("showQuestTypeIcons", false) end, set = function(v) setDB("showQuestTypeIcons", v) end },
             { type = "dropdown", name = "Active quest highlight", dbKey = "activeQuestHighlight", options = nil, get = function()
-                local v = getDB("activeQuestHighlight", "bar")
-                if v ~= "bar" and v ~= "highlight" then return (v == "none") and "bar" or "highlight" end
+                local v = getDB("activeQuestHighlight", "bar-left")
+                -- Migrate older value
+                if v == "bar" then v = "bar-left" end
+                if v ~= "bar-left" and v ~= "bar-right" and v ~= "highlight" then
+                    return "bar-left"
+                end
                 return v
             end, set = function(v) setDB("activeQuestHighlight", v) end },
             { type = "checkbox", name = "Show quest item buttons", dbKey = "showQuestItemButtons", tooltip = "Show the usable quest item button on the right of a quest.", get = function() return getDB("showQuestItemButtons", true) end, set = function(v) setDB("showQuestItemButtons", v) end },
@@ -860,7 +866,7 @@ local function BuildContentFromOptions(tab, options, refreshers)
                 local lab = row:CreateFontString(nil, "OVERLAY")
                 lab:SetFont(Def.FontPath, Def.LabelSize, "OUTLINE")
                 SetTextColor(lab, Def.TextColorLabel)
-                lab:SetText(key:gsub("^%l", string.upper))
+                lab:SetText((opt.labelMap and opt.labelMap[key]) or key:gsub("^%l", string.upper))
                 lab:SetPoint("LEFT", row, "LEFT", 0, 0)
                 local swatch = CreateFrame("Button", nil, row)
                 swatch:SetSize(18, 18)
@@ -951,7 +957,7 @@ local function BuildContentFromOptions(tab, options, refreshers)
                 local lab = row:CreateFontString(nil, "OVERLAY")
                 lab:SetFont(Def.FontPath, Def.LabelSize, "OUTLINE")
                 SetTextColor(lab, Def.TextColorLabel)
-                lab:SetText(key:gsub("^%l", string.upper))
+                lab:SetText((opt.labelMap and opt.labelMap[key]) or key:gsub("^%l", string.upper))
                 lab:SetPoint("LEFT", row, "LEFT", 0, 0)
                 local swatch = CreateFrame("Button", nil, row)
                 swatch:SetSize(18, 18)

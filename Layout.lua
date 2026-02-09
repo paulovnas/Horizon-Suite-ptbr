@@ -61,8 +61,12 @@ local function PopulateEntry(entry, questData)
     end
     entry.titleText:SetTextColor(c[1], c[2], c[3], 1)
 
-    local rawHighlight = addon.GetDB("activeQuestHighlight", "bar")
-    local highlightStyle = (rawHighlight == "bar") and "bar" or "highlight"
+    local rawHighlight = addon.GetDB("activeQuestHighlight", "bar-left")
+    -- Migrate legacy value
+    if rawHighlight == "bar" then
+        rawHighlight = "bar-left"
+    end
+    local highlightStyle = rawHighlight == "highlight" and "highlight" or rawHighlight
     local hc = addon.GetDB("highlightColor", nil)
     if not hc or #hc < 3 then hc = { 0.40, 0.70, 1.00 } end
     local ha = tonumber(addon.GetDB("highlightAlpha", 0.25)) or 0.25
@@ -73,12 +77,12 @@ local function PopulateEntry(entry, questData)
         entry.highlightBorderR:Hide()
     end
     if questData.isSuperTracked then
-        if highlightStyle == "bar" then
-            entry.trackBar:SetColorTexture(hc[1], hc[2], hc[3], 0.80)
-            entry.trackBar:Show()
+        if highlightStyle == "bar-left" or highlightStyle == "bar-right" then
             entry.highlightBg:Hide()
             if entry.highlightTop then entry.highlightTop:Hide() end
             hideHighlightBorders()
+            entry.trackBar:SetColorTexture(hc[1], hc[2], hc[3], 0.70)
+            entry.trackBar:Show()
         else
             -- Highlight style: inset bg + border + top strip
             entry.trackBar:Hide()
@@ -211,9 +215,24 @@ local function PopulateEntry(entry, questData)
         totalH = totalH + addon.OBJ_SPACING + objH
     end
 
-    entry.trackBar:SetHeight(math.max(totalH, 1))
     entry.entryHeight = totalH
     entry:SetHeight(totalH)
+
+    -- Active-quest bar: position after entry has final height (one texture, left or right, 2px slim)
+    local BAR_W = 2
+    if (highlightStyle == "bar-left" or highlightStyle == "bar-right") and entry.trackBar:IsShown() then
+        entry.trackBar:ClearAllPoints()
+        if highlightStyle == "bar-left" then
+            local barLeft = addon.BAR_LEFT_OFFSET or 12
+            entry.trackBar:SetPoint("TOPLEFT", entry, "TOPLEFT", -barLeft, 0)
+            entry.trackBar:SetPoint("BOTTOMRIGHT", entry, "BOTTOMLEFT", -barLeft + BAR_W, 0)
+        else
+            local barInsetRight = addon.ICON_COLUMN_WIDTH - addon.PADDING + 4
+            entry.trackBar:SetPoint("TOPRIGHT", entry, "TOPRIGHT", -barInsetRight, 0)
+            entry.trackBar:SetPoint("BOTTOMLEFT", entry, "BOTTOMRIGHT", -barInsetRight - BAR_W, 0)
+        end
+    end
+
     if questData.isRare then
         entry.questID    = nil
         entry.entryKey   = questData.entryKey

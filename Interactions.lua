@@ -117,13 +117,6 @@ for i = 1, addon.POOL_SIZE do
         elseif self.questID then
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             pcall(GameTooltip.SetHyperlink, GameTooltip, "quest:" .. self.questID)
-            GameTooltip:AddLine(" ")
-            if C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(self.questID) then
-                GameTooltip:AddLine("Click to set as active quest", 0.5, 0.8, 1)
-                GameTooltip:AddLine("Shift+Click to track on other maps", 0.5, 0.8, 1)
-            elseif self.isTracked == false then
-                GameTooltip:AddLine("Click to track", 0.5, 0.8, 1)
-            end
             GameTooltip:Show()
         elseif self.entryKey then
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")

@@ -180,6 +180,7 @@ local function ReadTrackedQuests()
 
         local itemLink, itemTexture
         local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
+        local isAccepted = (logIndex ~= nil)
         if logIndex and GetQuestLogSpecialItemInfo then
             local link, tex = GetQuestLogSpecialItemInfo(logIndex)
             if tex then
@@ -200,6 +201,7 @@ local function ReadTrackedQuests()
             isComplete     = isComplete,
             isSuperTracked = isSuper,
             isNearby       = isNearby,
+            isAccepted     = isAccepted,
             zoneName       = zoneName,
             itemLink       = itemLink,
             itemTexture    = itemTexture,
@@ -261,7 +263,11 @@ local function SortAndGroupQuests(quests)
             groups["DUNGEON"][#groups["DUNGEON"] + 1] = q
         elseif q.category == "WORLD" or q.category == "CALLING" then
             groups["WORLD"][#groups["WORLD"] + 1] = q
-        elseif q.isNearby then
+        elseif q.isNearby and not q.isAccepted then
+            -- Non-accepted quests tied to the current zone map.
+            groups["AVAILABLE"][#groups["AVAILABLE"] + 1] = q
+        elseif q.isNearby and q.isAccepted then
+            -- Accepted quests that are in the current zone.
             groups["NEARBY"][#groups["NEARBY"] + 1] = q
         else
             local grp = addon.CATEGORY_TO_GROUP[q.category] or "DEFAULT"

@@ -27,7 +27,7 @@ addon.PANEL_WIDTH     = 260
 addon.PANEL_X         = -40
 addon.PANEL_Y         = -100
 addon.PADDING              = 14
-addon.CONTENT_RIGHT_PADDING = 12
+addon.CONTENT_RIGHT_PADDING = 20
 addon.HEADER_HEIGHT         = 28
 addon.DIVIDER_HEIGHT  = 2
 addon.TITLE_SPACING   = 8
@@ -44,6 +44,7 @@ addon.ITEM_BTN_OFFSET = 4
 addon.QUEST_TYPE_ICON_SIZE = 16
 addon.QUEST_TYPE_ICON_GAP  = 4
 addon.ICON_COLUMN_WIDTH    = addon.QUEST_TYPE_ICON_SIZE + addon.QUEST_TYPE_ICON_GAP
+addon.BAR_LEFT_OFFSET      = 12  -- space from entry left (more = more gap between bar and quest type icon)
 addon.TRACKED_OTHER_ZONE_ICON_SIZE = 12
 
 addon.SHADOW_OX       = 2
@@ -87,8 +88,10 @@ addon.SECTION_POOL_SIZE = 8
 
 addon.SECTION_LABELS = {
     DUNGEON   = "IN THIS DUNGEON",
+    AVAILABLE = "AVAILABLE IN ZONE",
     NEARBY    = "NEARBY",
     CAMPAIGN  = "CAMPAIGN",
+    IMPORTANT = "IMPORTANT",
     LEGENDARY = "LEGENDARY",
     WORLD     = "WORLD QUESTS",
     RARES     = "RARE BOSSES",
@@ -98,8 +101,10 @@ addon.SECTION_LABELS = {
 
 addon.SECTION_COLORS = {
     DUNGEON   = { 0.60, 0.40, 1.00 },
-    NEARBY    = { 0.50, 0.80, 1.00 },
+    AVAILABLE = { 0.25, 0.88, 0.92 },  -- cyan/teal (available to pick up)
+    NEARBY    = { 0.35, 0.75, 0.98 },  -- sky blue (accepted, in zone)
     CAMPAIGN  = { 1.00, 0.82, 0.20 },
+    IMPORTANT = { 1.00, 0.82, 0.20 },
     LEGENDARY = { 1.00, 0.50, 0.00 },
     WORLD     = { 0.60, 0.20, 1.00 },
     RARES     = { 1.00, 0.55, 0.25 },
@@ -107,12 +112,12 @@ addon.SECTION_COLORS = {
     COMPLETE  = { 0.20, 1.00, 0.40 },
 }
 
-addon.GROUP_ORDER = { "DUNGEON", "NEARBY", "CAMPAIGN", "LEGENDARY", "WORLD", "RARES", "COMPLETE", "DEFAULT" }
+addon.GROUP_ORDER = { "DUNGEON", "NEARBY", "AVAILABLE", "CAMPAIGN", "IMPORTANT", "LEGENDARY", "WORLD", "RARES", "COMPLETE", "DEFAULT" }
 
 addon.CATEGORY_TO_GROUP = {
     COMPLETE  = "COMPLETE",
     LEGENDARY = "LEGENDARY",
-    IMPORTANT = "CAMPAIGN",
+    IMPORTANT = "IMPORTANT",
     CAMPAIGN  = "CAMPAIGN",
     WORLD     = "WORLD",
     CALLING   = "WORLD",

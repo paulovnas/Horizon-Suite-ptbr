@@ -132,31 +132,41 @@ local function HookWorldMapOnShow()
     end
 end
 
--- ============================================================================
--- WQT-style: replicate WorldQuestTracker's data flow so we get the same WQ list.
--- WQT hooks WorldMapFrame.OnMapChanged, uses WorldMapFrame.mapID, calls
--- GetQuestsForPlayerByMapID(mapID, mapID), and for unknown maps runs again after 0.5s.
--- We cache that result and feed it into the objective list via GetNearbyQuestIDs.
--- ============================================================================
-
 -- WQT uses two-arg form: GetQuestsForPlayerByMapID(mapID, mapID). Returns true if any quests cached.
+-- Parse both array and keyed table returns; some clients return { [questID] = info } or mixed.
 local function CacheWQDataWQT(mapID)
     local api = C_TaskQuest and (C_TaskQuest.GetQuestsForPlayerByMapID or C_TaskQuest.GetQuestsOnMap)
     if not mapID or not api then return false end
     local taskInfo = api(mapID, mapID) or api(mapID)
-    if not taskInfo or #taskInfo == 0 then return false end
+    if not taskInfo then return false end
     A.zoneTaskQuestCache = A.zoneTaskQuestCache or {}
-    A.zoneTaskQuestCache[mapID] = {}
-    for i, info in ipairs(taskInfo) do
-        local questID = info.questID or info.questId
-        if questID then
-            A.zoneTaskQuestCache[mapID][questID] = true
+    A.zoneTaskQuestCache[mapID] = A.zoneTaskQuestCache[mapID] or {}
+    local count = 0
+    if #taskInfo > 0 then
+        for _, poi in ipairs(taskInfo) do
+            local id = (type(poi) == "table" and (poi.questID or poi.questId)) or (type(poi) == "number" and poi)
+            if id then
+                A.zoneTaskQuestCache[mapID][id] = true
+                count = count + 1
+            end
         end
     end
-    return next(A.zoneTaskQuestCache[mapID]) ~= nil
+    for k, v in pairs(taskInfo) do
+        if type(k) == "number" and k > 0 and not A.zoneTaskQuestCache[mapID][k] then
+            A.zoneTaskQuestCache[mapID][k] = true
+            count = count + 1
+        elseif type(v) == "table" then
+            local id = v.questID or v.questId
+            if id and not A.zoneTaskQuestCache[mapID][id] then
+                A.zoneTaskQuestCache[mapID][id] = true
+                count = count + 1
+            end
+        end
+    end
+    return count > 0
 end
 
--- Count quests in cache for a map (for the on-map indicator).
+-- Count quests in cache for a map (for the on-map debug indicator).
 local function GetCachedWQCount(mapID)
     if not A.zoneTaskQuestCache or not mapID then return 0 end
     local t = A.zoneTaskQuestCache[mapID]
@@ -166,11 +176,11 @@ local function GetCachedWQCount(mapID)
     return n
 end
 
--- Update the small indicator on the world map so we can verify triggers and cached counts.
+-- Update the debug indicator on the world map (map + player zone cache counts).
 local function UpdateWQMapIndicator(fromDelayed, mapID, playerMapID)
     local f = A.WQMapIndicator
     if not f or not f.text then return end
-    mapID = mapID or (WorldMapFrame and WorldMapFrame.mapID)
+    mapID = mapID or GetWorldMapMapID()
     playerMapID = playerMapID or (C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player"))
     local label = fromDelayed and " (0.5s)" or " (now)"
     local mapCount = GetCachedWQCount(mapID)
@@ -180,11 +190,25 @@ local function UpdateWQMapIndicator(fromDelayed, mapID, playerMapID)
     f:Show()
 end
 
+local function GetWorldMapMapID()
+    if not WorldMapFrame then return nil end
+    if WorldMapFrame.mapID then return WorldMapFrame.mapID end
+    if WorldMapFrame.GetMapID and type(WorldMapFrame.GetMapID) == "function" then
+        return WorldMapFrame:GetMapID()
+    end
+    if WorldMapFrame.GetMap and WorldMapFrame:GetMap() then
+        local map = WorldMapFrame:GetMap()
+        if map and map.GetMapID then return map:GetMapID() end
+        if map and map.GetMapID and type(map.GetMapID) == "function" then return map:GetMapID() end
+        if map and type(map) == "table" and map.mapID then return map.mapID end
+    end
+    return nil
+end
+
 -- Run WQT-style cache for displayed map and player zone; refresh objective list if we got data.
--- Indicator is updated whenever map is visible (even if A.enabled is false).
 local function RunWQTMapCache(fromDelayed)
     if not WorldMapFrame or not WorldMapFrame:IsVisible() then return end
-    local mapID = WorldMapFrame.mapID
+    local mapID = GetWorldMapMapID()
     local playerMapID = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
     UpdateWQMapIndicator(fromDelayed, mapID, playerMapID)
     if not A.enabled or not mapID then return end
@@ -193,8 +217,33 @@ local function RunWQTMapCache(fromDelayed)
     if playerMapID and playerMapID ~= mapID then
         if CacheWQDataWQT(playerMapID) then didCache = true end
     end
-    UpdateWQMapIndicator(fromDelayed, mapID, playerMapID)
     if didCache then ScheduleRefresh() end
+    UpdateWQMapIndicator(fromDelayed, mapID, playerMapID)
+end
+
+-- Hidden heartbeat: when map is open run cache for map + player zone; when map is closed run cache for player zone only so WQs appear without opening map.
+local function StartMapCacheHeartbeat()
+    if A._mapCacheHeartbeat then return end
+    local f = CreateFrame("Frame", nil, UIParent)
+    f:SetSize(1, 1)
+    f:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", -1000, -1000)
+    f:Hide()
+    f._elapsed = 0
+    f:SetScript("OnUpdate", function(self, elapsed)
+        self._elapsed = (self._elapsed or 0) + elapsed
+        if self._elapsed < 0.5 then return end
+        self._elapsed = 0
+        if WorldMapFrame and WorldMapFrame:IsVisible() then
+            RunWQTMapCache(false)
+        else
+            -- Map closed: still cache player's current zone so world quests show without opening map.
+            local playerMapID = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+            if A.enabled and playerMapID and CacheWQDataWQT(playerMapID) then
+                ScheduleRefresh()
+            end
+        end
+    end)
+    A._mapCacheHeartbeat = f
 end
 
 -- Mirror WQT: OnMapChanged runs immediately, then 0.5s delayed (like WQT's check_for_quests_on_unknown_map).
@@ -231,7 +280,8 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
                 A.targetHeight  = A.GetCollapsedHeight()
                 A.currentHeight = A.GetCollapsedHeight()
             end
-            -- WQ map indicator: create on UIParent so it's always visible when we show it.
+            StartMapCacheHeartbeat()
+            -- WQ map debug indicator: visible when world map is open.
             do
                 local f = CreateFrame("Frame", "HorizonSuiteWQMapIndicator", UIParent, "BackdropTemplate")
                 f:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 20, 20)
@@ -249,7 +299,6 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
                 text:SetText("HS WQ: (close)")
                 f.text = text
                 f:Hide()
-                -- Refresh indicator every 0.5s while it's visible so we don't depend on map OnShow/timers.
                 f._elapsed = 0
                 f:SetScript("OnUpdate", function(self, elapsed)
                     if not self:IsShown() then return end
@@ -257,74 +306,29 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
                     if self._elapsed < 0.5 then return end
                     self._elapsed = 0
                     if WorldMapFrame and WorldMapFrame:IsVisible() then
-                        UpdateWQMapIndicator(false, WorldMapFrame.mapID, C_Map and C_Map.GetBestMapForUnit("player"))
+                        UpdateWQMapIndicator(false, GetWorldMapMapID(), C_Map and C_Map.GetBestMapForUnit("player"))
                         RunWQTMapCache(false)
                     end
                 end)
                 A.WQMapIndicator = f
             end
-            -- If Blizzard_WorldMap loads later (e.g. on first map open), poll until WorldMapFrame exists then hook show/hide.
-            C_Timer.After(0.5, function()
-                local function tryHook()
-                    if not WorldMapFrame or (WorldMapFrame._HSIndicatorHooked) then return end
-                    WorldMapFrame._HSIndicatorHooked = true
-                    WorldMapFrame:HookScript("OnShow", function()
-                        if A.WQMapIndicator and A.WQMapIndicator.text then
-                            A.WQMapIndicator.text:SetText("HS WQ: (map open...)")
-                            A.WQMapIndicator:Show()
-                        end
-                    end)
-                    WorldMapFrame:HookScript("OnHide", function()
-                        if A.WQMapIndicator then A.WQMapIndicator:Hide() end
-                    end)
-                    if WorldMapFrame:IsVisible() then
-                        if A.WQMapIndicator and A.WQMapIndicator.text then
-                            A.WQMapIndicator.text:SetText("HS WQ: (map open...)")
-                            A.WQMapIndicator:Show()
-                        end
-                        local function tick()
-                            if not WorldMapFrame or not WorldMapFrame:IsVisible() then return end
-                            UpdateWQMapIndicator(false, WorldMapFrame.mapID, C_Map and C_Map.GetBestMapForUnit("player"))
-                            RunWQTMapCache(false)
-                        end
-                        C_Timer.After(0.1, tick)
-                        C_Timer.After(0.6, function()
-                            if not WorldMapFrame or not WorldMapFrame:IsVisible() then return end
-                            UpdateWQMapIndicator(true, WorldMapFrame.mapID, C_Map and C_Map.GetBestMapForUnit("player"))
-                            RunWQTMapCache(true)
-                        end)
-                    end
-                end
-                tryHook()
-                for _ = 1, 30 do
-                    C_Timer.After(1 + _, tryHook)
-                end
-            end)
-            C_Timer.After(1, function()
-                HookWorldMapOnHide()
-                HookWorldMapOnShow()
-            end)
-        elseif addonName == "Blizzard_WorldMap" then
-            HookWorldMapOnHide()
-            HookWorldMapOnShow()
-            HookWorldMapOnMapChanged()
-            -- Show our indicator when map is shown, hide when hidden (indicator frame is on UIParent, created above).
-            if WorldMapFrame and not WorldMapFrame._HSIndicatorHooked then
+            -- If Blizzard_WorldMap loads later (e.g. on first map open), retry until WorldMapFrame exists.
+            local function tryHookWorldMap()
+                if not WorldMapFrame or (WorldMapFrame._HSIndicatorHooked) then return end
                 WorldMapFrame._HSIndicatorHooked = true
                 WorldMapFrame:HookScript("OnShow", function()
                     if A.WQMapIndicator and A.WQMapIndicator.text then
                         A.WQMapIndicator.text:SetText("HS WQ: (map open...)")
                         A.WQMapIndicator:Show()
                     end
-                    -- Update indicator and run cache after map is ready (so mapID is set).
                     local function tick()
                         if not WorldMapFrame or not WorldMapFrame:IsVisible() then return end
-                        UpdateWQMapIndicator(false, WorldMapFrame.mapID, C_Map and C_Map.GetBestMapForUnit("player"))
+                        UpdateWQMapIndicator(false, GetWorldMapMapID(), C_Map and C_Map.GetBestMapForUnit("player"))
                         RunWQTMapCache(false)
                     end
                     local function tickDelayed()
                         if not WorldMapFrame or not WorldMapFrame:IsVisible() then return end
-                        UpdateWQMapIndicator(true, WorldMapFrame.mapID, C_Map and C_Map.GetBestMapForUnit("player"))
+                        UpdateWQMapIndicator(true, GetWorldMapMapID(), C_Map and C_Map.GetBestMapForUnit("player"))
                         RunWQTMapCache(true)
                     end
                     C_Timer.After(0.1, tick)
@@ -338,6 +342,73 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
                         A.WQMapIndicator.text:SetText("HS WQ: (map open...)")
                         A.WQMapIndicator:Show()
                     end
+                    local function tick()
+                        if not WorldMapFrame or not WorldMapFrame:IsVisible() then return end
+                        UpdateWQMapIndicator(false, GetWorldMapMapID(), C_Map and C_Map.GetBestMapForUnit("player"))
+                        RunWQTMapCache(false)
+                    end
+                    C_Timer.After(0.1, tick)
+                    C_Timer.After(0.6, function()
+                        if not WorldMapFrame or not WorldMapFrame:IsVisible() then return end
+                        UpdateWQMapIndicator(true, GetWorldMapMapID(), C_Map and C_Map.GetBestMapForUnit("player"))
+                        RunWQTMapCache(true)
+                    end)
+                end
+                HookWorldMapOnHide()
+                HookWorldMapOnShow()
+            end
+            C_Timer.After(0.5, tryHookWorldMap)
+            for attempt = 1, 5 do
+                C_Timer.After(1 + attempt, tryHookWorldMap)
+            end
+            C_Timer.After(1, function()
+                HookWorldMapOnHide()
+                HookWorldMapOnShow()
+            end)
+        elseif addonName == "Blizzard_WorldMap" then
+            StartMapCacheHeartbeat()
+            HookWorldMapOnHide()
+            HookWorldMapOnShow()
+            HookWorldMapOnMapChanged()
+            -- Show debug indicator when map is shown, hide when hidden; run cache on show.
+            if WorldMapFrame and not WorldMapFrame._HSIndicatorHooked then
+                WorldMapFrame._HSIndicatorHooked = true
+                WorldMapFrame:HookScript("OnShow", function()
+                    if A.WQMapIndicator and A.WQMapIndicator.text then
+                        A.WQMapIndicator.text:SetText("HS WQ: (map open...)")
+                        A.WQMapIndicator:Show()
+                    end
+                    local function tick()
+                        if not WorldMapFrame or not WorldMapFrame:IsVisible() then return end
+                        UpdateWQMapIndicator(false, GetWorldMapMapID(), C_Map and C_Map.GetBestMapForUnit("player"))
+                        RunWQTMapCache(false)
+                    end
+                    local function tickDelayed()
+                        if not WorldMapFrame or not WorldMapFrame:IsVisible() then return end
+                        UpdateWQMapIndicator(true, GetWorldMapMapID(), C_Map and C_Map.GetBestMapForUnit("player"))
+                        RunWQTMapCache(true)
+                    end
+                    C_Timer.After(0.1, tick)
+                    C_Timer.After(0.6, tickDelayed)
+                end)
+                WorldMapFrame:HookScript("OnHide", function()
+                    if A.WQMapIndicator then A.WQMapIndicator:Hide() end
+                end)
+                if WorldMapFrame:IsVisible() then
+                    if A.WQMapIndicator and A.WQMapIndicator.text then
+                        A.WQMapIndicator.text:SetText("HS WQ: (map open...)")
+                        A.WQMapIndicator:Show()
+                    end
+                    C_Timer.After(0.1, function()
+                        if not WorldMapFrame or not WorldMapFrame:IsVisible() then return end
+                        UpdateWQMapIndicator(false, GetWorldMapMapID(), C_Map and C_Map.GetBestMapForUnit("player"))
+                        RunWQTMapCache(false)
+                    end)
+                    C_Timer.After(0.6, function()
+                        if not WorldMapFrame or not WorldMapFrame:IsVisible() then return end
+                        UpdateWQMapIndicator(true, GetWorldMapMapID(), C_Map and C_Map.GetBestMapForUnit("player"))
+                        RunWQTMapCache(true)
+                    end)
                 end
             end
             -- When the map refreshes its world quest data (same source as the pins on the map), cache that list so our objective list can show it.
@@ -353,7 +424,7 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
                             local map = WorldMapFrame:GetMap()
                             if map and map.GetMapID then mapID = map:GetMapID() end
                         end
-                        if not mapID and WorldMapFrame then mapID = WorldMapFrame.mapID end
+                        if not mapID and WorldMapFrame then mapID = WorldMapFrame.mapID or GetWorldMapMapID() end
                         if mapID and A.enabled then
                             if CacheWQDataWQT(mapID) then ScheduleRefresh() end
                         end
