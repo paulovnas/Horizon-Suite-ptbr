@@ -140,7 +140,7 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
             A.collapsed = false
             A.chevron:SetText("-")
             A.scrollFrame:Show()
-            if HorizonSuiteDB then HorizonSuiteDB.collapsed = false end
+            if HorizonDB then HorizonDB.collapsed = false end
         end
         A.FullLayout()
 
@@ -153,11 +153,11 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
     elseif cmd == "resetpos" then
         A.MQT:ClearAllPoints()
         A.MQT:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", A.PANEL_X, A.PANEL_Y)
-        if HorizonSuiteDB then
-            HorizonSuiteDB.point    = nil
-            HorizonSuiteDB.relPoint = nil
-            HorizonSuiteDB.x        = nil
-            HorizonSuiteDB.y        = nil
+        if HorizonDB then
+            HorizonDB.point    = nil
+            HorizonDB.relPoint = nil
+            HorizonDB.x        = nil
+            HorizonDB.y        = nil
         end
         print("|cFF00CCFFHorizon Suite - Focus:|r Position reset to default.")
 

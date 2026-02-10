@@ -3,7 +3,7 @@
 ## Notes: Clean glassmorphism objective tracker for the Midnight era.
 ## Author: Crystilac
 ## Version: 0.6.5
-## SavedVariables: HorizonSuiteDB, ModernQuestTrackerDB
+## SavedVariables: HorizonDB
 
 HorizonSuite.lua
 Core.lua

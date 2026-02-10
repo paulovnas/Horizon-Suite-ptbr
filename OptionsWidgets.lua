@@ -437,7 +437,7 @@ function OptionsWidgets_CreateColorSwatch(parent, labelText, description, dbKey,
             swatchFunc = function()
                 addon.EnsureDB()
                 local nr, ng, nb = ColorPickerFrame:GetColorRGB()
-                HorizonSuiteDB[dbKey] = { nr, ng, nb }
+                HorizonDB[dbKey] = { nr, ng, nb }
                 tex:SetColorTexture(nr, ng, nb, 1)
                 if onReset then onReset() end
             end,
@@ -464,7 +464,7 @@ function OptionsWidgets_CreateColorSwatch(parent, labelText, description, dbKey,
     resetLabel:SetPoint("CENTER", resetBtn, "CENTER", 0, 0)
     resetBtn:SetScript("OnClick", function()
         set(nil)
-        if HorizonSuiteDB then HorizonSuiteDB[dbKey] = nil end
+        if HorizonDB then HorizonDB[dbKey] = nil end
         tex:SetColorTexture(def[1], def[2], def[3], 1)
         if onReset then onReset() end
     end)
@@ -753,7 +753,7 @@ function OptionsWidgets_CreateReorderList(parent, anchor, opt, scrollFrameRef, p
     resetLabel:SetPoint("CENTER", resetBtn, "CENTER", 0, 0)
     resetBtn:SetScript("OnClick", function()
         if opt.set then opt.set(nil) end
-        if HorizonSuiteDB then HorizonSuiteDB.groupOrder = nil end
+        if HorizonDB then HorizonDB.groupOrder = nil end
         local newKeys = opt.get and opt.get() or {}
         if type(newKeys) == "function" then newKeys = newKeys() end
         if type(newKeys) == "table" then repositionRows(newKeys) end

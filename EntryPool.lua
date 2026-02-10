@@ -275,8 +275,8 @@ local function ApplyTypography()
     end
 end
 
-local function ApplyDimensions()
-    local w = addon.GetPanelWidth()
+local function ApplyDimensions(widthOverride)
+    local w = (widthOverride and type(widthOverride) == "number") and widthOverride or addon.GetPanelWidth()
     addon.MQT:SetSize(w, addon.MQT:GetHeight() or addon.MIN_HEIGHT)
     addon.divider:SetSize(w - addon.PADDING * 2, addon.DIVIDER_HEIGHT)
     addon.divider:SetPoint("TOP", addon.MQT, "TOPLEFT", w / 2, -(addon.PADDING + addon.HEADER_HEIGHT))

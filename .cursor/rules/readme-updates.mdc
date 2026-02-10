@@ -1,0 +1,8 @@
+---
+description: Update README when adding new features
+alwaysApply: true
+---
+
+# README Updates
+
+When adding new features to Horizon Suite, update README.md to document them in the appropriate section (Intelligent Features, Formatting & UI Design, Controls & Commands, etc.).

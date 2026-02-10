@@ -20,7 +20,7 @@ local scrollFrame = addon.scrollFrame
 
 local function PopulateEntry(entry, questData)
     local hasItem = questData.itemTexture and true or false
-    local showItemBtn = hasItem and addon.GetDB("showQuestItemButtons", true)
+    local showItemBtn = hasItem and addon.GetDB("showQuestItemButtons", false)
     local showQuestIcons = addon.GetDB("showQuestTypeIcons", false)
     local hasIcon = questData.questTypeAtlas and showQuestIcons
     -- Off-map WORLD quest that is tracked (only world quests, not normal quests).
@@ -438,7 +438,7 @@ local function ToggleCollapse()
         addon.FullLayout()
     end
     addon.EnsureDB()
-    HorizonSuiteDB.collapsed = addon.collapsed
+    HorizonDB.collapsed = addon.collapsed
 end
 
 -- Start an animated collapse for a single category group.
@@ -495,13 +495,15 @@ headerBtn:SetScript("OnClick", function()
 end)
 headerBtn:RegisterForDrag("LeftButton")
 headerBtn:SetScript("OnDragStart", function()
-    if HorizonSuiteDB and HorizonSuiteDB.lockPosition then return end
+    if HorizonDB and HorizonDB.lockPosition then return end
+    if InCombatLockdown() then return end
     addon.MQT:StartMoving()
 end)
 headerBtn:SetScript("OnDragStop", function()
-    if HorizonSuiteDB and HorizonSuiteDB.lockPosition then return end
+    if HorizonDB and HorizonDB.lockPosition then return end
     addon.MQT:StopMovingOrSizing()
     addon.MQT:SetUserPlaced(false)
+    if InCombatLockdown() then return end
     addon.SavePanelPosition()
 end)
 

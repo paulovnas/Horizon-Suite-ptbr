@@ -278,7 +278,7 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
             A.ApplyDimensions()
             if A.ApplyBackdropOpacity then A.ApplyBackdropOpacity() end
             if A.ApplyBorderVisibility then A.ApplyBorderVisibility() end
-            if HorizonSuiteDB and HorizonSuiteDB.collapsed then
+            if HorizonDB and HorizonDB.collapsed then
                 A.collapsed = true
                 A.chevron:SetText("+")
                 A.scrollFrame:Hide()

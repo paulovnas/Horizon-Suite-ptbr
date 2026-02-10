@@ -65,11 +65,11 @@ titleBar:RegisterForDrag("LeftButton")
 titleBar:SetScript("OnDragStart", function() panel:StartMoving() end)
 titleBar:SetScript("OnDragStop", function()
     panel:StopMovingOrSizing()
-    if HorizonSuiteDB then
+    if HorizonDB then
         local x, y = panel:GetCenter()
         local uix, uiy = UIParent:GetCenter()
-        HorizonSuiteDB.optionsLeft = x - uix
-        HorizonSuiteDB.optionsTop = y - uiy
+        HorizonDB.optionsLeft = x - uix
+        HorizonDB.optionsTop = y - uiy
     end
 end)
 local titleBg = titleBar:CreateTexture(nil, "BACKGROUND")
@@ -259,7 +259,7 @@ local function BuildCategory(tab, options, refreshers)
             local swatches = {}
             for _, key in ipairs(keys) do
                 local getTbl = function() local db = getDB(opt.dbKey, nil) return db and db[key] end
-                local setKeyVal = function(v) addon.EnsureDB() if not HorizonSuiteDB[opt.dbKey] then HorizonSuiteDB[opt.dbKey] = {} end HorizonSuiteDB[opt.dbKey][key] = v notifyMainAddon() end
+                local setKeyVal = function(v) addon.EnsureDB() if not HorizonDB[opt.dbKey] then HorizonDB[opt.dbKey] = {} end HorizonDB[opt.dbKey][key] = v notifyMainAddon() end
                 local row = CreateColorSwatchRow(currentCard, currentCard.contentAnchor, (opt.labelMap and opt.labelMap[key]) or key:gsub("^%l", string.upper), nil, defaultMap[key], getTbl, setKeyVal, notifyMainAddon)
                 currentCard.contentAnchor = row
                 currentCard.contentHeight = currentCard.contentHeight + 4 + 24
@@ -275,7 +275,7 @@ local function BuildCategory(tab, options, refreshers)
             rl:SetPoint("CENTER", resetBtn, "CENTER", 0, 0)
             resetBtn:SetScript("OnClick", function()
                 setDB(opt.dbKey, nil)
-                if HorizonSuiteDB then HorizonSuiteDB.sectionColors = nil end
+                if HorizonDB then HorizonDB.sectionColors = nil end
                 for _, sw in ipairs(swatches) do if sw.Refresh then sw:Refresh() end end
                 notifyMainAddon()
             end)
@@ -323,7 +323,7 @@ local function BuildCategory(tab, options, refreshers)
             local swatches = {}
             for _, key in ipairs(keys) do
                 local getTbl = function() local db = getDB(opt.dbKey, nil) return db and db[key] end
-                local setKeyVal = function(v) addon.EnsureDB() if not HorizonSuiteDB[opt.dbKey] then HorizonSuiteDB[opt.dbKey] = {} end HorizonSuiteDB[opt.dbKey][key] = v notifyMainAddon() end
+                local setKeyVal = function(v) addon.EnsureDB() if not HorizonDB[opt.dbKey] then HorizonDB[opt.dbKey] = {} end HorizonDB[opt.dbKey][key] = v notifyMainAddon() end
                 local def = defaultMap[key] or {0.5,0.5,0.5}
                 local row = CreateColorSwatchRow(currentCard, currentCard.contentAnchor, (opt.labelMap and opt.labelMap[key]) or key:gsub("^%l", string.upper), nil, def, getTbl, setKeyVal, notifyMainAddon)
                 currentCard.contentAnchor = row
@@ -340,7 +340,7 @@ local function BuildCategory(tab, options, refreshers)
             rl:SetPoint("CENTER", resetBtn, "CENTER", 0, 0)
             resetBtn:SetScript("OnClick", function()
                 setDB(opt.dbKey, nil)
-                if HorizonSuiteDB then HorizonSuiteDB.sectionColors = nil end
+                if HorizonDB then HorizonDB.sectionColors = nil end
                 for _, sw in ipairs(swatches) do if sw.Refresh then sw:Refresh() end end
                 notifyMainAddon()
             end)
@@ -450,9 +450,9 @@ local ANIM_DUR = 0.2
 local easeOut = addon.easeOut or function(t) return 1 - (1-t)*(1-t) end
 panel:SetScript("OnShow", function()
     updateOptionsPanelFonts()
-    if HorizonSuiteDB and HorizonSuiteDB.optionsLeft ~= nil and HorizonSuiteDB.optionsTop ~= nil then
+    if HorizonDB and HorizonDB.optionsLeft ~= nil and HorizonDB.optionsTop ~= nil then
         panel:ClearAllPoints()
-        panel:SetPoint("CENTER", UIParent, "CENTER", HorizonSuiteDB.optionsLeft, HorizonSuiteDB.optionsTop)
+        panel:SetPoint("CENTER", UIParent, "CENTER", HorizonDB.optionsLeft, HorizonDB.optionsTop)
     else
         panel:ClearAllPoints()
         panel:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
@@ -506,7 +506,7 @@ editTitleBar:RegisterForDrag("LeftButton")
 editTitleBar:SetScript("OnDragStart", function() editPanel:StartMoving() end)
 editTitleBar:SetScript("OnDragStop", function()
     editPanel:StopMovingOrSizing()
-    if HorizonSuiteDB then local x,y = editPanel:GetCenter() local uix,uiy = UIParent:GetCenter() HorizonSuiteDB.editPanelLeft = x-uix HorizonSuiteDB.editPanelTop = y-uiy end
+    if HorizonDB then local x,y = editPanel:GetCenter() local uix,uiy = UIParent:GetCenter() HorizonDB.editPanelLeft = x-uix HorizonDB.editPanelTop = y-uiy end
 end)
 local editTitleText = editTitleBar:CreateFontString(nil, "OVERLAY")
 editTitleText:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.HeaderSize or 16, "OUTLINE")
@@ -528,9 +528,9 @@ SetTextColor(editBody, Def.TextColorSection)
 editBody:SetPoint("TOPLEFT", editPanel, "TOPLEFT", PADDING, -(HEADER_HEIGHT + PADDING))
 editBody:SetText("Edit screen — add your content here.")
 editPanel:SetScript("OnShow", function()
-    if HorizonSuiteDB and HorizonSuiteDB.editPanelLeft ~= nil and HorizonSuiteDB.editPanelTop ~= nil then
+    if HorizonDB and HorizonDB.editPanelLeft ~= nil and HorizonDB.editPanelTop ~= nil then
         editPanel:ClearAllPoints()
-        editPanel:SetPoint("CENTER", UIParent, "CENTER", HorizonSuiteDB.editPanelLeft, HorizonSuiteDB.editPanelTop)
+        editPanel:SetPoint("CENTER", UIParent, "CENTER", HorizonDB.editPanelLeft, HorizonDB.editPanelTop)
     else editPanel:ClearAllPoints() editPanel:SetPoint("CENTER", UIParent, "CENTER", 0, 0) end
 end)
 

@@ -52,7 +52,7 @@ local function GetQuestCategory(questID)
 end
 
 local function GetQuestColor(category)
-    local db = HorizonSuiteDB and HorizonSuiteDB.questColors
+    local db = HorizonDB and HorizonDB.questColors
     if db then
         if db[category] then return db[category] end
         if category == "IMPORTANT" and db.CAMPAIGN then return db.CAMPAIGN end
@@ -62,8 +62,8 @@ local function GetQuestColor(category)
 end
 
 local function GetSectionColor(groupKey)
-    if HorizonSuiteDB and HorizonSuiteDB.sectionColors and HorizonSuiteDB.sectionColors[groupKey] then
-        return HorizonSuiteDB.sectionColors[groupKey]
+    if HorizonDB and HorizonDB.sectionColors and HorizonDB.sectionColors[groupKey] then
+        return HorizonDB.sectionColors[groupKey]
     end
     local questCategory = (groupKey == "RARES") and "RARE" or groupKey
     if questCategory == "CAMPAIGN" or questCategory == "LEGENDARY" or questCategory == "WORLD" or questCategory == "COMPLETE" or questCategory == "RARE" or questCategory == "DEFAULT" then
@@ -163,7 +163,8 @@ local function ReadTrackedQuests()
     local seen = {}
     local numWatches = C_QuestLog.GetNumQuestWatches()
     local superTracked = (C_SuperTrack and C_SuperTrack.GetSuperTrackedQuestID) and C_SuperTrack.GetSuperTrackedQuestID() or 0
-    local nearbySet, taskQuestOnlySet = addon.GetNearbyQuestIDs()
+    local nearbySet, taskQuestOnlySet, mapAutoPopulateAvailableSet = addon.GetNearbyQuestIDs()
+    mapAutoPopulateAvailableSet = mapAutoPopulateAvailableSet or {}
 
     local function addQuest(questID, opts)
         opts = opts or {}
@@ -179,6 +180,7 @@ local function ReadTrackedQuests()
         local zoneName   = GetQuestZoneName(questID)
         local isDungeonQuest = opts.isDungeonQuest or (IsInMythicDungeon() and isNearby)
         local isTracked  = opts.isTracked ~= false
+        local isMapAutoPopulatedAvailable = not not (mapAutoPopulateAvailableSet[questID])
 
         local itemLink, itemTexture
         local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
@@ -223,6 +225,7 @@ local function ReadTrackedQuests()
             isDungeonQuest = isDungeonQuest,
             isTracked      = isTracked,
             level          = questLevel,
+            isMapAutoPopulatedAvailable = isMapAutoPopulatedAvailable,
         }
     end
 
@@ -270,7 +273,6 @@ local function SortAndGroupQuests(quests)
     for _, key in ipairs(addon.GetGroupOrder()) do
         groups[key] = {}
     end
-
     for _, q in ipairs(quests) do
         if q.isRare or q.category == "RARE" then
             groups["RARES"][#groups["RARES"] + 1] = q
@@ -279,7 +281,6 @@ local function SortAndGroupQuests(quests)
         elseif q.category == "WORLD" or q.category == "CALLING" then
             groups["WORLD"][#groups["WORLD"] + 1] = q
         elseif q.isNearby and not q.isAccepted then
-            -- Non-accepted quests tied to the current zone map.
             groups["AVAILABLE"][#groups["AVAILABLE"] + 1] = q
         elseif q.isNearby and q.isAccepted then
             -- Accepted quests that are in the current zone.

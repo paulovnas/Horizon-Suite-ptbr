@@ -3,7 +3,7 @@
     OptionCategories (General, Content, Style, Colors, Categories), getDB/setDB/notifyMainAddon, search index.
 ]]
 
-if not HorizonSuiteDB then HorizonSuiteDB = {} end
+if not HorizonDB then HorizonDB = {} end
 local addon = _G.ModernQuestTracker
 if not addon then return end
 
@@ -22,8 +22,8 @@ local TYPOGRAPHY_KEYS = {
 }
 
 function OptionsData_GetDB(key, default)
-    if not HorizonSuiteDB then return default end
-    local v = HorizonSuiteDB[key]
+    if not HorizonDB then return default end
+    local v = HorizonDB[key]
     if v == nil then return default end
     return v
 end
@@ -35,7 +35,7 @@ end
 
 function OptionsData_SetDB(key, value)
     addon.EnsureDB()
-    HorizonSuiteDB[key] = value
+    HorizonDB[key] = value
     if key == "fontPath" and updateOptionsPanelFontsRef then
         updateOptionsPanelFontsRef()
     end
@@ -135,9 +135,9 @@ local OptionCategories = {
         name = "General",
         options = {
             { type = "section", name = "Panel behavior" },
-            { type = "toggle", name = "Lock position", desc = "Prevent dragging to reposition the tracker.", dbKey = "lockPosition", get = function() return (HorizonSuiteDB and HorizonSuiteDB.lockPosition) == true end, set = function(v) setDB("lockPosition", v) end },
+            { type = "toggle", name = "Lock position", desc = "Prevent dragging to reposition the tracker.", dbKey = "lockPosition", get = function() return (HorizonDB and HorizonDB.lockPosition) == true end, set = function(v) setDB("lockPosition", v) end },
             { type = "toggle", name = "Grow upward", desc = "Anchor the tracker by its bottom edge so the list expands upward.", dbKey = "growUp", get = function() return getDB("growUp", false) end, set = function(v) setDB("growUp", v) end },
-            { type = "toggle", name = "Start collapsed", desc = "When enabled, the objectives panel starts collapsed (header only) until you expand it.", dbKey = "collapsed", get = function() return (HorizonSuiteDB and HorizonSuiteDB.collapsed) == true end, set = function(v) setDB("collapsed", v) end },
+            { type = "toggle", name = "Start collapsed", desc = "When enabled, the objectives panel starts collapsed (header only) until you expand it.", dbKey = "collapsed", get = function() return (HorizonDB and HorizonDB.collapsed) == true end, set = function(v) setDB("collapsed", v) end },
             { type = "section", name = "Instance visibility" },
             { type = "toggle", name = "Show in dungeon", desc = "Show the tracker while in a party dungeon.", dbKey = "showInDungeon", get = function() return getDB("showInDungeon", false) end, set = function(v) setDB("showInDungeon", v) end },
             { type = "toggle", name = "Show in raid", desc = "Show the tracker while in a raid.", dbKey = "showInRaid", get = function() return getDB("showInRaid", false) end, set = function(v) setDB("showInRaid", v) end },
@@ -146,8 +146,8 @@ local OptionCategories = {
             { type = "section", name = "Combat" },
             { type = "toggle", name = "Hide in combat", desc = "Hide the tracker and floating quest item while in combat.", dbKey = "hideInCombat", get = function() return getDB("hideInCombat", false) end, set = function(v) setDB("hideInCombat", v) end },
             { type = "section", name = "Dimensions" },
-            { type = "slider", name = "Panel width", desc = "Width of the tracker in pixels.", dbKey = "panelWidth", min = 180, max = 500, get = function() return getDB("panelWidth", 260) end, set = function(v) setDB("panelWidth", math.max(180, math.min(500, v))) end },
-            { type = "slider", name = "Max content height", desc = "Maximum height of the scrollable content area.", dbKey = "maxContentHeight", min = 200, max = 800, get = function() return getDB("maxContentHeight", 480) end, set = function(v) setDB("maxContentHeight", math.max(200, math.min(800, v))) end },
+            { type = "slider", name = "Panel width", desc = "Width of the tracker in pixels.", dbKey = "panelWidth", min = 180, max = 800, get = function() return getDB("panelWidth", 260) end, set = function(v) setDB("panelWidth", math.max(180, math.min(800, v))) end },
+            { type = "slider", name = "Max content height", desc = "Maximum height of the scrollable content area.", dbKey = "maxContentHeight", min = 200, max = 1000, get = function() return getDB("maxContentHeight", 480) end, set = function(v) setDB("maxContentHeight", math.max(200, math.min(1000, v))) end },
         },
     },
     {
@@ -163,7 +163,7 @@ local OptionCategories = {
             { type = "toggle", name = "Show zone labels", desc = "Show the zone name under each quest title.", dbKey = "showZoneLabels", get = function() return getDB("showZoneLabels", true) end, set = function(v) setDB("showZoneLabels", v) end },
             { type = "toggle", name = "Show quest type icons", desc = "Show quest type icon to the left of each title.", dbKey = "showQuestTypeIcons", get = function() return getDB("showQuestTypeIcons", false) end, set = function(v) setDB("showQuestTypeIcons", v) end },
             { type = "dropdown", name = "Active quest highlight", desc = "How the super-tracked quest is highlighted.", dbKey = "activeQuestHighlight", options = HIGHLIGHT_OPTIONS, get = getActiveQuestHighlight, set = function(v) setDB("activeQuestHighlight", v) end },
-            { type = "toggle", name = "Show quest item buttons", desc = "Show the usable quest item button on the right of a quest.", dbKey = "showQuestItemButtons", get = function() return getDB("showQuestItemButtons", true) end, set = function(v) setDB("showQuestItemButtons", v) end },
+            { type = "toggle", name = "Show quest item buttons", desc = "Show the usable quest item button on the right of a quest.", dbKey = "showQuestItemButtons", get = function() return getDB("showQuestItemButtons", false) end, set = function(v) setDB("showQuestItemButtons", v) end },
             { type = "toggle", name = "Show objective numbers", desc = "Prefix objectives with 1., 2., 3.", dbKey = "showObjectiveNumbers", get = function() return getDB("showObjectiveNumbers", false) end, set = function(v) setDB("showObjectiveNumbers", v) end },
             { type = "toggle", name = "Show completed count", desc = "Show X/Y objective progress in quest title.", dbKey = "showCompletedCount", get = function() return getDB("showCompletedCount", false) end, set = function(v) setDB("showCompletedCount", v) end },
             { type = "toggle", name = "Compact mode", desc = "Reduce spacing between quest entries.", dbKey = "compactMode", get = function() return getDB("compactMode", false) end, set = function(v) setDB("compactMode", v) end },
@@ -201,8 +201,8 @@ local OptionCategories = {
             { type = "slider", name = "Shadow Y", desc = "Vertical shadow offset.", dbKey = "shadowOffsetY", min = -10, max = 10, get = function() return getDB("shadowOffsetY", -2) end, set = function(v) setDB("shadowOffsetY", v) end },
             { type = "slider", name = "Shadow alpha", desc = "Shadow opacity (0–1).", dbKey = "shadowAlpha", min = 0, max = 1, get = function() return getDB("shadowAlpha", 0.8) end, set = function(v) setDB("shadowAlpha", v) end },
             { type = "section", name = "Panel" },
-            { type = "slider", name = "Backdrop opacity", desc = "Opacity of the tracker panel background (0–1).", dbKey = "backdropOpacity", min = 0, max = 1, get = function() return tonumber(getDB("backdropOpacity", 0.9)) or 0.9 end, set = function(v) setDB("backdropOpacity", v) end },
-            { type = "toggle", name = "Show border", desc = "Show a border around the tracker panel.", dbKey = "showBorder", get = function() return getDB("showBorder", true) end, set = function(v) setDB("showBorder", v) end },
+            { type = "slider", name = "Backdrop opacity", desc = "Opacity of the tracker panel background (0–1).", dbKey = "backdropOpacity", min = 0, max = 1, get = function() return tonumber(getDB("backdropOpacity", 0)) or 0 end, set = function(v) setDB("backdropOpacity", v) end },
+            { type = "toggle", name = "Show border", desc = "Show a border around the tracker panel.", dbKey = "showBorder", get = function() return getDB("showBorder", false) end, set = function(v) setDB("showBorder", v) end },
             { type = "section", name = "Highlight" },
             { type = "slider", name = "Highlight alpha", desc = "Opacity of the super-tracked quest highlight bar or background (0–1).", dbKey = "highlightAlpha", min = 0, max = 1, get = function() return tonumber(getDB("highlightAlpha", 0.25)) or 0.25 end, set = function(v) setDB("highlightAlpha", v) end },
             { type = "slider", name = "Bar width", desc = "Width of bar-style highlights in pixels (2–6). Affects bar-top, bar-bottom, bar-both, pill-left.", dbKey = "highlightBarWidth", min = 2, max = 6, get = function() return math.max(2, math.min(6, tonumber(getDB("highlightBarWidth", 2)) or 2)) end, set = function(v) setDB("highlightBarWidth", math.max(2, math.min(6, v))) end },

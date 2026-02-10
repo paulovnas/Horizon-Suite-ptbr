@@ -6,11 +6,6 @@
 if not _G.ModernQuestTracker then _G.ModernQuestTracker = {} end
 local addon = _G.ModernQuestTracker
 
--- Migrate from legacy ModernQuestTrackerDB to HorizonSuiteDB (rebrand)
-if ModernQuestTrackerDB and (not HorizonSuiteDB or not next(HorizonSuiteDB)) then
-    HorizonSuiteDB = ModernQuestTrackerDB
-end
-
 -- ============================================================================
 -- CONFIGURATION
 -- ============================================================================
@@ -205,12 +200,12 @@ function addon.SetGroupOrder(order)
             result[#result + 1] = key
         end
     end
-    HorizonSuiteDB.groupOrder = result
+    HorizonDB.groupOrder = result
 end
 
 function addon.GetDB(key, default)
-    if not HorizonSuiteDB then return default end
-    local v = HorizonSuiteDB[key]
+    if not HorizonDB then return default end
+    local v = HorizonDB[key]
     if v == nil then return default end
     return v
 end
@@ -220,24 +215,24 @@ function addon.ShouldHideInCombat()
 end
 
 function addon.EnsureDB()
-    if not HorizonSuiteDB then HorizonSuiteDB = {} end
+    if not HorizonDB then HorizonDB = {} end
 end
 
 -- Per-category collapse state ------------------------------------------------
 
 local function EnsureCollapsedCategories()
     addon.EnsureDB()
-    if not HorizonSuiteDB.collapsedCategories then
-        HorizonSuiteDB.collapsedCategories = {}
+    if not HorizonDB.collapsedCategories then
+        HorizonDB.collapsedCategories = {}
     end
-    return HorizonSuiteDB.collapsedCategories
+    return HorizonDB.collapsedCategories
 end
 
 function addon.IsCategoryCollapsed(groupKey)
-    if not HorizonSuiteDB or not HorizonSuiteDB.collapsedCategories then
+    if not HorizonDB or not HorizonDB.collapsedCategories then
         return false
     end
-    return HorizonSuiteDB.collapsedCategories[groupKey] == true
+    return HorizonDB.collapsedCategories[groupKey] == true
 end
 
 function addon.SetCategoryCollapsed(groupKey, collapsed)
@@ -367,12 +362,12 @@ addon.mqtBorderL, addon.mqtBorderR = mqtBorderL, mqtBorderR
 
 function addon.ApplyBackdropOpacity()
     if not addon.mqtBg then return end
-    local a = tonumber(addon.GetDB("backdropOpacity", 0.9)) or 0.9
+    local a = tonumber(addon.GetDB("backdropOpacity", 0)) or 0
     addon.mqtBg:SetColorTexture(0.08, 0.08, 0.12, math.max(0, math.min(1, a)))
 end
 
 function addon.ApplyBorderVisibility()
-    local show = addon.GetDB("showBorder", true)
+    local show = addon.GetDB("showBorder", false)
     if addon.mqtBorderT then addon.mqtBorderT:SetShown(show) end
     if addon.mqtBorderB then addon.mqtBorderB:SetShown(show) end
     if addon.mqtBorderL then addon.mqtBorderL:SetShown(show) end
@@ -485,6 +480,8 @@ MQT:SetMovable(true)
 MQT:EnableMouse(true)
 MQT:RegisterForDrag("LeftButton")
 MQT:SetScript("OnDragStart", function(self)
+    if InCombatLockdown() then return end
+    if HorizonDB and HorizonDB.lockPosition then return end
     self:StartMoving()
 end)
 
@@ -500,10 +497,10 @@ local function SavePanelPosition()
         local x, y = right - uiRight, bottom - uiBottom
         MQT:ClearAllPoints()
         MQT:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", x, y)
-        HorizonSuiteDB.point    = "BOTTOMRIGHT"
-        HorizonSuiteDB.relPoint = "BOTTOMRIGHT"
-        HorizonSuiteDB.x        = x
-        HorizonSuiteDB.y        = y
+        HorizonDB.point    = "BOTTOMRIGHT"
+        HorizonDB.relPoint = "BOTTOMRIGHT"
+        HorizonDB.x        = x
+        HorizonDB.y        = y
     else
         local top = MQT:GetTop()
         local uiTop = UIParent:GetTop() or 0
@@ -511,25 +508,26 @@ local function SavePanelPosition()
         local x, y = right - uiRight, top - uiTop
         MQT:ClearAllPoints()
         MQT:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", x, y)
-        HorizonSuiteDB.point    = "TOPRIGHT"
-        HorizonSuiteDB.relPoint = "TOPRIGHT"
-        HorizonSuiteDB.x        = x
-        HorizonSuiteDB.y        = y
+        HorizonDB.point    = "TOPRIGHT"
+        HorizonDB.relPoint = "TOPRIGHT"
+        HorizonDB.x        = x
+        HorizonDB.y        = y
     end
 end
 
 MQT:SetScript("OnDragStop", function(self)
     self:StopMovingOrSizing()
     self:SetUserPlaced(false)
+    if InCombatLockdown() then return end
     SavePanelPosition()
 end)
 
 -- Resize handle: drag bottom-right corner to change panel width and height
-local RESIZE_MIN, RESIZE_MAX = 180, 500
+local RESIZE_MIN, RESIZE_MAX = 180, 800
 local RESIZE_HEIGHT_MIN = addon.MIN_HEIGHT
 local headerAreaResize = addon.PADDING + addon.HEADER_HEIGHT + addon.DIVIDER_HEIGHT + 6
-local RESIZE_HEIGHT_MAX = headerAreaResize + 800 + addon.PADDING
-local RESIZE_CONTENT_HEIGHT_MIN, RESIZE_CONTENT_HEIGHT_MAX = 200, 800
+local RESIZE_HEIGHT_MAX = headerAreaResize + 1000 + addon.PADDING
+local RESIZE_CONTENT_HEIGHT_MIN, RESIZE_CONTENT_HEIGHT_MAX = 200, 1000
 
 local resizeHandle = CreateFrame("Frame", nil, MQT)
 resizeHandle:SetSize(20, 20)
@@ -550,6 +548,11 @@ local startWidth, startHeight, startMouseX, startMouseY
 resizeHandle:RegisterForDrag("LeftButton")
 local function ResizeOnUpdate(self, elapsed)
     if not isResizing then return end
+    if InCombatLockdown() then
+        isResizing = false
+        self:SetScript("OnUpdate", nil)
+        return
+    end
     local scale = UIParent and UIParent:GetEffectiveScale() or 1
     local curX = select(1, GetCursorPosition()) / scale
     local curY = select(2, GetCursorPosition()) / scale
@@ -561,14 +564,11 @@ local function ResizeOnUpdate(self, elapsed)
     MQT:SetHeight(newHeight)
     addon.targetHeight = newHeight
     addon.currentHeight = newHeight
-    addon.EnsureDB()
-    HorizonSuiteDB.panelWidth = newWidth
-    local contentH = math.max(RESIZE_CONTENT_HEIGHT_MIN, math.min(RESIZE_CONTENT_HEIGHT_MAX, newHeight - headerAreaResize - addon.PADDING))
-    HorizonSuiteDB.maxContentHeight = contentH
-    if addon.ApplyDimensions then addon.ApplyDimensions() end
+    if addon.ApplyDimensions then addon.ApplyDimensions(newWidth) end
 end
 resizeHandle:SetScript("OnDragStart", function(self)
-    if HorizonSuiteDB and HorizonSuiteDB.lockPosition then return end
+    if HorizonDB and HorizonDB.lockPosition then return end
+    if InCombatLockdown() then return end
     isResizing = true
     startWidth = MQT:GetWidth()
     startHeight = MQT:GetHeight()
@@ -582,10 +582,10 @@ resizeHandle:SetScript("OnDragStop", function(self)
     isResizing = false
     self:SetScript("OnUpdate", nil)
     addon.EnsureDB()
-    HorizonSuiteDB.panelWidth = MQT:GetWidth()
+    HorizonDB.panelWidth = MQT:GetWidth()
     local h = MQT:GetHeight()
     local contentH = math.max(RESIZE_CONTENT_HEIGHT_MIN, math.min(RESIZE_CONTENT_HEIGHT_MAX, h - headerAreaResize - addon.PADDING))
-    HorizonSuiteDB.maxContentHeight = contentH
+    HorizonDB.maxContentHeight = contentH
     if addon.ApplyDimensions then addon.ApplyDimensions() end
     if addon.FullLayout and not InCombatLockdown() then addon.FullLayout() end
 end)
@@ -602,13 +602,13 @@ resizeLineV:SetPoint("BOTTOMRIGHT", resizeHandle, "BOTTOMRIGHT", 0, 0)
 resizeLineV:SetColorTexture(gripR, gripG, gripB, gripA)
 
 function addon.UpdateResizeHandleVisibility()
-    resizeHandle:SetShown(not (HorizonSuiteDB and HorizonSuiteDB.lockPosition))
+    resizeHandle:SetShown(not (HorizonDB and HorizonDB.lockPosition))
 end
 addon.UpdateResizeHandleVisibility()
 
 local function RestoreSavedPosition()
-    if not HorizonSuiteDB or not HorizonSuiteDB.point then return end
-    local db = HorizonSuiteDB
+    if not HorizonDB or not HorizonDB.point then return end
+    local db = HorizonDB
     MQT:ClearAllPoints()
     MQT:SetPoint(db.point, UIParent, db.relPoint or db.point, db.x, db.y)
 end
@@ -624,10 +624,10 @@ local function ApplyGrowUpAnchor()
     MQT:ClearAllPoints()
     MQT:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", x, y)
     addon.EnsureDB()
-    HorizonSuiteDB.point    = "BOTTOMRIGHT"
-    HorizonSuiteDB.relPoint = "BOTTOMRIGHT"
-    HorizonSuiteDB.x        = x
-    HorizonSuiteDB.y        = y
+    HorizonDB.point    = "BOTTOMRIGHT"
+    HorizonDB.relPoint = "BOTTOMRIGHT"
+    HorizonDB.x        = x
+    HorizonDB.y        = y
 end
 
 function addon.UpdateHeaderQuestCount(questCount)

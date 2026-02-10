@@ -56,7 +56,7 @@ All notable changes to Horizon Suite - Focus are documented here.
 
 ### Fixes
 
-- **TOC** — Version set to 0.6. SavedVariables corrected to a single line: `HorizonSuiteDB, ModernQuestTrackerDB`.
+- **TOC** — Version set to 0.6. SavedVariables corrected to a single line: `HorizonDB`.
 
 - **Debug overlay removed** — The development-only world quest cache indicator (bottom-left of screen when the map was open) has been removed from release builds.
 
@@ -65,7 +65,7 @@ All notable changes to Horizon Suite - Focus are documented here.
 ### Technical
 
 - World quest data flow uses `C_QuestLog.GetQuestsOnMap`, `C_TaskQuest.GetQuestsForPlayerByMapID`, and optional `WorldQuestDataProviderMixin.RefreshAllData` hook when available.
-- Per-category collapse state is stored in `HorizonSuiteDB.collapsedCategories`.
+- Per-category collapse state is stored in `HorizonDB.collapsedCategories`.
 
 ---
 

@@ -1,101 +1,91 @@
-# Horizon Suite – Focus
+# 🌌 Horizon Suite - Focus
 
-A clean, modern-style replacement for the default World of Warcraft objective tracker, built for the Midnight era. All settings are saved per character.
+**Horizon Suite - Focus** is a cinematic replacement for the default World of Warcraft objective tracker. Built for the Midnight era, it moves away from the static, cluttered list of the past and gives you total agency over how and when your goals appear on your screen.
 
-<img width="383" height="796" alt="image" src="https://github.com/user-attachments/assets/72072df2-7ba3-4205-a984-df561eaf3ed4" />
-
-
-
----
-
-## Current Functionality
-
-### Core tracker
-- **Replaces the default objective tracker** when enabled; the Blizzard tracker is hidden so only Horizon Suite shows objectives.
-- **Tracked quests** from your quest log and world quest watch list, grouped by category (Campaign, World, Calling, Legendary, Complete, etc.).
-- **Collapsible panel**: click the header or use `/horizon collapse` to collapse/expand (header-only or full list).
-- **Draggable panel** with position saved across sessions; optional **lock position** in options.
-- **Scrollable content** when the list exceeds max height (mouse wheel).
-- **Optional zone filter**: show only quests in your current zone.
-- **Hide in combat** (optional): hide the tracker and floating quest item while in combat; visibility restores when combat ends.
-
-### Quest display
-- **Quest type icons** (campaign, world, legendary, calling, etc.) next to each title.
-- **Zone labels** under each quest title.
-- **Section headers** (e.g. Campaign, World Quests, Rares) with optional custom colors.
-- **Objective progress** with distinct styling for completed objectives.
-- **Quest item buttons** on the right of quests that have usable items (click to use).
-- **Active-quest highlight**: optional bar or background highlight for the super-tracked quest.
-- **Typography**: configurable font, header/title/objective/zone/section sizes, outline, and text shadow.
-
-### World quests & map
-- **World quests** from the map watch list are merged into the tracker.
-- **Quests-on-map** for your current zone (and parent/child maps) appear as “nearby” and are included.
-- **Map close sync**: when you close the world map after untracking world quests there, the tracker updates to match.
-
-### Rare bosses
-- **Rare bosses on the current map** (vignettes) can be shown in the tracker with “Available” as the objective.
-- **Rare-added sound** when a new rare appears (optional).
-- **Click rare** → super-track on map and open map; **right-click rare** → clear super-track.
-
-### Floating quest item
-- **Floating quest item button** (optional): Extra Action–style button for the super-tracked quest’s item, or the first quest with an item. Configurable size, anchor (left/right/top/bottom of tracker), and offset. Works in combat via secure templates.
-
-### Interactions
-- **Left-click quest** → set super-tracked (map pin).
-- **Double-click quest** → open quest in Quest Log / map details.
-- **Right-click quest** → remove from tracker (untrack).
-- **Left-click untracked quest** (e.g. in tooltip) → add to tracker.
-- **Mouse wheel** on the panel → scroll when content overflows.
-
-### Animations & effects
-- **Entry animations**: quests slide in and fade in when added; slide out and fade out when removed.
-- **Collapse/expand** animation for the panel.
-- **Objective progress flash**: green flash when an objective is completed.
-- **Height animation**: panel height smoothly follows content (optional grow-up anchor).
-
-### Options panel
-- **Open via** `/horizon options` (or `/horizon config`) or the gear button on the tracker header.
-- **Tabs**: Appearance, Layout, Display, Visibility, Effects.
-- **Appearance**: Font, all font sizes, outline, shadow (X/Y/alpha), panel width, max content height, and full **quest/section color** matrix (per quest type and overrides for zone, objective, completed objective, highlight).
-- **Layout**: Start collapsed, lock position, grow upward (fix bottom edge), instance visibility (show in dungeon/raid/BG/arena), **hide in combat**.
-- **Display**: Quest count in header, header divider, super-minimal mode (hide “Objectives” header), section headers, zone labels, quest type icons, active quest highlight style, quest item buttons.
-- **Visibility**: Filter by current zone, show rare bosses, rare-added sound.
-- **Effects**: Enable/disable animations, objective progress flash.
-- Options panel is movable; position is saved.
-
-### Slash commands
-| Command | Description |
-|--------|-------------|
-| `/horizon` | Show help and command list |
-| `/horizon toggle` | Enable or disable the addon (restores Blizzard tracker when disabled) |
-| `/horizon collapse` | Collapse or expand the panel |
-| `/horizon options` | Open options (same as gear button) |
-| `/horizon reset` | Clear test data and refresh from live quest log |
-| `/horizon resetpos` | Reset panel position to default |
-| `/horizon test` | Fill tracker with sample quest data (for preview) |
-| `/horizon testsound` | Play the rare-added notification sound |
-
-### Key binding
-- **Collapse Tracker** can be bound in the Key Bindings UI under **Horizon Suite - Focus**.
-
-### Technical
-- **SavedVariables**: `HorizonSuiteDB` (position, collapsed state, all options).
-- **Combat-safe**: toggling and moving are blocked in combat where required; layout refresh runs after combat if needed.
-- **Interface**: 120001 / 120000 (current retail).
+<p align="center">
+  <img width="383" alt="Horizon Suite Preview" src="https://github.com/user-attachments/assets/72072df2-7ba3-4205-a984-df561eaf3ed4" />
+</p>
 
 ---
 
-## Installation
+## 🧠 Intelligent Features
 
-1. Download or clone into `World of Warcraft\_retail_\Interface\AddOns\`.
-2. Ensure the folder is named `HorizonSuite` (the TOC and namespace use this name; the title in-game is “Horizon Suite - Focus”).
-3. Enable **Horizon Suite - Focus** in the AddOns list at the character selection screen.
+The logic that drives your efficiency.
+
+**Spatial Awareness**
+- **Current Zone Filter** - Automatically hides quests that aren't in your immediate area to cut through the noise.
+- **Proximity Priority** - Dynamically floats "Nearby" quests to the top of the list so you never have to hunt for your next objective.
+
+**Dynamic Scanning**
+- **Rare Boss Tracker** - Scans for nearby Rare vignettes and adds them to the tracker with a single click to super-track on the map.
+- **World Map Sync** - Opening the world map automatically pulls active World Quests and Available quests into your tracker, keeping your UI in sync with your planning.
+
+**Combat & Utility**
+- **Hide in Combat** - Automatically vanishes the tracker during encounters to clear your screen for mechanics.
+- **Secure Quest Items** - High-performance quest item buttons built on secure templates, ensuring they work flawlessly mid-fight.
+- **ATT Integration** - Full support for All The Things. Displays collection data directly within your objectives.
+
+*Special thanks to the All The Things team for their incredible community data.*
+
+---
+
+## 🎨 Formatting & UI Design
+
+The aesthetic that defines your interface.
+
+**Visual Hierarchy**
+- **Quest Type Icons** - Distinct, high-fidelity icons for Campaign, World Quests, Legendaries, and Callings for instant identification.
+- **Turn-in Highlights** - Quests "Ready for Turn-in" receive a unique visual highlight, giving you a clear signal that it's time to head back to the hub.
+- **Category Collapsing** - Granular control over your screen space. Collapse specific sections (like World Quests) while keeping your main Campaign visible.
+
+**Total Customization**
+- **The Color Matrix** - Define your own hex-code reality. Customize the colors for every quest category and objective state via `/horizon options`.
+- **Typography Suite** - Total control over fonts, sizes, outlines, and text shadows for Headers, Titles, and Objectives.
+
+**Fluid Motion**
+- **Entry/Exit Animations** - Quests slide and fade into view with modern, smooth transitions.
+- **Objective Flash** - A subtle green pulse provides tactile feedback the moment you complete a requirement.
+- **Adaptive Layout** - Smoothly animates height changes and supports "Grow Upward" anchoring to protect your action bar space.
+
+---
+
+## 🕹️ Controls & Commands
+
+| Command | Action |
+|---------|--------|
+| `/horizon options` | Open the full customization suite |
+| `/horizon collapse` | Toggle the entire tracker or specific categories |
+| `/horizon test` | Populate the tracker with sample data to help you style |
+| `/horizon resetpos` | Snap the tracker back to its default center position |
+
+**Mouse Interactions**
+| Action | Result |
+|--------|--------|
+| **Left-Click** | Set as Super-Tracked (Map Pin) |
+| **Double-Click** | Open Quest Log or Map details |
+| **Right-Click** | Remove from tracker / Untrack |
+
+Key binding available: Collapse Tracker can be bound in Key Bindings under Horizon Suite - Focus.
+
+---
+
+## 📥 Installation
+
+1. Download the repository and extract the `HorizonSuite` folder.
+2. Place it in your `World of Warcraft\_retail_\Interface\AddOns\` directory.
+3. Enable **Horizon Suite - Focus** in your AddOn list.
+4. Type `/horizon options` to begin tailoring your experience.
+
+---
+
+## 💖 Support the Project
+
+Horizon is built for players who want a more intentional WoW experience. If this addon has cleaned up your UI, consider supporting its development for the Midnight expansion.
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/T6T71TX1Y1)
 
 ---
 
 ## License
 
 MIT License. See [LICENSE](LICENSE).
-
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/T6T71TX1Y1)
