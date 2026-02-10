@@ -33,7 +33,7 @@ floatingQuestItemBtn:SetScript("OnLeave", function(self)
 end)
 
 local function UpdateFloatingQuestItem(questsFlat)
-    if not addon.GetDB("showFloatingQuestItem", false) then
+    if addon.ShouldHideInCombat() or not addon.GetDB("showFloatingQuestItem", false) then
         floatingQuestItemBtn:Hide()
         return
     end
@@ -69,6 +69,7 @@ local function UpdateFloatingQuestItem(questsFlat)
         else
             floatingQuestItemBtn:SetPoint("TOP", addon.MQT, "BOTTOM", ox, oy)
         end
+        if addon.combatFadeState == "in" then floatingQuestItemBtn:SetAlpha(0) end
         floatingQuestItemBtn:Show()
         addon.ApplyItemCooldown(floatingQuestItemBtn.cooldown, chosenLink)
     else

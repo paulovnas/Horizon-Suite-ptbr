@@ -4,6 +4,14 @@ All notable changes to Horizon Suite - Focus are documented here.
 
 ---
 
+## [Unreleased]
+
+### New Features
+
+- **Hide in combat** — New option in General (Combat section): when enabled, the tracker panel and floating quest item button are hidden while in combat. When combat ends, visibility is restored according to your existing settings (instance visibility, collapsed state, quest content). When **Animations** is enabled, the tracker and floating button fade out over ~0.2s on entering combat and fade in on leaving combat.
+
+---
+
 ## [0.6] – 2025-02-09
 
 ### New Features

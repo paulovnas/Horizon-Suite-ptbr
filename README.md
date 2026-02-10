@@ -17,6 +17,7 @@ A clean, modern-style replacement for the default World of Warcraft objective tr
 - **Draggable panel** with position saved across sessions; optional **lock position** in options.
 - **Scrollable content** when the list exceeds max height (mouse wheel).
 - **Optional zone filter**: show only quests in your current zone.
+- **Hide in combat** (optional): hide the tracker and floating quest item while in combat; visibility restores when combat ends.
 
 ### Quest display
 - **Quest type icons** (campaign, world, legendary, calling, etc.) next to each title.
@@ -57,7 +58,7 @@ A clean, modern-style replacement for the default World of Warcraft objective tr
 - **Open via** `/horizon options` (or `/horizon config`) or the gear button on the tracker header.
 - **Tabs**: Appearance, Layout, Display, Visibility, Effects.
 - **Appearance**: Font, all font sizes, outline, shadow (X/Y/alpha), panel width, max content height, and full **quest/section color** matrix (per quest type and overrides for zone, objective, completed objective, highlight).
-- **Layout**: Start collapsed, lock position, grow upward (fix bottom edge).
+- **Layout**: Start collapsed, lock position, grow upward (fix bottom edge), instance visibility (show in dungeon/raid/BG/arena), **hide in combat**.
 - **Display**: Quest count in header, header divider, super-minimal mode (hide “Objectives” header), section headers, zone labels, quest type icons, active quest highlight style, quest item buttons.
 - **Visibility**: Filter by current zone, show rare bosses, rare-added sound.
 - **Effects**: Enable/disable animations, objective progress flash.

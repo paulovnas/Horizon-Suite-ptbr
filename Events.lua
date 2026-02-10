@@ -25,6 +25,7 @@ eventFrame:RegisterEvent("ZONE_CHANGED")
 eventFrame:RegisterEvent("VIGNETTE_MINIMAP_UPDATED")
 eventFrame:RegisterEvent("VIGNETTES_UPDATED")
 eventFrame:RegisterEvent("ADDON_LOADED")
+eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
 eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 
 local function ScheduleRefresh()
@@ -471,10 +472,31 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
             if A.enabled then A.TrySuppressTracker() end
         end
 
+    elseif event == "PLAYER_REGEN_DISABLED" then
+        if A.GetDB("hideInCombat", false) and A.enabled then
+            local useAnim = A.GetDB("animations", true)
+            if useAnim and A.MQT:IsShown() then
+                A.combatFadeState = "out"
+                A.combatFadeTime  = 0
+            else
+                A.MQT:Hide()
+                if A.UpdateFloatingQuestItem then A.UpdateFloatingQuestItem(nil) end
+                if A.UpdateMplusBlock then A.UpdateMplusBlock() end
+            end
+        end
+
     elseif event == "PLAYER_REGEN_ENABLED" then
         if A.layoutPendingAfterCombat then
             A.layoutPendingAfterCombat = nil
+            if A.GetDB("hideInCombat", false) and A.enabled then
+                A.combatFadeState = "in"
+                A.combatFadeTime  = 0
+            end
             A.FullLayout()
+        elseif A.GetDB("hideInCombat", false) and A.enabled then
+            A.combatFadeState = "in"
+            A.combatFadeTime  = 0
+            ScheduleRefresh()
         end
 
     elseif event == "PLAYER_LOGIN" or event == "PLAYER_ENTERING_WORLD" then

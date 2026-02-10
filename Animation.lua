@@ -59,6 +59,55 @@ MQT:SetScript("OnUpdate", function(self, dt)
         SetPanelHeight(addon.currentHeight)
     end
 
+    -- Combat hide-in-combat fade in/out
+    local combatState = addon.combatFadeState
+    if combatState then
+        local dur = addon.COMBAT_FADE_DUR or 0.4
+        addon.combatFadeTime = addon.combatFadeTime + dt
+        local useAnim = addon.GetDB("animations", true)
+        local floatingBtn = _G.MQTFloatingQuestItem
+
+        if combatState == "out" then
+            if not useAnim then
+                MQT:Hide()
+                if floatingBtn then floatingBtn:Hide() end
+                if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
+                if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
+                addon.combatFadeState = nil
+                addon.combatFadeTime = 0
+            else
+                local p = math.min(addon.combatFadeTime / dur, 1)
+                MQT:SetAlpha(1 - p)
+                if floatingBtn and floatingBtn:IsShown() then floatingBtn:SetAlpha(1 - p) end
+                if p >= 1 then
+                    MQT:Hide()
+                    if floatingBtn then floatingBtn:Hide() end
+                    if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
+                    if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
+                    addon.combatFadeState = nil
+                    addon.combatFadeTime = 0
+                end
+            end
+        elseif combatState == "in" then
+            if not useAnim then
+                MQT:SetAlpha(1)
+                if floatingBtn and floatingBtn:IsShown() then floatingBtn:SetAlpha(1) end
+                addon.combatFadeState = nil
+                addon.combatFadeTime = 0
+            else
+                local p = math.min(addon.combatFadeTime / dur, 1)
+                if MQT:IsShown() then MQT:SetAlpha(p) end
+                if floatingBtn and floatingBtn:IsShown() then floatingBtn:SetAlpha(p) end
+                if p >= 1 then
+                    MQT:SetAlpha(1)
+                    if floatingBtn and floatingBtn:IsShown() then floatingBtn:SetAlpha(1) end
+                    addon.combatFadeState = nil
+                    addon.combatFadeTime = 0
+                end
+            end
+        end
+    end
+
     local anyAnimating = false
     local useAnim = addon.GetDB("animations", true)
     for i = 1, addon.POOL_SIZE do

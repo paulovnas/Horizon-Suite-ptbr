@@ -45,8 +45,18 @@ local function PopulateEntry(entry, questData)
         entry.trackedFromOtherZoneIcon:Hide()
     end
 
+    local rawHighlight = addon.GetDB("activeQuestHighlight", "bar-left")
+    if rawHighlight == "bar" then rawHighlight = "bar-left" end
+    local highlightStyle = rawHighlight == "highlight" and "highlight" or rawHighlight
+    local hc = addon.GetDB("highlightColor", nil)
+    if not hc or #hc < 3 then hc = { 0.40, 0.70, 1.00 } end
+    local ha = tonumber(addon.GetDB("highlightAlpha", 0.25)) or 0.25
+    local barW = math.max(2, math.min(6, tonumber(addon.GetDB("highlightBarWidth", 2)) or 2))
+    local topPadding = (questData.isSuperTracked and highlightStyle == "bar-top") and barW or 0
+    local bottomPadding = (questData.isSuperTracked and highlightStyle == "bar-bottom") and barW or 0
+
     entry.titleText:ClearAllPoints()
-    entry.titleText:SetPoint("TOPLEFT", entry, "TOPLEFT", titleLeftOffset, 0)
+    entry.titleText:SetPoint("TOPLEFT", entry, "TOPLEFT", titleLeftOffset, -topPadding)
     entry.titleShadow:ClearAllPoints()
     entry.titleShadow:SetPoint("CENTER", entry.titleText, "CENTER", addon.SHADOW_OX, addon.SHADOW_OY)
 
@@ -73,49 +83,60 @@ local function PopulateEntry(entry, questData)
     entry.titleText:SetTextColor(c[1], c[2], c[3], 1)
     entry._savedColor = nil
 
-    local rawHighlight = addon.GetDB("activeQuestHighlight", "bar-left")
-    -- Migrate legacy value
-    if rawHighlight == "bar" then
-        rawHighlight = "bar-left"
-    end
-    local highlightStyle = rawHighlight == "highlight" and "highlight" or rawHighlight
-    local hc = addon.GetDB("highlightColor", nil)
-    if not hc or #hc < 3 then hc = { 0.40, 0.70, 1.00 } end
-    local ha = tonumber(addon.GetDB("highlightAlpha", 0.25)) or 0.25
-    local function hideHighlightBorders()
+    local function hideAllHighlight()
+        entry.trackBar:Hide()
+        entry.highlightBg:Hide()
+        if entry.highlightTop then entry.highlightTop:Hide() end
         entry.highlightBorderT:Hide()
         entry.highlightBorderB:Hide()
         entry.highlightBorderL:Hide()
         entry.highlightBorderR:Hide()
     end
+
     if questData.isSuperTracked then
-        if highlightStyle == "bar-left" or highlightStyle == "bar-right" then
-            entry.highlightBg:Hide()
-            if entry.highlightTop then entry.highlightTop:Hide() end
-            hideHighlightBorders()
+        hideAllHighlight()
+        local borderAlpha = math.min(1, (ha + 0.35))
+        if highlightStyle == "bar-left" or highlightStyle == "bar-right" or highlightStyle == "pill-left" then
+            local w = (highlightStyle == "pill-left") and barW or 2
             entry.trackBar:SetColorTexture(hc[1], hc[2], hc[3], 0.70)
             entry.trackBar:Show()
+        elseif highlightStyle == "bar-top" then
+            entry.highlightTop:SetColorTexture(hc[1], hc[2], hc[3], 0.70)
+            entry.highlightTop:SetHeight(barW)
+            entry.highlightTop:Show()
+        elseif highlightStyle == "bar-bottom" then
+            entry.highlightBorderB:SetColorTexture(hc[1], hc[2], hc[3], 0.70)
+            entry.highlightBorderB:SetHeight(barW)
+            entry.highlightBorderB:Show()
+        elseif highlightStyle == "outline" then
+            entry.highlightBorderB:SetHeight(1)
+            entry.highlightBorderL:SetWidth(1)
+            entry.highlightBorderR:SetWidth(1)
+            for _, tex in ipairs({ entry.highlightBorderT, entry.highlightBorderB, entry.highlightBorderL, entry.highlightBorderR }) do
+                tex:SetColorTexture(hc[1], hc[2], hc[3], borderAlpha)
+                tex:Show()
+            end
+        elseif highlightStyle == "glow" then
+        elseif highlightStyle == "bar-both" then
+            entry.highlightBorderL:SetColorTexture(hc[1], hc[2], hc[3], 0.70)
+            entry.highlightBorderL:SetWidth(2)
+            entry.highlightBorderL:Show()
+            entry.highlightBorderR:SetColorTexture(hc[1], hc[2], hc[3], 0.70)
+            entry.highlightBorderR:SetWidth(2)
+            entry.highlightBorderR:Show()
         else
-            -- Highlight style: inset bg + border + top strip
-            entry.trackBar:Hide()
             entry.highlightBg:SetColorTexture(hc[1], hc[2], hc[3], ha)
             entry.highlightBg:Show()
-            if entry.highlightTop then
-                local topAlpha = math.min(1, ha + 0.2)
-                entry.highlightTop:SetColorTexture(hc[1], hc[2], hc[3], topAlpha)
-                entry.highlightTop:Show()
-            end
-            local borderAlpha = math.min(1, (ha + 0.35))
+            entry.highlightTop:SetHeight(2)
+            entry.highlightTop:SetColorTexture(hc[1], hc[2], hc[3], math.min(1, ha + 0.2))
+            entry.highlightTop:Show()
             for _, tex in ipairs({ entry.highlightBorderT, entry.highlightBorderB, entry.highlightBorderL, entry.highlightBorderR }) do
                 tex:SetColorTexture(hc[1], hc[2], hc[3], borderAlpha)
                 tex:Show()
             end
         end
     else
-        entry.trackBar:Hide()
-        entry.highlightBg:Hide()
-        if entry.highlightTop then entry.highlightTop:Hide() end
-        hideHighlightBorders()
+        hideAllHighlight()
     end
 
     -- For tracked WORLD quests that are not on the current map (off-map world quests),
@@ -233,21 +254,37 @@ local function PopulateEntry(entry, questData)
         totalH = totalH + addon.GetObjSpacing() + objH
     end
 
-    entry.entryHeight = totalH
-    entry:SetHeight(totalH)
+    entry.entryHeight = totalH + topPadding + bottomPadding
+    entry:SetHeight(totalH + topPadding + bottomPadding)
 
-    -- Active-quest bar: position after entry has final height (one texture, left or right, 2px slim)
-    local BAR_W = 2
-    if (highlightStyle == "bar-left" or highlightStyle == "bar-right") and entry.trackBar:IsShown() then
+    local shadowA = addon.GetDB("showTextShadow", true) and (tonumber(addon.GetDB("shadowAlpha", 0.8)) or 0.8) or 0
+    local glowAlpha = math.min(1, ha + 0.4)
+    if questData.isSuperTracked and highlightStyle == "glow" then
+        entry.titleShadow:SetTextColor(hc[1], hc[2], hc[3], glowAlpha)
+        entry.zoneShadow:SetTextColor(hc[1], hc[2], hc[3], glowAlpha)
+        for j = 1, addon.MAX_OBJECTIVES do
+            entry.objectives[j].shadow:SetTextColor(hc[1], hc[2], hc[3], glowAlpha)
+        end
+    else
+        entry.titleShadow:SetTextColor(0, 0, 0, shadowA)
+        entry.zoneShadow:SetTextColor(0, 0, 0, shadowA)
+        for j = 1, addon.MAX_OBJECTIVES do
+            entry.objectives[j].shadow:SetTextColor(0, 0, 0, shadowA)
+        end
+    end
+
+    -- Active-quest bar: position after entry has final height (left, right, or pill-left)
+    local trackBarW = (highlightStyle == "pill-left") and barW or 2
+    if (highlightStyle == "bar-left" or highlightStyle == "bar-right" or highlightStyle == "pill-left") and entry.trackBar:IsShown() then
         entry.trackBar:ClearAllPoints()
-        if highlightStyle == "bar-left" then
+        if highlightStyle == "bar-left" or highlightStyle == "pill-left" then
             local barLeft = addon.BAR_LEFT_OFFSET or 12
             entry.trackBar:SetPoint("TOPLEFT", entry, "TOPLEFT", -barLeft, 0)
-            entry.trackBar:SetPoint("BOTTOMRIGHT", entry, "BOTTOMLEFT", -barLeft + BAR_W, 0)
+            entry.trackBar:SetPoint("BOTTOMRIGHT", entry, "BOTTOMLEFT", -barLeft + trackBarW, 0)
         else
             local barInsetRight = addon.ICON_COLUMN_WIDTH - addon.PADDING + 4
             entry.trackBar:SetPoint("TOPRIGHT", entry, "TOPRIGHT", -barInsetRight, 0)
-            entry.trackBar:SetPoint("BOTTOMLEFT", entry, "BOTTOMRIGHT", -barInsetRight - BAR_W, 0)
+            entry.trackBar:SetPoint("BOTTOMLEFT", entry, "BOTTOMRIGHT", -barInsetRight - trackBarW, 0)
         end
     end
 
@@ -500,6 +537,13 @@ local function FullLayout()
         return
     end
 
+    if addon.ShouldHideInCombat() then
+        addon.MQT:Hide()
+        addon.UpdateFloatingQuestItem(nil)
+        addon.UpdateMplusBlock()
+        return
+    end
+
     if addon.GetDB("growUp", false) then
         addon.ApplyGrowUpAnchor()
     end
@@ -555,7 +599,10 @@ local function FullLayout()
         for _, r in ipairs(rares) do quests[#quests + 1] = r end
         addon.UpdateFloatingQuestItem(quests)
         addon.UpdateHeaderQuestCount(#quests)
-        if #quests > 0 then addon.MQT:Show() end
+        if #quests > 0 then
+            if addon.combatFadeState == "in" then addon.MQT:SetAlpha(0) end
+            addon.MQT:Show()
+        end
         return
     end
 
@@ -673,6 +720,7 @@ local function FullLayout()
     addon.targetHeight  = math.max(addon.MIN_HEIGHT, headerArea + visibleH + addon.PADDING)
 
     if #quests > 0 then
+        if addon.combatFadeState == "in" then addon.MQT:SetAlpha(0) end
         addon.MQT:Show()
     end
 end

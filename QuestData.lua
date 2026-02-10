@@ -20,6 +20,8 @@ addon.collapseAnimStart  = 0
 addon.groupCollapses     = {}     -- per-group collapses: [groupKey] = startTime
 addon.lastPlayerMapID    = nil
 addon.lastMapCheckTime   = 0
+addon.combatFadeState   = nil   -- "out" = fading out for combat, "in" = fading in after combat
+addon.combatFadeTime    = 0
 
 local function GetQuestCategory(questID)
     if C_QuestLog.IsComplete(questID) then

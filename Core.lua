@@ -65,8 +65,8 @@ addon.SHADOW_OX       = 2
 addon.SHADOW_OY       = -2
 addon.SHADOW_A        = 0.8
 
-addon.FADE_IN_DUR     = 0.30
-addon.FADE_OUT_DUR    = 0.40
+addon.FADE_IN_DUR     = 0.4
+addon.FADE_OUT_DUR    = 0.4
 addon.COMPLETE_HOLD   = 0.50
 addon.HEIGHT_SPEED    = 8
 addon.FLASH_DUR       = 0.35
@@ -75,7 +75,8 @@ addon.SLIDE_IN_X      = 20
 addon.SLIDE_OUT_X     = 20
 addon.DRIFT_OUT_Y     = 10
 addon.ENTRY_STAGGER   = 0.05
-addon.COLLAPSE_DUR    = 0.25
+addon.COLLAPSE_DUR    = 0.4
+addon.COMBAT_FADE_DUR = 0.4
 
 addon.HEADER_COLOR    = { 1, 1, 1 }
 addon.DIVIDER_COLOR   = { 1, 1, 1, 0.5 }
@@ -212,6 +213,10 @@ function addon.GetDB(key, default)
     local v = HorizonSuiteDB[key]
     if v == nil then return default end
     return v
+end
+
+function addon.ShouldHideInCombat()
+    return addon.GetDB("hideInCombat", false) and UnitAffectingCombat("player")
 end
 
 function addon.EnsureDB()

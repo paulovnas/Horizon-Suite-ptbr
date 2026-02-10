@@ -88,6 +88,12 @@ local OUTLINE_OPTIONS = {
 local HIGHLIGHT_OPTIONS = {
     { "Bar (left edge)", "bar-left" },
     { "Bar (right edge)", "bar-right" },
+    { "Bar (top edge)", "bar-top" },
+    { "Bar (bottom edge)", "bar-bottom" },
+    { "Outline only", "outline" },
+    { "Soft glow", "glow" },
+    { "Dual edge bars", "bar-both" },
+    { "Pill left accent", "pill-left" },
     { "Highlight", "highlight" },
 }
 local MPLUS_POSITION_OPTIONS = {
@@ -108,10 +114,14 @@ local OBJ_COLOR_DEFAULT = { 0.78, 0.78, 0.78 }
 local OBJ_DONE_COLOR_DEFAULT = { 0.30, 0.80, 0.30 }
 local HIGHLIGHT_COLOR_DEFAULT = { 0.4, 0.7, 1 }
 
+local VALID_HIGHLIGHT_STYLES = {
+    ["bar-left"] = true, ["bar-right"] = true, ["bar-top"] = true, ["bar-bottom"] = true,
+    ["outline"] = true, ["glow"] = true, ["bar-both"] = true, ["pill-left"] = true, ["highlight"] = true,
+}
 local function getActiveQuestHighlight()
     local v = getDB("activeQuestHighlight", "bar-left")
     if v == "bar" then v = "bar-left" end
-    if v ~= "bar-left" and v ~= "bar-right" and v ~= "highlight" then return "bar-left" end
+    if not VALID_HIGHLIGHT_STYLES[v] then return "bar-left" end
     return v
 end
 
@@ -133,6 +143,8 @@ local OptionCategories = {
             { type = "toggle", name = "Show in raid", desc = "Show the tracker while in a raid.", dbKey = "showInRaid", get = function() return getDB("showInRaid", false) end, set = function(v) setDB("showInRaid", v) end },
             { type = "toggle", name = "Show in battleground", desc = "Show the tracker while in a battleground.", dbKey = "showInBattleground", get = function() return getDB("showInBattleground", false) end, set = function(v) setDB("showInBattleground", v) end },
             { type = "toggle", name = "Show in arena", desc = "Show the tracker while in an arena.", dbKey = "showInArena", get = function() return getDB("showInArena", false) end, set = function(v) setDB("showInArena", v) end },
+            { type = "section", name = "Combat" },
+            { type = "toggle", name = "Hide in combat", desc = "Hide the tracker and floating quest item while in combat.", dbKey = "hideInCombat", get = function() return getDB("hideInCombat", false) end, set = function(v) setDB("hideInCombat", v) end },
             { type = "section", name = "Dimensions" },
             { type = "slider", name = "Panel width", desc = "Width of the tracker in pixels.", dbKey = "panelWidth", min = 180, max = 500, get = function() return getDB("panelWidth", 260) end, set = function(v) setDB("panelWidth", math.max(180, math.min(500, v))) end },
             { type = "slider", name = "Max content height", desc = "Maximum height of the scrollable content area.", dbKey = "maxContentHeight", min = 200, max = 800, get = function() return getDB("maxContentHeight", 480) end, set = function(v) setDB("maxContentHeight", math.max(200, math.min(800, v))) end },
@@ -193,6 +205,7 @@ local OptionCategories = {
             { type = "toggle", name = "Show border", desc = "Show a border around the tracker panel.", dbKey = "showBorder", get = function() return getDB("showBorder", true) end, set = function(v) setDB("showBorder", v) end },
             { type = "section", name = "Highlight" },
             { type = "slider", name = "Highlight alpha", desc = "Opacity of the super-tracked quest highlight bar or background (0–1).", dbKey = "highlightAlpha", min = 0, max = 1, get = function() return tonumber(getDB("highlightAlpha", 0.25)) or 0.25 end, set = function(v) setDB("highlightAlpha", v) end },
+            { type = "slider", name = "Bar width", desc = "Width of bar-style highlights in pixels (2–6). Affects bar-top, bar-bottom, bar-both, pill-left.", dbKey = "highlightBarWidth", min = 2, max = 6, get = function() return math.max(2, math.min(6, tonumber(getDB("highlightBarWidth", 2)) or 2)) end, set = function(v) setDB("highlightBarWidth", math.max(2, math.min(6, v))) end },
         },
     },
     {
