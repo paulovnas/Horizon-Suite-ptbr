@@ -12,11 +12,28 @@ local addon = _G.ModernQuestTracker
 local DOUBLE_CLICK_WINDOW = 0.30
 local pool = addon.pool
 
+StaticPopupDialogs["HORIZONSUITE_ABANDON_QUEST"] = StaticPopupDialogs["HORIZONSUITE_ABANDON_QUEST"] or {
+    text = "Abandon %s?",
+    button1 = YES,
+    button2 = NO,
+    OnAccept = function(self, data)
+        if data and data.questID and C_QuestLog and C_QuestLog.AbandonQuest then
+            C_QuestLog.AbandonQuest(data.questID)
+            addon.ScheduleRefresh()
+        end
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+}
+
 for i = 1, addon.POOL_SIZE do
     local e = pool[i]
     e:EnableMouse(true)
     e._lastClickTime = 0
     e._lastClickQuest = nil
+    e._lastRightClickTime = 0
+    e._lastRightClickQuest = nil
 
     e:SetScript("OnMouseDown", function(self, button)
         if button == "LeftButton" then
@@ -49,9 +66,12 @@ for i = 1, addon.POOL_SIZE do
                 return
             end
 
+            local clickOpensLog = addon.GetDB("clickTitleOpensQuestLog", false)
             local now = GetTime()
-            if self._lastClickQuest == self.questID
-               and (now - self._lastClickTime) <= DOUBLE_CLICK_WINDOW then
+            local isDoubleClick = self._lastClickQuest == self.questID
+                and (now - self._lastClickTime) <= DOUBLE_CLICK_WINDOW
+
+            if isDoubleClick then
                 self._lastClickTime = 0
                 self._lastClickQuest = nil
                 if QuestMapFrame_OpenToQuestDetails then
@@ -61,15 +81,28 @@ for i = 1, addon.POOL_SIZE do
                     OpenQuestLog()
                 else
                     C_QuestLog.SetSelectedQuest(self.questID)
-                    if not WorldMapFrame:IsShown() then
-                        ToggleWorldMap()
-                    end
+                    if not WorldMapFrame:IsShown() then ToggleWorldMap() end
+                end
+            elseif clickOpensLog then
+                self._lastClickTime = now
+                self._lastClickQuest = self.questID
+                if QuestMapFrame_OpenToQuestDetails then
+                    QuestMapFrame_OpenToQuestDetails(self.questID)
+                elseif OpenQuestLog then
+                    C_QuestLog.SetSelectedQuest(self.questID)
+                    OpenQuestLog()
+                else
+                    C_QuestLog.SetSelectedQuest(self.questID)
+                    if not WorldMapFrame:IsShown() then ToggleWorldMap() end
                 end
             else
                 self._lastClickTime = now
                 self._lastClickQuest = self.questID
                 if C_SuperTrack and C_SuperTrack.SetSuperTrackedQuestID then
                     C_SuperTrack.SetSuperTrackedQuestID(self.questID)
+                end
+                if addon.FullLayout and not InCombatLockdown() then
+                    addon.FullLayout()
                 end
             end
         elseif button == "RightButton" then
@@ -83,13 +116,27 @@ for i = 1, addon.POOL_SIZE do
                 return
             end
             if self.questID then
-                if C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(self.questID) and addon.RemoveWorldQuestWatch then
-                    addon.RemoveWorldQuestWatch(self.questID)
-                elseif C_QuestLog.RemoveQuestWatch then
-                    C_QuestLog.RemoveQuestWatch(self.questID)
+                local now = GetTime()
+                local rightDoubleClick = addon.GetDB("doubleClickToAbandon", true)
+                    and self._lastRightClickQuest == self.questID
+                    and (now - self._lastRightClickTime) <= DOUBLE_CLICK_WINDOW
+
+                if rightDoubleClick then
+                    self._lastRightClickTime = 0
+                    self._lastRightClickQuest = nil
+                    local questName = C_QuestLog.GetTitleForQuestID(self.questID) or "this quest"
+                    StaticPopup_Show("HORIZONSUITE_ABANDON_QUEST", questName, nil, { questID = self.questID })
+                else
+                    self._lastRightClickTime = now
+                    self._lastRightClickQuest = self.questID
+                    if C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(self.questID) and addon.RemoveWorldQuestWatch then
+                        addon.RemoveWorldQuestWatch(self.questID)
+                    elseif C_QuestLog.RemoveQuestWatch then
+                        C_QuestLog.RemoveQuestWatch(self.questID)
+                    end
+                    addon.ScheduleRefresh()
                 end
             end
-            addon.ScheduleRefresh()
         end
     end)
 

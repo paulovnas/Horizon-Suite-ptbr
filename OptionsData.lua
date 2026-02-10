@@ -52,6 +52,8 @@ function OptionsData_NotifyMainAddon()
     local applyTy = _G.ModernQuestTracker_ApplyTypography or addon.ApplyTypography
     if applyTy then applyTy() end
     if _G.ModernQuestTracker_ApplyDimensions then _G.ModernQuestTracker_ApplyDimensions() end
+    if addon.ApplyBackdropOpacity then addon.ApplyBackdropOpacity() end
+    if addon.ApplyBorderVisibility then addon.ApplyBorderVisibility() end
     if _G.ModernQuestTracker_RequestRefresh then _G.ModernQuestTracker_RequestRefresh() end
     if _G.ModernQuestTracker_FullLayout and not InCombatLockdown() then _G.ModernQuestTracker_FullLayout() end
 end
@@ -150,6 +152,13 @@ local OptionCategories = {
             { type = "toggle", name = "Show quest type icons", desc = "Show quest type icon to the left of each title.", dbKey = "showQuestTypeIcons", get = function() return getDB("showQuestTypeIcons", false) end, set = function(v) setDB("showQuestTypeIcons", v) end },
             { type = "dropdown", name = "Active quest highlight", desc = "How the super-tracked quest is highlighted.", dbKey = "activeQuestHighlight", options = HIGHLIGHT_OPTIONS, get = getActiveQuestHighlight, set = function(v) setDB("activeQuestHighlight", v) end },
             { type = "toggle", name = "Show quest item buttons", desc = "Show the usable quest item button on the right of a quest.", dbKey = "showQuestItemButtons", get = function() return getDB("showQuestItemButtons", true) end, set = function(v) setDB("showQuestItemButtons", v) end },
+            { type = "toggle", name = "Show objective numbers", desc = "Prefix objectives with 1., 2., 3.", dbKey = "showObjectiveNumbers", get = function() return getDB("showObjectiveNumbers", false) end, set = function(v) setDB("showObjectiveNumbers", v) end },
+            { type = "toggle", name = "Show completed count", desc = "Show X/Y objective progress in quest title.", dbKey = "showCompletedCount", get = function() return getDB("showCompletedCount", false) end, set = function(v) setDB("showCompletedCount", v) end },
+            { type = "toggle", name = "Compact mode", desc = "Reduce spacing between quest entries.", dbKey = "compactMode", get = function() return getDB("compactMode", false) end, set = function(v) setDB("compactMode", v) end },
+            { type = "toggle", name = "Show quest level", desc = "Show quest level next to the title.", dbKey = "showQuestLevel", get = function() return getDB("showQuestLevel", false) end, set = function(v) setDB("showQuestLevel", v) end },
+            { type = "toggle", name = "Dim non-super-tracked quests", desc = "Slightly dim quests that are not super-tracked.", dbKey = "dimNonSuperTracked", get = function() return getDB("dimNonSuperTracked", false) end, set = function(v) setDB("dimNonSuperTracked", v) end },
+            { type = "toggle", name = "Click title to open quest log", desc = "Single left-click opens quest log instead of super-tracking.", dbKey = "clickTitleOpensQuestLog", get = function() return getDB("clickTitleOpensQuestLog", false) end, set = function(v) setDB("clickTitleOpensQuestLog", v) end },
+            { type = "toggle", name = "Right double-click to abandon", desc = "Right double-click on a quest abandons it with confirmation.", dbKey = "doubleClickToAbandon", get = function() return getDB("doubleClickToAbandon", true) end, set = function(v) setDB("doubleClickToAbandon", v) end },
             { type = "section", name = "Filtering" },
             { type = "toggle", name = "Only show quests in current zone", desc = "Hide tracked quests not in your current zone.", dbKey = "filterByZone", get = function() return getDB("filterByZone", false) end, set = function(v) setDB("filterByZone", v) end },
             { type = "section", name = "Rare bosses" },
@@ -175,9 +184,13 @@ local OptionCategories = {
             { type = "slider", name = "Section size", desc = "Font size for section headers.", dbKey = "sectionFontSize", min = 8, max = 18, get = function() return getDB("sectionFontSize", 10) end, set = function(v) setDB("sectionFontSize", v) end },
             { type = "dropdown", name = "Outline", desc = "Font outline style.", dbKey = "fontOutline", options = OUTLINE_OPTIONS, get = function() return getDB("fontOutline", "OUTLINE") end, set = function(v) setDB("fontOutline", v) end },
             { type = "section", name = "Shadow" },
+            { type = "toggle", name = "Show text shadow", desc = "Enable drop shadow on tracker text.", dbKey = "showTextShadow", get = function() return getDB("showTextShadow", true) end, set = function(v) setDB("showTextShadow", v) end },
             { type = "slider", name = "Shadow X", desc = "Horizontal shadow offset.", dbKey = "shadowOffsetX", min = -10, max = 10, get = function() return getDB("shadowOffsetX", 2) end, set = function(v) setDB("shadowOffsetX", v) end },
             { type = "slider", name = "Shadow Y", desc = "Vertical shadow offset.", dbKey = "shadowOffsetY", min = -10, max = 10, get = function() return getDB("shadowOffsetY", -2) end, set = function(v) setDB("shadowOffsetY", v) end },
             { type = "slider", name = "Shadow alpha", desc = "Shadow opacity (0–1).", dbKey = "shadowAlpha", min = 0, max = 1, get = function() return getDB("shadowAlpha", 0.8) end, set = function(v) setDB("shadowAlpha", v) end },
+            { type = "section", name = "Panel" },
+            { type = "slider", name = "Backdrop opacity", desc = "Opacity of the tracker panel background (0–1).", dbKey = "backdropOpacity", min = 0, max = 1, get = function() return tonumber(getDB("backdropOpacity", 0.9)) or 0.9 end, set = function(v) setDB("backdropOpacity", v) end },
+            { type = "toggle", name = "Show border", desc = "Show a border around the tracker panel.", dbKey = "showBorder", get = function() return getDB("showBorder", true) end, set = function(v) setDB("showBorder", v) end },
             { type = "section", name = "Highlight" },
             { type = "slider", name = "Highlight alpha", desc = "Opacity of the super-tracked quest highlight bar or background (0–1).", dbKey = "highlightAlpha", min = 0, max = 1, get = function() return tonumber(getDB("highlightAlpha", 0.25)) or 0.25 end, set = function(v) setDB("highlightAlpha", v) end },
         },

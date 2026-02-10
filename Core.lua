@@ -34,7 +34,20 @@ addon.DIVIDER_HEIGHT  = 2
 addon.TITLE_SPACING   = 8
 addon.OBJ_SPACING     = 2
 addon.OBJ_INDENT      = 12
+addon.COMPACT_TITLE_SPACING = 4
+addon.COMPACT_OBJ_SPACING   = 1
+addon.COMPACT_OBJ_INDENT    = 8
 addon.MIN_HEIGHT      = 50
+
+function addon.GetTitleSpacing()
+    return addon.GetDB("compactMode", false) and addon.COMPACT_TITLE_SPACING or addon.TITLE_SPACING
+end
+function addon.GetObjSpacing()
+    return addon.GetDB("compactMode", false) and addon.COMPACT_OBJ_SPACING or addon.OBJ_SPACING
+end
+function addon.GetObjIndent()
+    return addon.GetDB("compactMode", false) and addon.COMPACT_OBJ_INDENT or addon.OBJ_INDENT
+end
 
 addon.MAX_CONTENT_HEIGHT = 480
 addon.SCROLL_STEP        = 30
@@ -317,6 +330,49 @@ MQT:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", addon.PANEL_X, addon.PANEL_Y)
 MQT:SetFrameStrata("MEDIUM")
 MQT:SetClampedToScreen(true)
 MQT:Hide()
+
+local mqtBg = MQT:CreateTexture(nil, "BACKGROUND")
+mqtBg:SetAllPoints(MQT)
+mqtBg:SetColorTexture(0.08, 0.08, 0.12, 0.9)
+addon.mqtBg = mqtBg
+
+local BORDER_COLOR = { 0.35, 0.38, 0.45, 0.45 }
+local mqtBorderT = MQT:CreateTexture(nil, "BORDER")
+mqtBorderT:SetColorTexture(BORDER_COLOR[1], BORDER_COLOR[2], BORDER_COLOR[3], BORDER_COLOR[4])
+mqtBorderT:SetHeight(1)
+mqtBorderT:SetPoint("TOPLEFT", MQT, "TOPLEFT", 0, 0)
+mqtBorderT:SetPoint("TOPRIGHT", MQT, "TOPRIGHT", 0, 0)
+local mqtBorderB = MQT:CreateTexture(nil, "BORDER")
+mqtBorderB:SetColorTexture(BORDER_COLOR[1], BORDER_COLOR[2], BORDER_COLOR[3], BORDER_COLOR[4])
+mqtBorderB:SetHeight(1)
+mqtBorderB:SetPoint("BOTTOMLEFT", MQT, "BOTTOMLEFT", 0, 0)
+mqtBorderB:SetPoint("BOTTOMRIGHT", MQT, "BOTTOMRIGHT", 0, 0)
+local mqtBorderL = MQT:CreateTexture(nil, "BORDER")
+mqtBorderL:SetColorTexture(BORDER_COLOR[1], BORDER_COLOR[2], BORDER_COLOR[3], BORDER_COLOR[4])
+mqtBorderL:SetWidth(1)
+mqtBorderL:SetPoint("TOPLEFT", MQT, "TOPLEFT", 0, 0)
+mqtBorderL:SetPoint("BOTTOMLEFT", MQT, "BOTTOMLEFT", 0, 0)
+local mqtBorderR = MQT:CreateTexture(nil, "BORDER")
+mqtBorderR:SetColorTexture(BORDER_COLOR[1], BORDER_COLOR[2], BORDER_COLOR[3], BORDER_COLOR[4])
+mqtBorderR:SetWidth(1)
+mqtBorderR:SetPoint("TOPRIGHT", MQT, "TOPRIGHT", 0, 0)
+mqtBorderR:SetPoint("BOTTOMRIGHT", MQT, "BOTTOMRIGHT", 0, 0)
+addon.mqtBorderT, addon.mqtBorderB = mqtBorderT, mqtBorderB
+addon.mqtBorderL, addon.mqtBorderR = mqtBorderL, mqtBorderR
+
+function addon.ApplyBackdropOpacity()
+    if not addon.mqtBg then return end
+    local a = tonumber(addon.GetDB("backdropOpacity", 0.9)) or 0.9
+    addon.mqtBg:SetColorTexture(0.08, 0.08, 0.12, math.max(0, math.min(1, a)))
+end
+
+function addon.ApplyBorderVisibility()
+    local show = addon.GetDB("showBorder", true)
+    if addon.mqtBorderT then addon.mqtBorderT:SetShown(show) end
+    if addon.mqtBorderB then addon.mqtBorderB:SetShown(show) end
+    if addon.mqtBorderL then addon.mqtBorderL:SetShown(show) end
+    if addon.mqtBorderR then addon.mqtBorderR:SetShown(show) end
+end
 
 local headerShadow = MQT:CreateFontString(nil, "BORDER")
 headerShadow:SetFontObject(addon.HeaderFont)

@@ -53,13 +53,25 @@ local function PopulateEntry(entry, questData)
     entry.titleText:SetWidth(textWidth)
     entry.titleShadow:SetWidth(textWidth)
 
-    entry.titleText:SetText(questData.title)
-    entry.titleShadow:SetText(questData.title)
+    local displayTitle = questData.title
+    if addon.GetDB("showCompletedCount", false) and questData.objectives and #questData.objectives > 0 then
+        local done, total = 0, #questData.objectives
+        for _, o in ipairs(questData.objectives) do if o.finished then done = done + 1 end end
+        displayTitle = ("%s (%d/%d)"):format(questData.title, done, total)
+    end
+    if addon.GetDB("showQuestLevel", false) and questData.level then
+        displayTitle = ("%s [L%d]"):format(displayTitle, questData.level)
+    end
+    entry.titleText:SetText(displayTitle)
+    entry.titleShadow:SetText(displayTitle)
     local c = questData.color
     if questData.isDungeonQuest and not questData.isTracked then
         c = { c[1] * 0.65, c[2] * 0.65, c[3] * 0.65 }
+    elseif addon.GetDB("dimNonSuperTracked", false) and not questData.isSuperTracked then
+        c = { c[1] * 0.60, c[2] * 0.60, c[3] * 0.60 }
     end
     entry.titleText:SetTextColor(c[1], c[2], c[3], 1)
+    entry._savedColor = nil
 
     local rawHighlight = addon.GetDB("activeQuestHighlight", "bar-left")
     -- Migrate legacy value
@@ -144,12 +156,12 @@ local function PopulateEntry(entry, questData)
         if not zoneColor or #zoneColor < 3 then zoneColor = addon.ZONE_COLOR end
         entry.zoneText:SetTextColor(zoneColor[1], zoneColor[2], zoneColor[3], 1)
         entry.zoneText:ClearAllPoints()
-        entry.zoneText:SetPoint("TOPLEFT", entry.titleText, "BOTTOMLEFT", addon.OBJ_INDENT, -addon.OBJ_SPACING)
+        entry.zoneText:SetPoint("TOPLEFT", entry.titleText, "BOTTOMLEFT", addon.GetObjIndent(), -addon.GetObjSpacing())
         entry.zoneText:Show()
         entry.zoneShadow:Show()
         local zoneH = entry.zoneText:GetStringHeight()
         if not zoneH or zoneH < 1 then zoneH = addon.ZONE_SIZE + 2 end
-        totalH = totalH + addon.OBJ_SPACING + zoneH
+        totalH = totalH + addon.GetObjSpacing() + zoneH
         prevAnchor = entry.zoneText
     else
         entry.zoneText:Hide()
@@ -157,8 +169,9 @@ local function PopulateEntry(entry, questData)
     end
 
     local shownObjs  = 0
-    local objTextWidth = textWidth - addon.OBJ_INDENT
-    if objTextWidth < 1 then objTextWidth = addon.GetPanelWidth() - addon.PADDING * 2 - addon.OBJ_INDENT - (addon.CONTENT_RIGHT_PADDING or 0) end
+    local objIndent = addon.GetObjIndent()
+    local objTextWidth = textWidth - objIndent
+    if objTextWidth < 1 then objTextWidth = addon.GetPanelWidth() - addon.PADDING * 2 - objIndent - (addon.CONTENT_RIGHT_PADDING or 0) end
 
     local objColor = addon.GetDB("objectiveColor", nil)
     if not objColor or #objColor < 3 then objColor = c end
@@ -173,8 +186,12 @@ local function PopulateEntry(entry, questData)
         obj.shadow:SetWidth(objTextWidth)
 
         if oData then
-            obj.text:SetText(oData.text or "")
-            obj.shadow:SetText(oData.text or "")
+            local objText = oData.text or ""
+            if addon.GetDB("showObjectiveNumbers", false) then
+                objText = ("%d. %s"):format(j, objText)
+            end
+            obj.text:SetText(objText)
+            obj.shadow:SetText(objText)
 
             if oData.finished then
                 obj.text:SetTextColor(doneColor[1], doneColor[2], doneColor[3], 1)
@@ -183,14 +200,14 @@ local function PopulateEntry(entry, questData)
             end
 
             obj.text:ClearAllPoints()
-            local indent = (shownObjs == 0 and prevAnchor == entry.titleText) and addon.OBJ_INDENT or 0
-            obj.text:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", indent, -addon.OBJ_SPACING)
+            local indent = (shownObjs == 0 and prevAnchor == entry.titleText) and objIndent or 0
+            obj.text:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", indent, -addon.GetObjSpacing())
             obj.text:Show()
             obj.shadow:Show()
 
             local objH = obj.text:GetStringHeight()
             if not objH or objH < 1 then objH = addon.OBJ_SIZE + 2 end
-            totalH = totalH + addon.OBJ_SPACING + objH
+            totalH = totalH + addon.GetObjSpacing() + objH
 
             prevAnchor = obj.text
             shownObjs  = shownObjs + 1
@@ -202,17 +219,18 @@ local function PopulateEntry(entry, questData)
 
     if questData.isComplete and shownObjs == 0 then
         local obj = entry.objectives[1]
-        obj.text:SetText("Ready to turn in")
-        obj.shadow:SetText("Ready to turn in")
+        local turnInText = addon.GetDB("showObjectiveNumbers", false) and "1. Ready to turn in" or "Ready to turn in"
+        obj.text:SetText(turnInText)
+        obj.shadow:SetText(turnInText)
         obj.text:SetTextColor(doneColor[1], doneColor[2], doneColor[3], 1)
         obj.text:ClearAllPoints()
-        local turnInIndent = (prevAnchor == entry.titleText) and addon.OBJ_INDENT or 0
-        obj.text:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", turnInIndent, -addon.OBJ_SPACING)
+        local turnInIndent = (prevAnchor == entry.titleText) and objIndent or 0
+        obj.text:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", turnInIndent, -addon.GetObjSpacing())
         obj.text:Show()
         obj.shadow:Show()
         local objH = obj.text:GetStringHeight()
         if not objH or objH < 1 then objH = addon.OBJ_SIZE + 2 end
-        totalH = totalH + addon.OBJ_SPACING + objH
+        totalH = totalH + addon.GetObjSpacing() + objH
     end
 
     entry.entryHeight = totalH
@@ -633,7 +651,7 @@ local function FullLayout()
                     entry:ClearAllPoints()
                     entry:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", addon.PADDING + addon.ICON_COLUMN_WIDTH, yOff)
                     entry:Show()
-                    yOff = yOff - entry.entryHeight - addon.TITLE_SPACING
+                    yOff = yOff - entry.entryHeight - addon.GetTitleSpacing()
                 end
             end
         end

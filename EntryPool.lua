@@ -247,7 +247,7 @@ local function ApplyTypography()
 
     local shadowOx = tonumber(addon.GetDB("shadowOffsetX", 2)) or 2
     local shadowOy = tonumber(addon.GetDB("shadowOffsetY", -2)) or -2
-    local shadowA  = tonumber(addon.GetDB("shadowAlpha", 0.8)) or 0.8
+    local shadowA  = addon.GetDB("showTextShadow", true) and (tonumber(addon.GetDB("shadowAlpha", 0.8)) or 0.8) or 0
 
     addon.headerShadow:SetTextColor(0, 0, 0, shadowA)
     addon.headerShadow:SetPoint("CENTER", addon.headerText, "CENTER", shadowOx, shadowOy)
@@ -290,8 +290,9 @@ local function ApplyDimensions()
         e.titleText:SetWidth(textW)
         for j = 1, addon.MAX_OBJECTIVES do
             local obj = e.objectives[j]
-            obj.shadow:SetWidth(textW - addon.OBJ_INDENT)
-            obj.text:SetWidth(textW - addon.OBJ_INDENT)
+            local objIndent = addon.GetObjIndent and addon.GetObjIndent() or addon.OBJ_INDENT
+            obj.shadow:SetWidth(textW - objIndent)
+            obj.text:SetWidth(textW - objIndent)
         end
     end
     for i = 1, addon.SECTION_POOL_SIZE do

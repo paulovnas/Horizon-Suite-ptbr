@@ -189,6 +189,18 @@ local function ReadTrackedQuests()
             end
         end
 
+        local questLevel
+        if logIndex then
+            if C_QuestLog.GetInfo then
+                local ok, info = pcall(C_QuestLog.GetInfo, logIndex)
+                if ok and info and info.level then questLevel = info.level end
+            end
+            if not questLevel and GetQuestLogTitle then
+                local ok, _, level = pcall(GetQuestLogTitle, logIndex)
+                if ok and level then questLevel = level end
+            end
+        end
+
         local questTypeAtlas = GetQuestTypeAtlas(questID, category)
 
         quests[#quests + 1] = {
@@ -208,6 +220,7 @@ local function ReadTrackedQuests()
             questTypeAtlas = questTypeAtlas,
             isDungeonQuest = isDungeonQuest,
             isTracked      = isTracked,
+            level          = questLevel,
         }
     end
 

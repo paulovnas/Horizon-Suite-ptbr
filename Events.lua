@@ -275,6 +275,8 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
             A.RestoreSavedPosition()
             A.ApplyTypography()
             A.ApplyDimensions()
+            if A.ApplyBackdropOpacity then A.ApplyBackdropOpacity() end
+            if A.ApplyBorderVisibility then A.ApplyBorderVisibility() end
             if HorizonSuiteDB and HorizonSuiteDB.collapsed then
                 A.collapsed = true
                 A.chevron:SetText("+")
