@@ -147,7 +147,7 @@ for i = 2, #tabFrames do tabFrames[i]:Hide() end
 local versionLabel = sidebar:CreateFontString(nil, "OVERLAY")
 versionLabel:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.SectionSize or 10, "OUTLINE")
 SetTextColor(versionLabel, Def.TextColorSection)
-versionLabel:SetText("v0.6")
+versionLabel:SetText("v0.6.5")
 versionLabel:SetPoint("BOTTOMLEFT", sidebar, "BOTTOMLEFT", 8, 8)
 
 -- ---------------------------------------------------------------------------

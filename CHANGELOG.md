@@ -6,17 +6,29 @@ All notable changes to Horizon Suite - Focus are documented here.
 
 ## [Unreleased]
 
+(No changes yet.)
+
+---
+
+## [0.6.5] – 2025-02-10
+
 ### New Features
 
 - **Hide in combat** — New option in General (Combat section): when enabled, the tracker panel and floating quest item button are hidden while in combat. When combat ends, visibility is restored according to your existing settings (instance visibility, collapsed state, quest content). When **Animations** is enabled, the tracker and floating button fade out over ~0.2s on entering combat and fade in on leaving combat.
+
+- **Focus category order** — The order of categories in the Focus list (Campaign, World Quests, Rares, etc.) can now be customised. In the options popout (Appearance), reorder categories via drag-and-drop; the new order is saved and used for section headers and section header colors. Use "Reset order" to restore the default order.
+
+### Improvements
+
+- **Settings panel** — The options/settings UI has been updated for clearer layout and easier navigation.
+
+- **New settings** — A range of new options have been added across General, Appearance, and other sections so you can tailor the tracker and behaviour to your preference.
 
 ---
 
 ## [0.6] – 2025-02-09
 
 ### New Features
-
-- **Focus category order** — In the options popout (Appearance), you can reorder the categories in the Focus list via drag-and-drop. Order is saved and used for section headers and section header colors. Use "Reset order" to restore the default order.
 
 - **World quest tracking** — World quests in your current zone now appear in the tracker automatically, using both `C_QuestLog` and `C_TaskQuest` data. No need to track every WQ manually.
 
