@@ -535,7 +535,7 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
 
     elseif event == "QUEST_WATCH_LIST_CHANGED" then
         local questID, added = ...
-        if questID and C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(questID) then
+        if questID and A.IsQuestWorldQuest and A.IsQuestWorldQuest(questID) then
             if not A.recentlyUntrackedWorldQuests then A.recentlyUntrackedWorldQuests = {} end
             if added then
                 A.recentlyUntrackedWorldQuests[questID] = nil

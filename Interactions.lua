@@ -49,7 +49,7 @@ for i = 1, addon.POOL_SIZE do
             end
             if not self.questID then return end
 
-            local isWorldQuest = C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(self.questID)
+            local isWorldQuest = addon.IsQuestWorldQuest and addon.IsQuestWorldQuest(self.questID)
             -- World quests: left-click = set active (super-track) only; position does not change. Shift+click = add to watch list for other zones.
             if isWorldQuest then
                 if IsShiftKeyDown() and C_QuestLog.AddWorldQuestWatch then
@@ -129,7 +129,7 @@ for i = 1, addon.POOL_SIZE do
                 else
                     self._lastRightClickTime = now
                     self._lastRightClickQuest = self.questID
-                    if C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(self.questID) and addon.RemoveWorldQuestWatch then
+                    if addon.IsQuestWorldQuest and addon.IsQuestWorldQuest(self.questID) and addon.RemoveWorldQuestWatch then
                         addon.RemoveWorldQuestWatch(self.questID)
                     elseif C_QuestLog.RemoveQuestWatch then
                         C_QuestLog.RemoveQuestWatch(self.questID)

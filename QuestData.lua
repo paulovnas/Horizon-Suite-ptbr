@@ -23,29 +23,59 @@ addon.lastMapCheckTime   = 0
 addon.combatFadeState   = nil   -- "out" = fading out for combat, "in" = fading in after combat
 addon.combatFadeTime    = 0
 
+-- Single source of truth: QuestUtils_IsQuestWorldQuest (Blizzard) or C_QuestLog.IsWorldQuest.
+local function IsQuestWorldQuest(questID)
+    if not questID or questID <= 0 then return false end
+    if _G.QuestUtils_IsQuestWorldQuest and _G.QuestUtils_IsQuestWorldQuest(questID) then return true end
+    if C_QuestLog and C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(questID) then return true end
+    return false
+end
+
+-- Frequency from quest log (Daily/Weekly). Returns nil if quest not in log or API unavailable.
+local function GetQuestFrequency(questID)
+    if not questID or not C_QuestLog or not C_QuestLog.GetLogIndexForQuestID then return nil end
+    local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
+    if not logIndex then return nil end
+    if GetQuestLogTitle then
+        local ok, _, _, _, _, _, frequency = pcall(GetQuestLogTitle, logIndex)
+        if ok and frequency ~= nil then return frequency end
+    end
+    if C_QuestLog.GetInfo then
+        local ok, info = pcall(C_QuestLog.GetInfo, logIndex)
+        if ok and info and info.frequency ~= nil then return info.frequency end
+    end
+    return nil
+end
+
+-- Single source of truth: C_QuestInfoSystem.GetQuestClassification + frequency + IsQuestWorldQuest.
+-- Order: COMPLETE (state) -> WORLD (WQ) -> Classification (Calling, Campaign, Recurring, Important, Legendary) -> Frequency (Weekly) -> DEFAULT.
+-- Meta and Questline are ignored and fall through to frequency/DEFAULT.
 local function GetQuestCategory(questID)
-    if C_QuestLog.IsComplete(questID) then
+    if not questID or questID <= 0 then return "DEFAULT" end
+    if C_QuestLog and C_QuestLog.IsComplete and C_QuestLog.IsComplete(questID) then
         return "COMPLETE"
     end
-    if C_QuestLog.IsLegendaryQuest and C_QuestLog.IsLegendaryQuest(questID) then
-        return "LEGENDARY"
-    end
-    if C_QuestLog.IsImportantQuest and C_QuestLog.IsImportantQuest(questID) then
-        return "IMPORTANT"
-    end
-    if C_TaskQuest and C_TaskQuest.IsActive and C_TaskQuest.IsActive(questID) then
+    if IsQuestWorldQuest(questID) then
         return "WORLD"
     end
-    if C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(questID) then
-        return "WORLD"
-    end
-    if C_QuestLog.IsQuestCalling and C_QuestLog.IsQuestCalling(questID) then
-        return "CALLING"
-    end
+    -- Classification (single source): Normal, Important, Legendary, Campaign, Calling, Meta, Recurring, Questline.
     if C_QuestInfoSystem and C_QuestInfoSystem.GetQuestClassification then
         local qc = C_QuestInfoSystem.GetQuestClassification(questID)
-        if qc == Enum.QuestClassification.Campaign then
-            return "CAMPAIGN"
+        if qc == Enum.QuestClassification.Calling then return "CALLING" end
+        if qc == Enum.QuestClassification.Campaign then return "CAMPAIGN" end
+        if qc == Enum.QuestClassification.Recurring then return "WEEKLY" end
+        if qc == Enum.QuestClassification.Important then return "IMPORTANT" end
+        if qc == Enum.QuestClassification.Legendary then return "LEGENDARY" end
+        -- Meta, Questline, Normal: fall through to frequency then DEFAULT
+    end
+    -- Frequency (when in log): Weekly -> WEEKLY; Daily stays DEFAULT (no DAILY section).
+    local freq = GetQuestFrequency(questID)
+    if freq ~= nil then
+        if Enum.QuestFrequency and Enum.QuestFrequency.Weekly and freq == Enum.QuestFrequency.Weekly then
+            return "WEEKLY"
+        end
+        if freq == 2 or (LE_QUEST_FREQUENCY_WEEKLY and freq == LE_QUEST_FREQUENCY_WEEKLY) then
+            return "WEEKLY"
         end
     end
     return "DEFAULT"
@@ -66,7 +96,7 @@ local function GetSectionColor(groupKey)
         return HorizonDB.sectionColors[groupKey]
     end
     local questCategory = (groupKey == "RARES") and "RARE" or groupKey
-    if questCategory == "CAMPAIGN" or questCategory == "LEGENDARY" or questCategory == "WORLD" or questCategory == "COMPLETE" or questCategory == "RARE" or questCategory == "DEFAULT" then
+    if questCategory == "CAMPAIGN" or questCategory == "LEGENDARY" or questCategory == "WORLD" or questCategory == "WEEKLY" or questCategory == "COMPLETE" or questCategory == "RARE" or questCategory == "DEFAULT" then
         return GetQuestColor(questCategory)
     end
     return addon.SECTION_COLORS[groupKey] or addon.SECTION_COLORS.DEFAULT
@@ -95,6 +125,7 @@ local function GetQuestTypeAtlas(questID, category)
     if category == "LEGENDARY" then return "UI-QuestPoiLegendary-QuestBang" end
     if category == "CALLING" then return "Quest-DailyCampaign-Available" end
     if category == "WORLD" then return "quest-recurring-available" end
+    if category == "WEEKLY" then return "quest-recurring-available" end
     if C_QuestLog.GetQuestTagInfo then
         local tagInfo = C_QuestLog.GetQuestTagInfo(questID)
         if tagInfo and tagInfo.tagID then
@@ -236,7 +267,7 @@ local function ReadTrackedQuests()
             -- When \"Filter by current zone\" is enabled, we *still* want tracked WORLD quests
             -- to remain visible while you're in the broader zone (even if the child map
             -- changes and they momentarily fall out of nearbySet).
-            local isWorld = C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(questID)
+            local isWorld = IsQuestWorldQuest(questID)
             if (not filterByZone or nearbySet[questID] or isWorld) then
                 addQuest(questID)
             end
@@ -250,9 +281,9 @@ local function ReadTrackedQuests()
         end
     end
 
-    if IsInMythicDungeon() and C_QuestLog.IsWorldQuest then
+    if IsInMythicDungeon() then
         for questID, _ in pairs(nearbySet) do
-            if not seen[questID] and not C_QuestLog.IsWorldQuest(questID) then
+            if not seen[questID] and not IsQuestWorldQuest(questID) then
                 if not (C_QuestLog.IsQuestCalling and C_QuestLog.IsQuestCalling(questID)) then
                     addQuest(questID, { isDungeonQuest = true, isTracked = false })
                 end
@@ -261,7 +292,7 @@ local function ReadTrackedQuests()
     end
 
     -- Always show super-tracked world quest in the list even if not on current map or watch list (e.g. super-tracked from map only).
-    if superTracked and superTracked > 0 and not seen[superTracked] and C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(superTracked) then
+    if superTracked and superTracked > 0 and not seen[superTracked] and IsQuestWorldQuest(superTracked) then
         addQuest(superTracked, { isTracked = true })
     end
 
@@ -300,6 +331,8 @@ local function SortAndGroupQuests(quests)
     return result
 end
 
+addon.IsQuestWorldQuest   = IsQuestWorldQuest
+addon.GetQuestFrequency   = GetQuestFrequency
 addon.GetQuestCategory   = GetQuestCategory
 addon.GetQuestColor      = GetQuestColor
 addon.GetSectionColor    = GetSectionColor

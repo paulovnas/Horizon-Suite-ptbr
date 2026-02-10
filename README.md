@@ -34,9 +34,10 @@ The logic that drives your efficiency.
 The aesthetic that defines your interface.
 
 **Visual Hierarchy**
-- **Quest Type Icons** - Distinct, high-fidelity icons for Campaign, World Quests, Legendaries, and Callings for instant identification.
+- **Quest Type Icons** - Distinct, high-fidelity icons for Campaign, World Quests, Weekly (recurring), Legendaries, and Callings for instant identification.
+- **Weekly Quests** - Recurring/weekly quests (e.g. PvP weeklies) appear in their own "WEEKLY QUESTS" section, using Blizzard's quest classification so they are no longer mixed with World Quests.
 - **Turn-in Highlights** - Quests "Ready for Turn-in" receive a unique visual highlight, giving you a clear signal that it's time to head back to the hub.
-- **Category Collapsing** - Granular control over your screen space. Collapse specific sections (like World Quests) while keeping your main Campaign visible.
+- **Category Collapsing** - Granular control over your screen space. Collapse specific sections (like World Quests or Weekly Quests) while keeping your main Campaign visible.
 
 **Total Customization**
 - **The Color Matrix** - Define your own hex-code reality. Customize the colors for every quest category and objective state via `/horizon options`.

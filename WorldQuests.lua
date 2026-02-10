@@ -142,24 +142,25 @@ local function GetWorldAndCallingQuestIDsToShow(nearbySet, taskQuestOnlySet)
             end
         end
     end
-    if nearbySet and C_QuestLog.IsWorldQuest then
+    if nearbySet and (addon.IsQuestWorldQuest or C_QuestLog.IsWorldQuest) then
         local recentlyUntracked = addon.recentlyUntrackedWorldQuests
         local ids = {}
         for questID, _ in pairs(nearbySet) do
             if not seen[questID] and (not recentlyUntracked or not recentlyUntracked[questID]) then
-                local isWorld = C_QuestLog.IsWorldQuest(questID)
+                local isWorld = addon.IsQuestWorldQuest and addon.IsQuestWorldQuest(questID) or (C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(questID))
                 local isCalling = C_QuestLog.IsQuestCalling and C_QuestLog.IsQuestCalling(questID)
                 local isActiveTask = C_TaskQuest and C_TaskQuest.IsActive and C_TaskQuest.IsActive(questID)
                 local fromTaskQuestMap = taskQuestOnlySet and taskQuestOnlySet[questID]
                 local inLog = C_QuestLog.GetLogIndexForQuestID and C_QuestLog.GetLogIndexForQuestID(questID)
-                -- Callings: always include. World/task: only if currently active or in quest log (avoids deprecated/expired WQs).
-                if isCalling then
-                    ids[#ids + 1] = questID
-                elseif isActiveTask then
+                local qc = C_QuestInfoSystem and C_QuestInfoSystem.GetQuestClassification and C_QuestInfoSystem.GetQuestClassification(questID)
+                local isCampaign = (qc == Enum.QuestClassification.Campaign)
+                local isRecurring = (qc == Enum.QuestClassification.Recurring)
+                -- Only add actual World Quests or Callings to the WORLD list (no IsActive/fromTaskQuestMap-only).
+                if isCampaign or isRecurring then
+                    if isCalling then ids[#ids + 1] = questID end
+                elseif isCalling then
                     ids[#ids + 1] = questID
                 elseif isWorld and (inLog or isActiveTask) then
-                    ids[#ids + 1] = questID
-                elseif fromTaskQuestMap and isActiveTask then
                     ids[#ids + 1] = questID
                 end
             end
@@ -170,11 +171,14 @@ local function GetWorldAndCallingQuestIDsToShow(nearbySet, taskQuestOnlySet)
             if C_TaskQuest and C_TaskQuest.RequestPreloadRewardData then
                 C_TaskQuest.RequestPreloadRewardData(questID)
             end
-            local isWorld = C_QuestLog.IsWorldQuest(questID)
+            local isWorld = addon.IsQuestWorldQuest and addon.IsQuestWorldQuest(questID) or (C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(questID))
             local isCalling = C_QuestLog.IsQuestCalling and C_QuestLog.IsQuestCalling(questID)
             local fromTaskQuestMap = taskQuestOnlySet and taskQuestOnlySet[questID]
-            local isImportant = C_QuestLog.IsImportantQuest and C_QuestLog.IsImportantQuest(questID)
-            local forceCategory = (fromTaskQuestMap and not isWorld and not isCalling and not isImportant) and "WORLD" or nil
+            local qc = C_QuestInfoSystem and C_QuestInfoSystem.GetQuestClassification and C_QuestInfoSystem.GetQuestClassification(questID)
+            local isCampaign = (qc == Enum.QuestClassification.Campaign)
+            local isRecurring = (qc == Enum.QuestClassification.Recurring)
+            -- Only force WORLD for task-map quests that are not already world/calling/campaign/recurring (should not happen now we only add WQ/Calling).
+            local forceCategory = (fromTaskQuestMap and not isWorld and not isCalling and not isCampaign and not isRecurring) and "WORLD" or nil
             out[#out + 1] = { questID = questID, isTracked = false, forceCategory = forceCategory }
         end
     end
@@ -183,7 +187,7 @@ end
 
 local function RemoveWorldQuestWatch(questID)
     if not questID then return end
-    if C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(questID) and C_QuestLog.RemoveWorldQuestWatch then
+    if (addon.IsQuestWorldQuest and addon.IsQuestWorldQuest(questID)) and C_QuestLog.RemoveWorldQuestWatch then
         C_QuestLog.RemoveWorldQuestWatch(questID)
     end
 end
