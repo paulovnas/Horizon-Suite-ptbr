@@ -96,3 +96,5 @@ A clean, modern-style replacement for the default World of Warcraft objective tr
 ## License
 
 MIT License. See [LICENSE](LICENSE).
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/T6T71TX1Y1)
