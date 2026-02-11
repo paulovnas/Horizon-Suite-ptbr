@@ -146,6 +146,10 @@ function addon.ParseTaskPOIs(taskPOIs, outSet)
     return count
 end
 
+-- Resolve C_TaskQuest world-quest-list API once at load time.
+-- Newer builds expose GetQuestsForPlayerByMapID; older builds have GetQuestsOnMap.
+addon.GetTaskQuestsForMap = C_TaskQuest and (C_TaskQuest.GetQuestsForPlayerByMapID or C_TaskQuest.GetQuestsOnMap) or nil
+
 --- Open the quest details view for a quest ID, mirroring Blizzard's behavior.
 -- Used by click handlers so the logic lives in one place.
 function addon.OpenQuestDetails(questID)

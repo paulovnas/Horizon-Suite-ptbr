@@ -59,8 +59,8 @@ local function GetNearbyQuestIDs()
                 end
             end
         end
-        if C_TaskQuest and C_TaskQuest.GetQuestsForPlayerByMapID then
-            local taskPOIs = C_TaskQuest.GetQuestsForPlayerByMapID(checkMapID, checkMapID) or C_TaskQuest.GetQuestsForPlayerByMapID(checkMapID)
+        if addon.GetTaskQuestsForMap then
+            local taskPOIs = addon.GetTaskQuestsForMap(checkMapID, checkMapID) or addon.GetTaskQuestsForMap(checkMapID)
             if taskPOIs then
                 addon.ParseTaskPOIs(taskPOIs, nearbySet)
                 addon.ParseTaskPOIs(taskPOIs, taskQuestOnlySet)
