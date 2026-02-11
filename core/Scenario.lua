@@ -1,0 +1,272 @@
+--[[
+    Horizon Suite - Focus - Scenario Events
+    C_Scenario / C_ScenarioInfo data provider for main and bonus steps.
+]]
+
+local addon = _G.HorizonSuite
+
+local function ScenarioDebug(fmt, ...)
+    if addon.GetDB and addon.GetDB("scenarioDebug", false) and addon.HSPrint then
+        addon.HSPrint("[Scenario] " .. (fmt and string.format(fmt, ...) or ""))
+    end
+end
+
+-- ============================================================================
+-- SCENARIO DATA PROVIDER
+-- ============================================================================
+
+--- Extract timerDuration and timerStartTime from criteria. startTime = GetTime() - elapsed.
+-- @return duration, startTime or nil, nil
+local function GetCriteriaTimerInfo(criteriaInfo)
+    if not criteriaInfo then return nil, nil end
+    local duration = criteriaInfo.duration
+    if not duration or duration <= 0 then return nil, nil end
+    local elapsed = criteriaInfo.elapsed
+    if elapsed == nil or type(elapsed) ~= "number" then return nil, nil end
+    if elapsed >= duration then return nil, nil end -- skip expired (KT-aligned)
+    local elapsedSeconds = math.max(0, math.min(elapsed, duration))
+    local startTime = GetTime() - elapsedSeconds
+    return duration, startTime
+end
+
+--- Get timerDuration, timerStartTime from quest APIs. For TaskQuest (mins only): duration = mins*60, startTime = GetTime().
+local function GetQuestTimerInfo(questID)
+    if not questID or type(questID) ~= "number" or questID <= 0 then return nil, nil end
+
+    -- C_QuestLog.GetTimeAllowed: timeTotal, timeElapsed -> startTime = GetTime() - timeElapsed
+    if C_QuestLog and C_QuestLog.GetTimeAllowed then
+        local ok, total, elapsed = pcall(C_QuestLog.GetTimeAllowed, questID)
+        if ok and total and elapsed and total > 0 and elapsed >= 0 then
+            local elapsedCapped = math.min(elapsed, total)
+            local startTime = GetTime() - elapsedCapped
+            return total, startTime
+        end
+    end
+
+    -- C_TaskQuest.GetQuestTimeLeftMinutes: mins remaining -> duration = mins*60, startTime = GetTime()
+    if C_TaskQuest and C_TaskQuest.GetQuestTimeLeftMinutes then
+        local ok, mins = pcall(C_TaskQuest.GetQuestTimeLeftMinutes, questID)
+        if ok and mins and mins > 0 then
+            local duration = mins * 60
+            local startTime = GetTime()
+            return duration, startTime
+        end
+    end
+
+    return nil, nil
+end
+
+local function IsScenarioActive()
+    if not C_Scenario then return false end
+    if C_Scenario.IsInScenario then
+        local okIn, inScenario = pcall(C_Scenario.IsInScenario)
+        if okIn and not inScenario then return false end
+    end
+
+    if C_Scenario.GetInfo then
+        local okInfo, name, currentStage = pcall(C_Scenario.GetInfo)
+        if okInfo and ((name and name ~= "") or (currentStage and currentStage > 0)) then
+            return true
+        end
+    end
+
+    if C_Scenario.GetStepInfo then
+        local sOk, stageName = pcall(C_Scenario.GetStepInfo)
+        if sOk and stageName and stageName ~= "" then
+            return true
+        end
+    end
+    if C_Scenario.GetBonusSteps then
+        local bOk, bonusSteps = pcall(C_Scenario.GetBonusSteps)
+        if bOk and bonusSteps and #bonusSteps > 0 then
+            return true
+        end
+    end
+    return false
+end
+
+--- Build tracker rows from active scenario main step and bonus steps.
+-- @return table Array of normalized entry tables for the tracker
+local function ReadScenarioEntries()
+    local out = {}
+    if not addon.GetDB("showScenarioEvents", true) then return out end
+    if not C_Scenario then return out end
+    if not IsScenarioActive() then return out end
+
+    local scenarioColor = addon.GetQuestColor and addon.GetQuestColor("SCENARIO") or addon.QUEST_COLORS and addon.QUEST_COLORS.SCENARIO or { 0.38, 0.52, 0.88 }
+
+    -- Main step
+    if C_Scenario.GetStepInfo and C_ScenarioInfo and C_ScenarioInfo.GetCriteriaInfo then
+        local t = { pcall(C_Scenario.GetStepInfo) }
+        local ok = t[1]
+        local stageName = t[2]
+        -- GetStepInfo return order may vary; try fallbacks (3: numCriteria at 4 or 3 or 5).
+        local numCriteria = t[4] or t[3] or t[5]
+        local rawReward = t[11] or t[10] or t[12]
+        local rewardQuestID = (type(rawReward) == "number" and rawReward > 0) and rawReward or nil
+        if ScenarioDebug then
+            ScenarioDebug("GetStepInfo: ok=%s stageName=%s numCriteria=%s rewardQuestID=%s",
+                tostring(ok), tostring(stageName), tostring(numCriteria), tostring(rewardQuestID))
+            for i = 1, math.min(#t, 15) do ScenarioDebug("  t[%d]=%s", i, tostring(t[i])) end
+        end
+        if ok and stageName and stageName ~= "" then
+            local objectives = {}
+            local timerDuration, timerStartTime = nil, nil
+
+            -- Try 0-based and 1..numCriteria+3 to catch off-by-one and extra timer-only criteria (KT-aligned).
+            local maxIdx = math.max((numCriteria or 0), 1) + 3
+            for criteriaIndex = 0, maxIdx do
+                local cOk, criteriaInfo = pcall(C_ScenarioInfo.GetCriteriaInfo, criteriaIndex)
+                -- Option 5: Fallback to GetCriteriaInfoByStep(1, ci) for main step when GetCriteriaInfo returns nil.
+                if (not cOk or not criteriaInfo) and C_ScenarioInfo.GetCriteriaInfoByStep then
+                    cOk, criteriaInfo = pcall(C_ScenarioInfo.GetCriteriaInfoByStep, 1, criteriaIndex)
+                end
+                if cOk and criteriaInfo then
+                    local d, s = GetCriteriaTimerInfo(criteriaInfo)
+                    local hasTimer = (d and s) and not (criteriaInfo.failed or criteriaInfo.completed or criteriaInfo.complete)
+                    local text = (criteriaInfo.description and criteriaInfo.description ~= "") and criteriaInfo.description or (criteriaInfo.criteriaString or "")
+                    -- Option 4: Include timer-only criteria (no text) as standalone timer objectives.
+                    local obj = {
+                        text = text ~= "" and text or nil,
+                        finished = criteriaInfo.complete or criteriaInfo.completed or false,
+                        percent = (criteriaInfo.quantity and criteriaInfo.totalQuantity and criteriaInfo.totalQuantity > 0)
+                            and math.floor(100 * criteriaInfo.quantity / criteriaInfo.totalQuantity) or nil,
+                        timerDuration = hasTimer and d or nil,
+                        timerStartTime = hasTimer and s or nil,
+                    }
+                    objectives[#objectives + 1] = obj
+                    if hasTimer and (not timerDuration or not timerStartTime) then
+                        timerDuration, timerStartTime = d, s
+                    end
+                    if ScenarioDebug then
+                        ScenarioDebug("crit[%d] dur=%s elapsed=%s hasTimer=%s", criteriaIndex,
+                            tostring(criteriaInfo.duration), tostring(criteriaInfo.elapsed), tostring(hasTimer))
+                    end
+                end
+            end
+
+            if not timerDuration or not timerStartTime then
+                timerDuration, timerStartTime = GetQuestTimerInfo(rewardQuestID)
+                if ScenarioDebug then
+                    ScenarioDebug("Quest fallback: rewardQuestID=%s got timer=%s", tostring(rewardQuestID), (timerDuration and timerStartTime) and "yes" or "no")
+                end
+            end
+            if ScenarioDebug then
+                ScenarioDebug("main: objs=%d timers=%s entryTimer=%s", #objectives,
+                    timerDuration and "yes" or "no", (timerDuration and timerStartTime) and "yes" or "no")
+            end
+
+            out[#out + 1] = {
+                entryKey          = "scenario-main",
+                questID           = rewardQuestID,
+                title             = stageName,
+                objectives        = objectives,
+                color             = scenarioColor,
+                category          = "SCENARIO",
+                isComplete        = false,
+                isSuperTracked    = false,
+                isNearby          = true,
+                zoneName          = nil,
+                itemLink          = nil,
+                itemTexture       = nil,
+                isTracked         = true,
+                isScenarioMain    = true,
+                isScenarioBonus   = false,
+                scenarioStepIndex = nil,
+                rewardQuestID     = rewardQuestID,
+                timerDuration     = timerDuration,
+                timerStartTime    = timerStartTime,
+            }
+        end
+    end
+
+    -- Bonus steps
+    if C_Scenario.GetBonusSteps and C_Scenario.GetBonusStepRewardQuestID then
+        local ok, bonusSteps = pcall(C_Scenario.GetBonusSteps)
+        if ok and bonusSteps and #bonusSteps > 0 then
+            for _, stepInfo in ipairs(bonusSteps) do
+                local stepIndex = (type(stepInfo) == "table" and stepInfo.stepIndex) or (type(stepInfo) == "number" and stepInfo)
+                if stepIndex then
+                    local rOk, rewardQuestID = pcall(C_Scenario.GetBonusStepRewardQuestID, stepIndex)
+                    local bt = { pcall(C_Scenario.GetStepInfo, stepIndex) }
+                    local bOk = bt[1]
+                    local bonusTitle = bt[2]
+                    local bonusNumCriteria = bt[4] or bt[3] or bt[5]
+                    local rawBonus = bt[11] or bt[10] or bt[12]
+                    local bonusRewardQuestID = (type(rawBonus) == "number" and rawBonus > 0) and rawBonus or nil
+                    if ScenarioDebug then
+                        ScenarioDebug("Bonus step %d: title=%s numCriteria=%s rewardID=%s", stepIndex,
+                            tostring(bonusTitle), tostring(bonusNumCriteria), tostring(bonusRewardQuestID))
+                    end
+                    local title = (bOk and bonusTitle and bonusTitle ~= "") and bonusTitle
+                        or (type(stepInfo) == "table" and stepInfo.name and stepInfo.name ~= "" and stepInfo.name)
+                        or (rOk and rewardQuestID and C_QuestLog and C_QuestLog.GetTitleForQuestID and C_QuestLog.GetTitleForQuestID(rewardQuestID))
+                        or ("Bonus " .. tostring(stepIndex))
+                    local objectives = {}
+                    local timerDuration, timerStartTime = nil, nil
+
+                    if C_ScenarioInfo and C_ScenarioInfo.GetCriteriaInfoByStep then
+                        local maxCriteria = math.max((bonusNumCriteria and bonusNumCriteria > 0) and bonusNumCriteria or 10, 1) + 3
+                        for ci = 0, maxCriteria do
+                            local cOk, criteriaInfo = pcall(C_ScenarioInfo.GetCriteriaInfoByStep, stepIndex, ci)
+                            if cOk and criteriaInfo then
+                                local d, s = GetCriteriaTimerInfo(criteriaInfo)
+                                local hasTimer = (d and s) and not (criteriaInfo.failed or criteriaInfo.completed or criteriaInfo.complete)
+                                local text = (criteriaInfo.description and criteriaInfo.description ~= "") and criteriaInfo.description or (criteriaInfo.criteriaString or "")
+                                objectives[#objectives + 1] = {
+                                    text = text ~= "" and text or nil,
+                                    finished = criteriaInfo.complete or criteriaInfo.completed or false,
+                                    percent = (criteriaInfo.quantity and criteriaInfo.totalQuantity and criteriaInfo.totalQuantity > 0)
+                                        and math.floor(100 * criteriaInfo.quantity / criteriaInfo.totalQuantity) or nil,
+                                    timerDuration = hasTimer and d or nil,
+                                    timerStartTime = hasTimer and s or nil,
+                                }
+                                if hasTimer and (not timerDuration or not timerStartTime) then
+                                    timerDuration, timerStartTime = d, s
+                                end
+                                if ScenarioDebug then
+                                    ScenarioDebug("bonus[%d] crit[%d] dur=%s elapsed=%s hasTimer=%s", stepIndex, ci,
+                                        tostring(criteriaInfo.duration), tostring(criteriaInfo.elapsed), tostring(hasTimer))
+                                end
+                            end
+                        end
+                    end
+
+                    if not timerDuration or not timerStartTime then
+                        timerDuration, timerStartTime = GetQuestTimerInfo((bOk and bonusRewardQuestID) or (rOk and rewardQuestID))
+                        if ScenarioDebug then
+                            ScenarioDebug("Bonus step %d quest fallback: timer=%s", stepIndex, (timerDuration and timerStartTime) and "yes" or "no")
+                        end
+                    end
+
+                    out[#out + 1] = {
+                        entryKey          = "scenario-bonus-" .. tostring(stepIndex),
+                        questID           = nil,
+                        title             = title or ("Bonus " .. tostring(stepIndex)),
+                        objectives        = objectives,
+                        color             = scenarioColor,
+                        category          = "SCENARIO",
+                        isComplete        = false,
+                        isSuperTracked    = false,
+                        isNearby          = true,
+                        zoneName          = nil,
+                        itemLink          = nil,
+                        itemTexture       = nil,
+                        isTracked         = true,
+                        isScenarioMain    = false,
+                        isScenarioBonus   = true,
+                        scenarioStepIndex = stepIndex,
+                        rewardQuestID     = (bOk and bonusRewardQuestID) or (rOk and rewardQuestID) or nil,
+                        timerDuration     = timerDuration,
+                        timerStartTime    = timerStartTime,
+                    }
+                end
+            end
+        end
+    end
+
+    return out
+end
+
+addon.ReadScenarioEntries = ReadScenarioEntries
+addon.IsScenarioActive = IsScenarioActive

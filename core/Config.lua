@@ -43,6 +43,8 @@ addon.QUEST_TYPE_ICON_GAP  = 4
 addon.ICON_COLUMN_WIDTH    = addon.QUEST_TYPE_ICON_SIZE + addon.QUEST_TYPE_ICON_GAP
 addon.BAR_LEFT_OFFSET      = 9
 addon.TRACKED_OTHER_ZONE_ICON_SIZE = 12
+addon.WQ_TIMER_BAR_HEIGHT = 6
+addon.SCENARIO_TIMER_BAR_SLOTS = 5
 
 addon.SHADOW_OX       = 2
 addon.SHADOW_OY       = -2
@@ -73,6 +75,7 @@ addon.QUEST_COLORS = {
     CAMPAIGN  = { 1.00, 0.82, 0.20 },
     IMPORTANT = { 1.00, 0.45, 0.80 },  -- pink to match importantavailablequesticon
     LEGENDARY = { 1.00, 0.50, 0.00 },
+    SCENARIO  = { 0.38, 0.52, 0.88 },  -- deep blue: event/scenario steps (Twilight's Call etc.)
     WORLD     = { 0.60, 0.20, 1.00 },
     WEEKLY    = { 0.25, 0.88, 0.92 },  -- match quest-recurring-available icon (cyan)
     DAILY     = { 0.25, 0.88, 0.92 },  -- match quest-recurring-available icon (cyan)
@@ -106,6 +109,7 @@ addon.SectionFont:SetFont(addon.FONT_PATH, addon.SECTION_SIZE, "OUTLINE")
 
 addon.SECTION_LABELS = {
     DUNGEON   = "IN THIS DUNGEON",
+    SCENARIO  = "SCENARIO EVENTS",
     AVAILABLE = "AVAILABLE IN ZONE",
     NEARBY    = "CURRENT ZONE",
     CAMPAIGN  = "CAMPAIGN",
@@ -121,6 +125,7 @@ addon.SECTION_LABELS = {
 
 addon.SECTION_COLORS = {
     DUNGEON   = { 0.60, 0.40, 1.00 },
+    SCENARIO  = { 0.38, 0.52, 0.88 },  -- deep blue: event/scenario steps
     AVAILABLE = { 0.25, 0.88, 0.92 },  -- cyan/teal (available to pick up)
     NEARBY    = { 0.35, 0.75, 0.98 },  -- sky blue (accepted, in zone)
     CAMPAIGN  = { 1.00, 0.82, 0.20 },
@@ -134,11 +139,11 @@ addon.SECTION_COLORS = {
     COMPLETE  = { 0.20, 1.00, 0.40 },
 }
 
-addon.GROUP_ORDER = { "DUNGEON", "NEARBY", "COMPLETE", "WORLD", "WEEKLY", "DAILY", "RARES", "AVAILABLE", "CAMPAIGN", "IMPORTANT", "LEGENDARY", "DEFAULT" }
+addon.GROUP_ORDER = { "SCENARIO", "DUNGEON", "NEARBY", "COMPLETE", "WORLD", "WEEKLY", "DAILY", "RARES", "AVAILABLE", "CAMPAIGN", "IMPORTANT", "LEGENDARY", "DEFAULT" }
 
 -- Category keys (enum-style) for consistent string usage across modules.
 addon.CATEGORY_KEYS = {
-    DUNGEON = "DUNGEON", AVAILABLE = "AVAILABLE", NEARBY = "NEARBY", CAMPAIGN = "CAMPAIGN",
+    DUNGEON = "DUNGEON", SCENARIO = "SCENARIO", AVAILABLE = "AVAILABLE", NEARBY = "NEARBY", CAMPAIGN = "CAMPAIGN",
     IMPORTANT = "IMPORTANT", LEGENDARY = "LEGENDARY", WORLD = "WORLD", WEEKLY = "WEEKLY",
     DAILY = "DAILY", RARES = "RARES", RARE = "RARE", DEFAULT = "DEFAULT", COMPLETE = "COMPLETE",
     CALLING = "CALLING",
@@ -154,6 +159,7 @@ addon.ATLAS_QUEST_PVP = "questlog-questtypeicon-pvp"
 
 addon.CATEGORY_TO_GROUP = {
     COMPLETE  = "COMPLETE",
+    SCENARIO  = "SCENARIO",
     LEGENDARY = "LEGENDARY",
     IMPORTANT = "IMPORTANT",
     CAMPAIGN  = "CAMPAIGN",

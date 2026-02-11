@@ -180,6 +180,12 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
             HSPrint("Edit panel not loaded.")
         end
 
+    elseif cmd == "scendebug" then
+        local v = not (addon.GetDB and addon.GetDB("scenarioDebug", false))
+        if addon.SetDB then addon.SetDB("scenarioDebug", v) end
+        HSPrint("Scenario debug logging: " .. (v and "on" or "off"))
+        if addon.ScheduleRefresh then addon.ScheduleRefresh() end
+
     else
         HSPrint("Commands:")
         HSPrint("  /horizon            - Show this help")
@@ -191,6 +197,7 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
         HSPrint("  /horizon test       - Show with test data")
         HSPrint("  /horizon reset      - Reset to live data")
         HSPrint("  /horizon resetpos   - Reset panel to default position")
+        HSPrint("  /horizon scendebug  - Toggle scenario timer debug logging")
         HSPrint("")
         HSPrint("  Click the header row to collapse / expand.")
         HSPrint("  Scroll with mouse wheel when content overflows.")

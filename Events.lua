@@ -28,6 +28,12 @@ eventFrame:RegisterEvent("VIGNETTES_UPDATED")
 eventFrame:RegisterEvent("ADDON_LOADED")
 eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
 eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+eventFrame:RegisterEvent("SCENARIO_UPDATE")
+eventFrame:RegisterEvent("SCENARIO_CRITERIA_UPDATE")
+eventFrame:RegisterEvent("SCENARIO_CRITERIA_SHOW_STATE_UPDATE")
+eventFrame:RegisterEvent("SCENARIO_COMPLETED")
+eventFrame:RegisterEvent("SCENARIO_SPELL_UPDATE")
+eventFrame:RegisterEvent("CRITERIA_COMPLETE")
 
 local function ScheduleRefresh()
     if addon.refreshPending then return end
@@ -293,6 +299,27 @@ local function StartMapCacheHeartbeat()
     addon._mapCacheHeartbeat = f
 end
 
+local function StartScenarioTimerHeartbeat()
+    if addon._scenarioTimerHeartbeat then return end
+    local f = CreateFrame("Frame", nil, UIParent)
+    f:SetSize(1, 1)
+    f:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", -1000, -1000)
+    f:Show()
+    f._elapsed = 0
+    f:SetScript("OnUpdate", function(self, elapsed)
+        if not addon.enabled or addon.collapsed then return end
+        if addon.ShouldHideInCombat and addon.ShouldHideInCombat() then return end
+        if not addon.GetDB("showScenarioEvents", true) then return end
+        self._elapsed = (self._elapsed or 0) + elapsed
+        if self._elapsed < 5 then return end
+        self._elapsed = 0
+        if addon.IsScenarioActive and addon.IsScenarioActive() then
+            ScheduleRefresh()
+        end
+    end)
+    addon._scenarioTimerHeartbeat = f
+end
+
 -- Mirror WQT: OnMapChanged runs immediately, then 0.5s delayed (like WQT's check_for_quests_on_unknown_map).
 local function OnMapChanged()
     RunWQTMapCache(false)
@@ -332,6 +359,7 @@ local function OnAddonLoaded(addonName)
                 addon.currentHeight = addon.GetCollapsedHeight()
             end
             StartMapCacheHeartbeat()
+            StartScenarioTimerHeartbeat()
             CreateWQMapIndicator()
             local function tryHookWorldMap()
                 HookWorldMapIndicator()
@@ -477,6 +505,12 @@ local eventHandlers = {
     VIGNETTES_UPDATED        = function() ScheduleRefresh() end,
     ZONE_CHANGED             = function(_, evt) OnZoneChanged(evt) end,
     ZONE_CHANGED_NEW_AREA    = function(_, evt) OnZoneChanged(evt) end,
+    SCENARIO_UPDATE          = function() ScheduleRefresh() end,
+    SCENARIO_CRITERIA_UPDATE = function() ScheduleRefresh() end,
+    SCENARIO_CRITERIA_SHOW_STATE_UPDATE = function() ScheduleRefresh() end,
+    SCENARIO_COMPLETED       = function() ScheduleRefresh() end,
+    SCENARIO_SPELL_UPDATE    = function() ScheduleRefresh() end,
+    CRITERIA_COMPLETE        = function() ScheduleRefresh() end,
 }
 
 --- OnEvent: table-dispatch to eventHandlers[event]; falls back to ScheduleRefresh for unhandled events.

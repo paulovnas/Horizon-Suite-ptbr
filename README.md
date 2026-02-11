@@ -17,6 +17,7 @@ The logic that drives your efficiency.
 - **Proximity Priority** - Dynamically floats "Nearby" quests to the top of the list so you never have to hunt for your next objective. Quest grouping into "Current Zone" works correctly in sub-zones and micro-dungeons (e.g. Foundation Hall within Dornogal) on initial load, without needing to open the map first.
 
 **Dynamic Scanning**
+- **Scenario Events** - Surfaces active scenario activities (main step and bonus steps) in a dedicated SCENARIO EVENTS section, always pinned to the top of the tracker. Supports Twilight's Call–style events with time remaining and cinematic progress bars. If a scenario row maps to a quest already in the list, the scenario row is shown and the duplicate quest row is suppressed (Options → Content).
 - **Rare Boss Tracker** - Scans for nearby Rare vignettes and adds them to the tracker with a single click to super-track on the map. Optional sound when a rare is added (Options → Content).
 - **World Map Sync** - Opening the world map automatically pulls active World Quests and Available quests into your tracker, keeping your UI in sync with your planning.
 - **Weeklies & Dailies in Zone** - Weekly and daily quests that appear in your current zone are auto-added to the tracker (WEEKLY QUESTS and DAILY QUESTS sections). Quests you have not yet accepted show an "— Available" label so you can see what is ready to pick up.
@@ -42,7 +43,7 @@ The aesthetic that defines your interface.
 - **Focus sort mode** - In Options → Categories, choose how entries are ordered within each category: Alphabetical, Quest Type, Zone, or Quest Level.
 
 **Total Customization**
-- **The Color Matrix** - Define your own hex-code reality. Customize the colors for every quest category and objective state via `/horizon options`.
+- **The Color Matrix** - Define your own hex-code reality. Customize the colors for every quest category (Default, Campaign, Legendary, World, Scenario, Weekly, Daily, Complete, Rare) and objective state via `/horizon options`. Scenario events use a distinct deep blue by default.
 - **Typography Suite** - Total control over fonts, sizes, outlines, and text shadows for Headers, Titles, and Objectives.
 - **Compact mode** - Reduce spacing between quest entries for a denser list.
 - **Quest level display** - Show quest level next to the title.
@@ -61,6 +62,7 @@ The aesthetic that defines your interface.
 - **Objective Flash** - A subtle green pulse provides tactile feedback the moment you complete a requirement.
 - **Adaptive Layout** - Smoothly animates height changes and supports "Grow Upward" anchoring to protect your action bar space.
 - **Mythic+ block** - Options → Content: show timer, completion %, and affixes when in a Mythic+ dungeon (position: top or bottom).
+- **Scenario Events** - Options → Content: show or hide the SCENARIO EVENTS section (always pinned first when visible). Scenario entries always display time remaining when timer data exists. Cinematic scenario bar, bar opacity, and bar height can be customized.
 
 ---
 
@@ -87,7 +89,7 @@ The aesthetic that defines your interface.
 **Start collapsed** - Objectives panel starts collapsed (header only) until you expand it.
 **Super-minimal mode** - Hide the OBJECTIVES header for a pure text list.
 **Options search** - Use the search box in the options panel to find settings by name or description.
-**Category reorder** - Options → Categories: drag to reorder Focus category order.
+**Category reorder** - Options → Categories: drag to reorder Focus category order. SCENARIO EVENTS is always pinned first and cannot be moved.
 
 Key binding available: Collapse Tracker can be bound in Key Bindings under Horizon Suite - Focus.
 

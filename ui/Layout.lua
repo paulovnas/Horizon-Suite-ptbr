@@ -150,6 +150,175 @@ local function ApplyObjectives(entry, questData, textWidth, prevAnchor, totalH, 
         local objH = obj.text:GetStringHeight()
         if not objH or objH < 1 then objH = addon.OBJ_SIZE + 2 end
         totalH = totalH + addon.GetObjSpacing() + objH
+        prevAnchor = obj.text
+    end
+
+    return totalH, prevAnchor
+end
+
+local function FormatTimeLeftSeconds(seconds)
+    if not seconds or seconds < 0 then return nil end
+    local m = math.floor(seconds / 60)
+    local s = math.floor(seconds % 60)
+    return ("%02d:%02d"):format(m, s)
+end
+
+local function FormatTimeLeftMinutes(minutes)
+    if not minutes or minutes < 0 then return nil end
+    local m = math.floor(minutes)
+    local s = math.floor((minutes - m) * 60)
+    return ("%02d:%02d"):format(m, s)
+end
+
+local function ApplyScenarioOrWQTimerBar(entry, questData, textWidth, prevAnchor, totalH)
+    local isWorld = questData.category == "WORLD" or questData.category == "CALLING"
+    local isScenario = questData.category == "SCENARIO"
+    if (not isWorld and not isScenario) or questData.isRare then
+        entry.wqTimerText:Hide()
+        entry.wqProgressBg:Hide()
+        entry.wqProgressFill:Hide()
+        entry.wqProgressText:Hide()
+        if entry.scenarioTimerBars then
+            for _, bar in ipairs(entry.scenarioTimerBars) do bar:Hide() end
+        end
+        return totalH
+    end
+
+    local objIndent = addon.GetObjIndent()
+    local barW = textWidth - objIndent
+    if barW < 40 then barW = addon.GetPanelWidth() - addon.PADDING * 2 - objIndent - (addon.CONTENT_RIGHT_PADDING or 0) end
+    local barH = addon.WQ_TIMER_BAR_HEIGHT or 6
+    local spacing = addon.GetObjSpacing()
+
+    local showBar
+    -- Scenario per-criteria timer bars (KT-aligned): one bar per objective/criterion with timer.
+    if isScenario and entry.scenarioTimerBars and addon.GetDB("cinematicScenarioBar", true) then
+        local timerSources = {}
+        for _, o in ipairs(questData.objectives or {}) do
+            if o.timerDuration and o.timerStartTime then
+                timerSources[#timerSources + 1] = { duration = o.timerDuration, startTime = o.timerStartTime }
+            end
+        end
+        if #timerSources == 0 and questData.timerDuration and questData.timerStartTime then
+            timerSources[#timerSources + 1] = { duration = questData.timerDuration, startTime = questData.timerStartTime }
+        end
+        local barHeight = math.max(4, math.min(8, tonumber(addon.GetDB("scenarioBarHeight", 6)) or 6))
+        for i, src in ipairs(timerSources) do
+            local bar = entry.scenarioTimerBars[i]
+            if bar then
+                bar.duration = src.duration
+                bar.startTime = src.startTime
+                bar:SetWidth(barW)
+                bar:SetHeight(barHeight)
+                bar:ClearAllPoints()
+                bar:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", objIndent, -spacing)
+                bar:Show()
+                totalH = totalH + spacing + barHeight
+                prevAnchor = bar
+            end
+        end
+        for i = #timerSources + 1, #(entry.scenarioTimerBars or {}) do
+            local bar = entry.scenarioTimerBars[i]
+            if bar then bar.duration = nil; bar.startTime = nil; bar:Hide() end
+        end
+        entry.wqTimerText:Hide()
+        showBar = addon.GetDB("cinematicScenarioBar", true)
+    else
+        if entry.scenarioTimerBars then
+            for _, bar in ipairs(entry.scenarioTimerBars) do
+                bar.duration = nil
+                bar.startTime = nil
+                bar:Hide()
+            end
+        end
+
+        local timerStr
+        if questData.timeLeftSeconds and questData.timeLeftSeconds > 0 then
+            timerStr = FormatTimeLeftSeconds(questData.timeLeftSeconds)
+        elseif questData.timeLeft and questData.timeLeft > 0 then
+            timerStr = FormatTimeLeftMinutes(questData.timeLeft)
+        end
+
+        local showTimer
+        if isScenario then
+            showTimer = (timerStr ~= nil)
+            showBar = addon.GetDB("cinematicScenarioBar", true)
+        else
+            showTimer = addon.GetDB("showWorldQuestTimer", true) and (timerStr ~= nil)
+            showBar = addon.GetDB("showWorldQuestProgressBar", true)
+        end
+
+        if showTimer and timerStr then
+            entry.wqTimerText:SetText(timerStr)
+            entry.wqTimerText:SetWidth(barW)
+            entry.wqTimerText:ClearAllPoints()
+            entry.wqTimerText:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", objIndent, -spacing)
+            if isScenario then
+                local sc = addon.GetQuestColor and addon.GetQuestColor("SCENARIO") or (addon.QUEST_COLORS and addon.QUEST_COLORS.SCENARIO) or { 0.38, 0.52, 0.88 }
+                entry.wqTimerText:SetTextColor(sc[1], sc[2], sc[3], 1)
+            else
+                entry.wqTimerText:SetTextColor(1, 1, 1, 1)
+            end
+            entry.wqTimerText:Show()
+            local th = entry.wqTimerText:GetStringHeight()
+            if not th or th < 1 then th = addon.OBJ_SIZE + 2 end
+            totalH = totalH + spacing + th
+            prevAnchor = entry.wqTimerText
+        else
+            entry.wqTimerText:Hide()
+        end
+    end
+
+    local firstPercent
+    for _, o in ipairs(questData.objectives or {}) do
+        if o.percent ~= nil and not o.finished then
+            firstPercent = o.percent
+            break
+        end
+    end
+    if showBar and firstPercent ~= nil then
+        local barHeight = barH
+        if isScenario then
+            barHeight = math.max(4, math.min(8, tonumber(addon.GetDB("scenarioBarHeight", 6)) or 6))
+        end
+        entry.wqProgressBg:SetHeight(barHeight)
+        entry.wqProgressBg:SetWidth(barW)
+        entry.wqProgressBg:ClearAllPoints()
+        entry.wqProgressBg:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", objIndent, -spacing)
+        if isScenario then
+            local opacity = tonumber(addon.GetDB("scenarioBarOpacity", 0.85)) or 0.85
+            entry.wqProgressBg:SetColorTexture(0.15, 0.12, 0.2, math.max(0.3, opacity * 0.5))
+        else
+            entry.wqProgressBg:SetColorTexture(0.2, 0.2, 0.25, 0.8)
+        end
+        entry.wqProgressBg:Show()
+        local pct = firstPercent and math.min(100, math.max(0, firstPercent)) or 0
+        entry.wqProgressFill:SetHeight(barHeight)
+        entry.wqProgressFill:SetWidth(math.max(2, barW * pct / 100))
+        entry.wqProgressFill:ClearAllPoints()
+        entry.wqProgressFill:SetPoint("TOPLEFT", entry.wqProgressBg, "TOPLEFT", 0, 0)
+        if isScenario then
+            local sc = addon.GetQuestColor and addon.GetQuestColor("SCENARIO") or (addon.QUEST_COLORS and addon.QUEST_COLORS.SCENARIO) or { 0.38, 0.52, 0.88 }
+            local fillOpacity = tonumber(addon.GetDB("scenarioBarOpacity", 0.85)) or 0.85
+            entry.wqProgressFill:SetColorTexture(sc[1], sc[2], sc[3], fillOpacity)
+        else
+            entry.wqProgressFill:SetColorTexture(0.45, 0.35, 0.65, 0.9)
+        end
+        entry.wqProgressFill:Show()
+        entry.wqProgressText:SetText(firstPercent ~= nil and (tostring(firstPercent) .. "%") or "")
+        entry.wqProgressText:ClearAllPoints()
+        entry.wqProgressText:SetPoint("CENTER", entry.wqProgressBg, "CENTER", 0, 0)
+        if isScenario then
+            entry.wqProgressText:SetTextColor(1, 1, 1, 0.95)
+        else
+            entry.wqProgressText:SetTextColor(0.9, 0.9, 0.9, 1)
+        end
+        entry.wqProgressText:SetShown(firstPercent ~= nil)
+        totalH = totalH + spacing + barHeight
+    else
+        entry.wqProgressBg:Hide()
+        entry.wqProgressFill:Hide()
+        entry.wqProgressText:Hide()
     end
 
     return totalH
@@ -216,8 +385,8 @@ local function PopulateEntry(entry, questData)
     if addon.GetDB("showQuestLevel", false) and questData.level then
         displayTitle = ("%s [L%d]"):format(displayTitle, questData.level)
     end
-    -- Indicator for quests that are available to accept but not yet accepted (not for rares).
-    if not questData.isAccepted and questData.category ~= "RARE" then
+    -- Indicator for quests that are available to accept but not yet accepted (not for rares or scenario).
+    if not questData.isAccepted and questData.category ~= "RARE" and questData.category ~= "SCENARIO" then
         displayTitle = displayTitle .. "  — Available"
     end
     entry.titleText:SetText(displayTitle)
@@ -283,7 +452,8 @@ local function PopulateEntry(entry, questData)
         entry.zoneShadow:Hide()
     end
 
-    totalH = ApplyObjectives(entry, questData, textWidth, prevAnchor, totalH, c)
+    totalH, prevAnchor = ApplyObjectives(entry, questData, textWidth, prevAnchor, totalH, c)
+    totalH = ApplyScenarioOrWQTimerBar(entry, questData, textWidth, prevAnchor or entry.titleText, totalH)
 
     entry.entryHeight = totalH + topPadding + bottomPadding
     entry:SetHeight(totalH + topPadding + bottomPadding)
@@ -311,6 +481,11 @@ local function PopulateEntry(entry, questData)
         entry.creatureID = questData.creatureID
         entry.itemLink   = nil
         entry.isTracked  = nil
+    elseif questData.isScenarioMain or questData.isScenarioBonus then
+        entry.questID    = questData.questID
+        entry.entryKey   = questData.entryKey
+        entry.creatureID = nil
+        entry.isTracked  = questData.isTracked
     else
         entry.questID    = questData.questID
         entry.entryKey   = nil

@@ -104,7 +104,7 @@ local function GetSectionColor(groupKey)
         return HorizonDB.sectionColors[groupKey]
     end
     local questCategory = (groupKey == "RARES") and "RARE" or groupKey
-    if questCategory == "CAMPAIGN" or questCategory == "LEGENDARY" or questCategory == "WORLD" or questCategory == "WEEKLY" or questCategory == "DAILY" or questCategory == "COMPLETE" or questCategory == "RARE" or questCategory == "DEFAULT" then
+    if questCategory == "CAMPAIGN" or questCategory == "LEGENDARY" or questCategory == "WORLD" or questCategory == "WEEKLY" or questCategory == "DAILY" or questCategory == "COMPLETE" or questCategory == "RARE" or questCategory == "SCENARIO" or questCategory == "DEFAULT" then
         return GetQuestColor(questCategory)
     end
     return addon.SECTION_COLORS[groupKey] or addon.SECTION_COLORS.DEFAULT
@@ -204,6 +204,16 @@ local function ReadTrackedQuests()
 
     local quests = {}
     local seen = {}
+    local scenarioRewardQuestIDs = {}
+    if addon.ReadScenarioEntries then
+        for _, se in ipairs(addon.ReadScenarioEntries()) do
+            local rid = se.rewardQuestID
+            if type(rid) == "number" and rid > 0 then
+                scenarioRewardQuestIDs[rid] = true
+            end
+        end
+    end
+
     local numWatches = C_QuestLog.GetNumQuestWatches()
     local superTracked = (C_SuperTrack and C_SuperTrack.GetSuperTrackedQuestID) and C_SuperTrack.GetSuperTrackedQuestID() or 0
     local nearbySet, taskQuestOnlySet = addon.GetNearbyQuestIDs()
@@ -211,6 +221,7 @@ local function ReadTrackedQuests()
     local function addQuest(questID, opts)
         opts = opts or {}
         if not questID or questID <= 0 or seen[questID] then return end
+        if scenarioRewardQuestIDs[questID] then return end
         seen[questID] = true
         local category   = opts.forceCategory or GetQuestCategory(questID)
         local title      = C_QuestLog.GetTitleForQuestID(questID) or "..."
@@ -311,9 +322,16 @@ local function ReadTrackedQuests()
         end
     end
 
-    -- Always show super-tracked world quest in the list even if not on current map or watch list (e.g. super-tracked from map only).
-    if superTracked and superTracked > 0 and not seen[superTracked] and IsQuestWorldQuest(superTracked) then
+    -- Always show super-tracked quest in the list even if not on current map or watch list (e.g. super-tracked from map).
+    if superTracked and superTracked > 0 and not seen[superTracked] and not scenarioRewardQuestIDs[superTracked] then
         addQuest(superTracked, { isTracked = true })
+    end
+
+    -- Append scenario entries (main + bonus steps); prefer scenario over duplicate quest rows.
+    if addon.ReadScenarioEntries then
+        for _, se in ipairs(addon.ReadScenarioEntries()) do
+            quests[#quests + 1] = se
+        end
     end
 
     return quests
@@ -330,7 +348,7 @@ end
 -- Category order for questType sort (lower = earlier)
 local CATEGORY_SORT_ORDER = {
     COMPLETE = 1, CAMPAIGN = 2, IMPORTANT = 3, LEGENDARY = 4,
-    WORLD = 5, WEEKLY = 6, DAILY = 7, CALLING = 8, RARE = 9, DEFAULT = 10,
+    SCENARIO = 5, WORLD = 6, WEEKLY = 7, DAILY = 8, CALLING = 9, RARE = 10, DEFAULT = 11,
 }
 
 local function CompareEntriesBySortMode(a, b)
@@ -372,6 +390,8 @@ local function SortAndGroupQuests(quests)
             groups["RARES"][#groups["RARES"] + 1] = q
         elseif q.isDungeonQuest then
             groups["DUNGEON"][#groups["DUNGEON"] + 1] = q
+        elseif q.category == "SCENARIO" then
+            groups["SCENARIO"][#groups["SCENARIO"] + 1] = q
         elseif q.category == "WORLD" or q.category == "CALLING" then
             groups["WORLD"][#groups["WORLD"] + 1] = q
         elseif q.isNearby and not q.isAccepted then

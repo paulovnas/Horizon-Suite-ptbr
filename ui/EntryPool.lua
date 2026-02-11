@@ -166,6 +166,92 @@ local function CreateQuestEntry(parent, index)
         objShadow:Hide()
     end
 
+    e.wqTimerText = e:CreateFontString(nil, "OVERLAY")
+    e.wqTimerText:SetFontObject(addon.ObjFont)
+    e.wqTimerText:SetTextColor(1, 1, 1, 1)
+    e.wqTimerText:SetJustifyH("LEFT")
+    e.wqTimerText:Hide()
+
+    e.wqProgressBg = e:CreateTexture(nil, "BACKGROUND")
+    e.wqProgressBg:SetHeight(addon.WQ_TIMER_BAR_HEIGHT or 6)
+    e.wqProgressBg:SetColorTexture(0.2, 0.2, 0.25, 0.8)
+    e.wqProgressBg:Hide()
+
+    e.wqProgressFill = e:CreateTexture(nil, "ARTWORK")
+    e.wqProgressFill:SetHeight(addon.WQ_TIMER_BAR_HEIGHT or 6)
+    e.wqProgressFill:SetColorTexture(0.45, 0.35, 0.65, 0.9)
+    e.wqProgressFill:Hide()
+
+    e.wqProgressText = e:CreateFontString(nil, "OVERLAY")
+    e.wqProgressText:SetFontObject(addon.ObjFont)
+    e.wqProgressText:SetTextColor(0.9, 0.9, 0.9, 1)
+    e.wqProgressText:SetJustifyH("CENTER")
+    e.wqProgressText:Hide()
+
+    -- Per-criteria scenario timer bars (KT-aligned; OnUpdate driven).
+    local slots = addon.SCENARIO_TIMER_BAR_SLOTS or 5
+    e.scenarioTimerBars = {}
+    for si = 1, slots do
+        local bar = CreateFrame("Frame", nil, e)
+        bar:SetHeight(addon.WQ_TIMER_BAR_HEIGHT or 6)
+        bar.Bg = bar:CreateTexture(nil, "BACKGROUND")
+        bar.Bg:SetAllPoints()
+        bar.Bg:SetColorTexture(0.15, 0.12, 0.2, 0.6)
+        bar.Fill = bar:CreateTexture(nil, "ARTWORK")
+        bar.Fill:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
+        bar.Fill:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
+        bar.Fill:SetColorTexture(0.55, 0.35, 0.85, 0.9)
+        bar.Label = bar:CreateFontString(nil, "OVERLAY")
+        bar.Label:SetFontObject(addon.ObjFont)
+        bar.Label:SetPoint("CENTER", bar, "CENTER", 0, 0)
+        bar.Label:SetJustifyH("CENTER")
+        bar.duration = nil
+        bar.startTime = nil
+        bar._expiredAt = nil
+        bar:SetScript("OnUpdate", function(self)
+            local d, s = self.duration, self.startTime
+            if not d or not s then return end
+            local now = GetTime()
+            local remaining = d - (now - s)
+            -- Hold at 0 for 1s then trigger refresh and stop (KT-aligned).
+            if remaining < 0 then
+                if not self._expiredAt then self._expiredAt = now end
+                if (now - self._expiredAt) > 1 then
+                    self.duration = nil
+                    self.startTime = nil
+                    self._expiredAt = nil
+                    if addon.ScheduleRefresh then addon.ScheduleRefresh() end
+                    return
+                end
+                remaining = 0
+            else
+                self._expiredAt = nil
+            end
+            local pct = (d > 0) and (remaining / d) or 0
+            local w = self:GetWidth() or 1
+            self.Fill:SetWidth(math.max(2, w * pct))
+            local m = math.floor(remaining / 60)
+            local sec = math.floor(remaining % 60)
+            self.Label:SetText(("%02d:%02d"):format(m, sec))
+            -- Percentage-based color (KT: 66% white, 33% yellow, below red).
+            local pctLeft = (d > 0) and pct or 0
+            local r, g, b
+            if pctLeft > 0.66 then
+                local sc = addon.GetQuestColor and addon.GetQuestColor("SCENARIO") or (addon.QUEST_COLORS and addon.QUEST_COLORS.SCENARIO) or { 0.55, 0.35, 0.85 }
+                r, g, b = sc[1], sc[2], sc[3]
+            elseif pctLeft > 0.33 then
+                local blueOffset = (pctLeft - 0.33) / 0.33
+                r, g, b = 1, 1, blueOffset
+            else
+                local greenOffset = pctLeft / 0.33
+                r, g, b = 1, greenOffset, 0
+            end
+            self.Label:SetTextColor(r, g, b, 1)
+        end)
+        bar:Hide()
+        e.scenarioTimerBars[si] = bar
+    end
+
     e.flash = e:CreateTexture(nil, "HIGHLIGHT")
     e.flash:SetAllPoints(e)
     e.flash:SetColorTexture(1, 1, 1, 0)
@@ -314,6 +400,18 @@ local function ClearEntry(entry, full)
         entry:SetAlpha(0)
         if entry.itemBtn then entry.itemBtn:Hide() end
         if entry.trackBar then entry.trackBar:Hide() end
+        if entry.wqTimerText then entry.wqTimerText:Hide() end
+        if entry.wqProgressBg then entry.wqProgressBg:Hide() end
+        if entry.wqProgressFill then entry.wqProgressFill:Hide() end
+        if entry.wqProgressText then entry.wqProgressText:Hide() end
+        if entry.scenarioTimerBars then
+            for _, bar in ipairs(entry.scenarioTimerBars) do
+                bar.duration = nil
+                bar.startTime = nil
+                bar._expiredAt = nil
+                bar:Hide()
+            end
+        end
     end
 end
 
