@@ -11,7 +11,6 @@ local addon = _G.ModernQuestTracker
 -- ============================================================================
 
 -- Default: use game font path so it works across locales/patches (set explicitly before font object creation)
-addon.FONT_PATH       = nil
 addon.HEADER_SIZE     = 16
 addon.TITLE_SIZE      = 13
 addon.OBJ_SIZE        = 11
@@ -306,14 +305,6 @@ function addon.GetFontNameForPath(path)
     return "Custom"
 end
 
--- Legacy: static list used if no LSM; GetFontList() is the source of truth for the dropdown
-addon.FONT_LIST = {
-    { "Friz Quadrata (Default)", "Fonts\\FRIZQT__.TTF" },
-    { "Arial Narrow", "Fonts\\ARIALN.ttf" },
-    { "Morpheus", "Fonts\\MORPHEUS.ttf" },
-    { "Skurri", "Fonts\\skurri.ttf" },
-}
-
 function addon.GetPanelWidth()
     return tonumber(addon.GetDB("panelWidth", addon.PANEL_WIDTH)) or addon.PANEL_WIDTH
 end
@@ -341,37 +332,20 @@ MQT:Hide()
 
 local mqtBg = MQT:CreateTexture(nil, "BACKGROUND")
 mqtBg:SetAllPoints(MQT)
-mqtBg:SetColorTexture(0.08, 0.08, 0.12, 0.9)
+local backdropColor = (addon.Design and addon.Design.BACKDROP_COLOR) or { 0.08, 0.08, 0.12, 0.90 }
+mqtBg:SetColorTexture(backdropColor[1], backdropColor[2], backdropColor[3], backdropColor[4] or 1)
 addon.mqtBg = mqtBg
 
-local BORDER_COLOR = { 0.35, 0.38, 0.45, 0.45 }
-local mqtBorderT = MQT:CreateTexture(nil, "BORDER")
-mqtBorderT:SetColorTexture(BORDER_COLOR[1], BORDER_COLOR[2], BORDER_COLOR[3], BORDER_COLOR[4])
-mqtBorderT:SetHeight(1)
-mqtBorderT:SetPoint("TOPLEFT", MQT, "TOPLEFT", 0, 0)
-mqtBorderT:SetPoint("TOPRIGHT", MQT, "TOPRIGHT", 0, 0)
-local mqtBorderB = MQT:CreateTexture(nil, "BORDER")
-mqtBorderB:SetColorTexture(BORDER_COLOR[1], BORDER_COLOR[2], BORDER_COLOR[3], BORDER_COLOR[4])
-mqtBorderB:SetHeight(1)
-mqtBorderB:SetPoint("BOTTOMLEFT", MQT, "BOTTOMLEFT", 0, 0)
-mqtBorderB:SetPoint("BOTTOMRIGHT", MQT, "BOTTOMRIGHT", 0, 0)
-local mqtBorderL = MQT:CreateTexture(nil, "BORDER")
-mqtBorderL:SetColorTexture(BORDER_COLOR[1], BORDER_COLOR[2], BORDER_COLOR[3], BORDER_COLOR[4])
-mqtBorderL:SetWidth(1)
-mqtBorderL:SetPoint("TOPLEFT", MQT, "TOPLEFT", 0, 0)
-mqtBorderL:SetPoint("BOTTOMLEFT", MQT, "BOTTOMLEFT", 0, 0)
-local mqtBorderR = MQT:CreateTexture(nil, "BORDER")
-mqtBorderR:SetColorTexture(BORDER_COLOR[1], BORDER_COLOR[2], BORDER_COLOR[3], BORDER_COLOR[4])
-mqtBorderR:SetWidth(1)
-mqtBorderR:SetPoint("TOPRIGHT", MQT, "TOPRIGHT", 0, 0)
-mqtBorderR:SetPoint("BOTTOMRIGHT", MQT, "BOTTOMRIGHT", 0, 0)
+local borderColor = (addon.Design and addon.Design.BORDER_COLOR) or nil
+local mqtBorderT, mqtBorderB, mqtBorderL, mqtBorderR = addon.CreateBorder(MQT, borderColor)
 addon.mqtBorderT, addon.mqtBorderB = mqtBorderT, mqtBorderB
 addon.mqtBorderL, addon.mqtBorderR = mqtBorderL, mqtBorderR
 
 function addon.ApplyBackdropOpacity()
     if not addon.mqtBg then return end
     local a = tonumber(addon.GetDB("backdropOpacity", 0)) or 0
-    addon.mqtBg:SetColorTexture(0.08, 0.08, 0.12, math.max(0, math.min(1, a)))
+    local base = (addon.Design and addon.Design.BACKDROP_COLOR) or { 0.08, 0.08, 0.12, 0.90 }
+    addon.mqtBg:SetColorTexture(base[1], base[2], base[3], math.max(0, math.min(1, a)))
 end
 
 function addon.ApplyBorderVisibility()

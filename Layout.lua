@@ -120,7 +120,6 @@ local function PopulateEntry(entry, questData)
                 tex:SetColorTexture(hc[1], hc[2], hc[3], borderAlpha)
                 tex:Show()
             end
-        elseif highlightStyle == "glow" then
         elseif highlightStyle == "bar-both" then
             entry.highlightBorderL:SetColorTexture(hc[1], hc[2], hc[3], 0.70)
             entry.highlightBorderL:SetWidth(2)

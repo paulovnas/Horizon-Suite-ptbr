@@ -6,6 +6,7 @@
 ## SavedVariables: HorizonDB
 
 HorizonSuite.lua
+Utilities.lua
 Core.lua
 WorldQuests.lua
 Rares.lua

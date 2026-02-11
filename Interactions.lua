@@ -74,27 +74,11 @@ for i = 1, addon.POOL_SIZE do
             if isDoubleClick then
                 self._lastClickTime = 0
                 self._lastClickQuest = nil
-                if QuestMapFrame_OpenToQuestDetails then
-                    QuestMapFrame_OpenToQuestDetails(self.questID)
-                elseif OpenQuestLog then
-                    C_QuestLog.SetSelectedQuest(self.questID)
-                    OpenQuestLog()
-                else
-                    C_QuestLog.SetSelectedQuest(self.questID)
-                    if not WorldMapFrame:IsShown() then ToggleWorldMap() end
-                end
+                addon.OpenQuestDetails(self.questID)
             elseif clickOpensLog then
                 self._lastClickTime = now
                 self._lastClickQuest = self.questID
-                if QuestMapFrame_OpenToQuestDetails then
-                    QuestMapFrame_OpenToQuestDetails(self.questID)
-                elseif OpenQuestLog then
-                    C_QuestLog.SetSelectedQuest(self.questID)
-                    OpenQuestLog()
-                else
-                    C_QuestLog.SetSelectedQuest(self.questID)
-                    if not WorldMapFrame:IsShown() then ToggleWorldMap() end
-                end
+                addon.OpenQuestDetails(self.questID)
             else
                 self._lastClickTime = now
                 self._lastClickQuest = self.questID

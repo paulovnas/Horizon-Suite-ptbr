@@ -201,8 +201,7 @@ local function ReadTrackedQuests()
     local seen = {}
     local numWatches = C_QuestLog.GetNumQuestWatches()
     local superTracked = (C_SuperTrack and C_SuperTrack.GetSuperTrackedQuestID) and C_SuperTrack.GetSuperTrackedQuestID() or 0
-    local nearbySet, taskQuestOnlySet, mapAutoPopulateAvailableSet = addon.GetNearbyQuestIDs()
-    mapAutoPopulateAvailableSet = mapAutoPopulateAvailableSet or {}
+    local nearbySet, taskQuestOnlySet = addon.GetNearbyQuestIDs()
 
     local function addQuest(questID, opts)
         opts = opts or {}
@@ -218,7 +217,6 @@ local function ReadTrackedQuests()
         local zoneName   = GetQuestZoneName(questID)
         local isDungeonQuest = opts.isDungeonQuest or (IsInMythicDungeon() and isNearby)
         local isTracked  = opts.isTracked ~= false
-        local isMapAutoPopulatedAvailable = not not (mapAutoPopulateAvailableSet[questID])
 
         local itemLink, itemTexture
         local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
@@ -263,7 +261,6 @@ local function ReadTrackedQuests()
             isDungeonQuest = isDungeonQuest,
             isTracked      = isTracked,
             level          = questLevel,
-            isMapAutoPopulatedAvailable = isMapAutoPopulatedAvailable,
         }
     end
 

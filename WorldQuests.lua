@@ -62,27 +62,8 @@ local function GetNearbyQuestIDs()
         if C_TaskQuest and C_TaskQuest.GetQuestsForPlayerByMapID then
             local taskPOIs = C_TaskQuest.GetQuestsForPlayerByMapID(checkMapID, checkMapID) or C_TaskQuest.GetQuestsForPlayerByMapID(checkMapID)
             if taskPOIs then
-                if #taskPOIs > 0 then
-                    for _, poi in ipairs(taskPOIs) do
-                        local id = (type(poi) == "table" and (poi.questID or poi.questId)) or (type(poi) == "number" and poi)
-                        if id then
-                            nearbySet[id] = true
-                            taskQuestOnlySet[id] = true
-                        end
-                    end
-                end
-                for k, v in pairs(taskPOIs) do
-                    if type(k) == "number" and k > 0 then
-                        nearbySet[k] = true
-                        taskQuestOnlySet[k] = true
-                    elseif type(v) == "table" then
-                        local id = v.questID or v.questId
-                        if id then
-                            nearbySet[id] = true
-                            taskQuestOnlySet[id] = true
-                        end
-                    end
-                end
+                addon.ParseTaskPOIs(taskPOIs, nearbySet)
+                addon.ParseTaskPOIs(taskPOIs, taskQuestOnlySet)
             end
         end
     end

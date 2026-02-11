@@ -38,8 +38,8 @@ function _G.OptionsWidgets_SetDef(overrides)
     for k, v in pairs(overrides) do Def[k] = v end
 end
 
-local function SetTextColor(obj, color)
-    if not color then return end
+local SetTextColor = addon.SetTextColor or function(obj, color)
+    if not color or not obj then return end
     obj:SetTextColor(color[1], color[2], color[3], color[4] or 1)
 end
 
@@ -391,95 +391,6 @@ function OptionsWidgets_CreateCustomDropdown(parent, labelText, description, opt
     return row
 end
 
--- Color swatch + Reset link
-function OptionsWidgets_CreateColorSwatch(parent, labelText, description, dbKey, defaultColor, get, set, onReset)
-    local row = CreateFrame("Frame", nil, parent)
-    row:SetHeight(28)
-    local searchText = (labelText or "") .. " " .. (description or "")
-    row.searchText = searchText:lower()
-
-    local label = row:CreateFontString(nil, "OVERLAY")
-    label:SetFont(Def.FontPath, Def.LabelSize, "OUTLINE")
-    label:SetJustifyH("LEFT")
-    SetTextColor(label, Def.TextColorLabel)
-    label:SetText(labelText or "")
-    label:SetPoint("LEFT", row, "LEFT", 0, 0)
-    local desc = row:CreateFontString(nil, "OVERLAY")
-    desc:SetFont(Def.FontPath, Def.SectionSize, "OUTLINE")
-    desc:SetJustifyH("LEFT")
-    SetTextColor(desc, Def.TextColorSection)
-    desc:SetText(description or "")
-    desc:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
-    desc:SetPoint("RIGHT", row, "RIGHT", -80, 0)
-    desc:SetWordWrap(true)
-
-    local def = defaultColor or { 0.5, 0.5, 0.5 }
-    local swatch = CreateFrame("Button", nil, row)
-    swatch:SetSize(20, 20)
-    swatch:SetPoint("TOPRIGHT", row, "TOPRIGHT", -50, -4)
-    local tex = swatch:CreateTexture(nil, "BACKGROUND")
-    tex:SetAllPoints(swatch)
-    local bc = Def.SectionCardBorder
-    local e = 1
-    do
-        local t1 = swatch:CreateTexture(nil, "BORDER"); t1:SetColorTexture(bc[1], bc[2], bc[3], bc[4]); t1:SetHeight(e); t1:SetPoint("TOPLEFT", swatch, "TOPLEFT", 0, 0); t1:SetPoint("TOPRIGHT", swatch, "TOPRIGHT", 0, 0)
-        local t2 = swatch:CreateTexture(nil, "BORDER"); t2:SetColorTexture(bc[1], bc[2], bc[3], bc[4]); t2:SetHeight(e); t2:SetPoint("BOTTOMLEFT", swatch, "BOTTOMLEFT", 0, 0); t2:SetPoint("BOTTOMRIGHT", swatch, "BOTTOMRIGHT", 0, 0)
-        local t3 = swatch:CreateTexture(nil, "BORDER"); t3:SetColorTexture(bc[1], bc[2], bc[3], bc[4]); t3:SetWidth(e); t3:SetPoint("TOPLEFT", swatch, "TOPLEFT", 0, 0); t3:SetPoint("BOTTOMLEFT", swatch, "BOTTOMLEFT", 0, 0)
-        local t4 = swatch:CreateTexture(nil, "BORDER"); t4:SetColorTexture(bc[1], bc[2], bc[3], bc[4]); t4:SetWidth(e); t4:SetPoint("TOPRIGHT", swatch, "TOPRIGHT", 0, 0); t4:SetPoint("BOTTOMRIGHT", swatch, "BOTTOMRIGHT", 0, 0)
-    end
-    swatch.tex = tex
-    swatch:SetScript("OnClick", function()
-        local db = get()
-        local r, g, b = def[1], def[2], def[3]
-        if db and #db >= 3 then r, g, b = db[1], db[2], db[3] end
-        ColorPickerFrame:SetupColorPickerAndShow({
-            r = r, g = g, b = b, hasOpacity = false,
-            swatchFunc = function()
-                addon.EnsureDB()
-                local nr, ng, nb = ColorPickerFrame:GetColorRGB()
-                HorizonDB[dbKey] = { nr, ng, nb }
-                tex:SetColorTexture(nr, ng, nb, 1)
-                if onReset then onReset() end
-            end,
-            cancelFunc = function()
-                local prev = ColorPickerFrame.previousValues
-                if prev then set({ prev.r, prev.g, prev.b }) if onReset then onReset() end end
-            end,
-            finishedFunc = function()
-                local nr, ng, nb = ColorPickerFrame:GetColorRGB()
-                set({ nr, ng, nb })
-                tex:SetColorTexture(nr, ng, nb, 1)
-                if onReset then onReset() end
-            end,
-        })
-    end)
-
-    local resetBtn = CreateFrame("Button", nil, row)
-    resetBtn:SetSize(40, 18)
-    resetBtn:SetPoint("RIGHT", row, "RIGHT", 0, 0)
-    local resetLabel = resetBtn:CreateFontString(nil, "OVERLAY")
-    resetLabel:SetFont(Def.FontPath, Def.SectionSize, "OUTLINE")
-    SetTextColor(resetLabel, Def.TextColorSection)
-    resetLabel:SetText("Reset")
-    resetLabel:SetPoint("CENTER", resetBtn, "CENTER", 0, 0)
-    resetBtn:SetScript("OnClick", function()
-        set(nil)
-        if HorizonDB then HorizonDB[dbKey] = nil end
-        tex:SetColorTexture(def[1], def[2], def[3], 1)
-        if onReset then onReset() end
-    end)
-
-    function row:Refresh()
-        local db = get()
-        local r, g, b = def[1], def[2], def[3]
-        if db and #db >= 3 then r, g, b = db[1], db[2], db[3] end
-        tex:SetColorTexture(r, g, b, 1)
-    end
-
-    row:Refresh()
-    return row
-end
-
 -- Search input: full width, optional magnifier icon and clear button
 function OptionsWidgets_CreateSearchInput(parent, onTextChanged)
     local row = CreateFrame("Frame", nil, parent)
@@ -526,14 +437,7 @@ function OptionsWidgets_CreateSectionCard(parent, anchor)
     local cardBg = card:CreateTexture(nil, "BACKGROUND")
     cardBg:SetAllPoints(card)
     cardBg:SetColorTexture(Def.SectionCardBg[1], Def.SectionCardBg[2], Def.SectionCardBg[3], Def.SectionCardBg[4])
-    local b = Def.BorderEdge
-    local bc = Def.SectionCardBorder
-    for _, pt in ipairs({{"TOP",b,true},{"BOTTOM",b,true},{"LEFT",b,false},{"RIGHT",b,false}}) do
-        local tex = card:CreateTexture(nil, "BORDER")
-        tex:SetColorTexture(bc[1], bc[2], bc[3], bc[4])
-        if pt[3] then tex:SetHeight(pt[2]) tex:SetPoint(pt[1], card, pt[1]) tex:SetPoint("LEFT", card, "LEFT", 0, 0) tex:SetPoint("RIGHT", card, "RIGHT", 0, 0)
-        else tex:SetWidth(pt[2]) tex:SetPoint(pt[1], card, pt[1]) tex:SetPoint("TOP", card, "TOP", 0, 0) tex:SetPoint("BOTTOM", card, "BOTTOM", 0, 0) end
-    end
+    addon.CreateBorder(card, Def.SectionCardBorder)
     return card
 end
 

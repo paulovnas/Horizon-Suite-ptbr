@@ -19,8 +19,8 @@ local SectionGap = 16
 local CardPadding = 12
 local RowHeights = { sectionLabel = 14, toggle = 36, slider = 40, dropdown = 52, colorRow = 28, reorder = 24 }
 
-local function SetTextColor(obj, color)
-    if not color then return end
+local SetTextColor = addon.SetTextColor or function(obj, color)
+    if not color or not obj then return end
     obj:SetTextColor(color[1], color[2], color[3], color[4] or 1)
 end
 
@@ -44,16 +44,7 @@ local bg = panel:CreateTexture(nil, "BACKGROUND")
 bg:SetAllPoints(panel)
 bg:SetColorTexture(Def.SectionCardBg and Def.SectionCardBg[1] or 0.10, Def.SectionCardBg and Def.SectionCardBg[2] or 0.10, Def.SectionCardBg and Def.SectionCardBg[3] or 0.15, Def.SectionCardBg and Def.SectionCardBg[4] or 0.95)
 local bc = Def.BorderColor or Def.SectionCardBorder
-local function addBorder(point, w, h, x, y)
-    local tex = panel:CreateTexture(nil, "BORDER")
-    tex:SetColorTexture(bc[1], bc[2], bc[3], bc[4])
-    tex:SetSize(w, h)
-    tex:SetPoint(point, panel, point, x or 0, y or 0)
-end
-addBorder("TOPLEFT", PAGE_WIDTH, 1)
-addBorder("BOTTOMLEFT", PAGE_WIDTH, 1)
-addBorder("TOPLEFT", 1, PAGE_HEIGHT)
-addBorder("TOPRIGHT", 1, PAGE_HEIGHT)
+addon.CreateBorder(panel, bc)
 
 -- Title bar
 local titleBar = CreateFrame("Frame", nil, panel)
@@ -488,53 +479,4 @@ function _G.ModernQuestTracker_ShowOptions()
     end
 end
 
--- Edit panel stub
-local editPanel = CreateFrame("Frame", "ModernQuestTrackerEditPanel", UIParent)
-editPanel:SetSize(480, 360)
-editPanel:SetFrameStrata("DIALOG")
-editPanel:SetClampedToScreen(true)
-editPanel:Hide()
-local editBg = editPanel:CreateTexture(nil, "BACKGROUND")
-editBg:SetAllPoints(editPanel)
-editBg:SetColorTexture(0.10, 0.10, 0.15, 0.95)
-local editTitleBar = CreateFrame("Frame", nil, editPanel)
-editTitleBar:SetPoint("TOPLEFT", 0, 0)
-editTitleBar:SetPoint("TOPRIGHT", 0, 0)
-editTitleBar:SetHeight(HEADER_HEIGHT)
-editTitleBar:EnableMouse(true)
-editTitleBar:RegisterForDrag("LeftButton")
-editTitleBar:SetScript("OnDragStart", function() editPanel:StartMoving() end)
-editTitleBar:SetScript("OnDragStop", function()
-    editPanel:StopMovingOrSizing()
-    if HorizonDB then local x,y = editPanel:GetCenter() local uix,uiy = UIParent:GetCenter() HorizonDB.editPanelLeft = x-uix HorizonDB.editPanelTop = y-uiy end
-end)
-local editTitleText = editTitleBar:CreateFontString(nil, "OVERLAY")
-editTitleText:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.HeaderSize or 16, "OUTLINE")
-SetTextColor(editTitleText, Def.TextColorNormal)
-editTitleText:SetPoint("TOPLEFT", editTitleBar, "TOPLEFT", PADDING, -PADDING)
-editTitleText:SetText("EDIT")
-local editCloseBtn = CreateFrame("Button", nil, editPanel)
-editCloseBtn:SetSize(44, 22)
-editCloseBtn:SetPoint("TOPRIGHT", editPanel, "TOPRIGHT", -PADDING, -PADDING)
-local editCloseLabel = editCloseBtn:CreateFontString(nil, "OVERLAY")
-editCloseLabel:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.LabelSize or 13, "OUTLINE")
-SetTextColor(editCloseLabel, Def.TextColorLabel)
-editCloseLabel:SetText("Close")
-editCloseLabel:SetPoint("CENTER", editCloseBtn, "CENTER", 0, 0)
-editCloseBtn:SetScript("OnClick", function() editPanel:Hide() end)
-local editBody = editPanel:CreateFontString(nil, "OVERLAY")
-editBody:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.LabelSize or 13, "OUTLINE")
-SetTextColor(editBody, Def.TextColorSection)
-editBody:SetPoint("TOPLEFT", editPanel, "TOPLEFT", PADDING, -(HEADER_HEIGHT + PADDING))
-editBody:SetText("Edit screen — add your content here.")
-editPanel:SetScript("OnShow", function()
-    if HorizonDB and HorizonDB.editPanelLeft ~= nil and HorizonDB.editPanelTop ~= nil then
-        editPanel:ClearAllPoints()
-        editPanel:SetPoint("CENTER", UIParent, "CENTER", HorizonDB.editPanelLeft, HorizonDB.editPanelTop)
-    else editPanel:ClearAllPoints() editPanel:SetPoint("CENTER", UIParent, "CENTER", 0, 0) end
-end)
-
-function _G.ModernQuestTracker_ShowEditPanel()
-    local ep = _G.ModernQuestTrackerEditPanel
-    if ep then if ep:IsShown() then ep:Hide() else ep:Show() end end
-end
+-- (Edit panel stub removed — reserved for a future fully implemented editor.)
