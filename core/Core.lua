@@ -1,11 +1,11 @@
 --[[
     Horizon Suite - Focus - Core
-    DB access, easing, and main frame (MQT + scroll, resize, drag, position).
+    DB access, easing, and main frame (HS + scroll, resize, drag, position).
     Constants, colors, fonts, and labels live in Config.lua.
 ]]
 
-if not _G.ModernQuestTracker then _G.ModernQuestTracker = {} end
-local addon = _G.ModernQuestTracker
+if not _G.HorizonSuite then _G.HorizonSuite = {} end
+local addon = _G.HorizonSuite
 
 -- ============================================================================
 -- DB AND DIMENSION HELPERS (depend on Config constants)
@@ -33,6 +33,11 @@ function addon.GetDB(key, default)
     local v = HorizonDB[key]
     if v == nil then return default end
     return v
+end
+
+function addon.SetDB(key, value)
+    addon.EnsureDB()
+    HorizonDB[key] = value
 end
 
 function addon.ShouldHideInCombat()
@@ -138,73 +143,73 @@ function addon.easeIn(t)   return t * t end
 -- FRAME SETUP
 -- ============================================================================
 
-local MQT = CreateFrame("Frame", "ModernQuestTrackerFrame", UIParent)
-MQT:SetSize(addon.GetPanelWidth(), addon.MIN_HEIGHT)
-MQT:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", addon.PANEL_X, addon.PANEL_Y)
-MQT:SetFrameStrata("MEDIUM")
-MQT:SetClampedToScreen(true)
-MQT:Hide()
+local HS = CreateFrame("Frame", "HSFrame", UIParent)
+HS:SetSize(addon.GetPanelWidth(), addon.MIN_HEIGHT)
+HS:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", addon.PANEL_X, addon.PANEL_Y)
+HS:SetFrameStrata("MEDIUM")
+HS:SetClampedToScreen(true)
+HS:Hide()
 
-local mqtBg = MQT:CreateTexture(nil, "BACKGROUND")
-mqtBg:SetAllPoints(MQT)
+local hsBg = HS:CreateTexture(nil, "BACKGROUND")
+hsBg:SetAllPoints(HS)
 local backdropColor = (addon.Design and addon.Design.BACKDROP_COLOR) or { 0.08, 0.08, 0.12, 0.90 }
-mqtBg:SetColorTexture(backdropColor[1], backdropColor[2], backdropColor[3], backdropColor[4] or 1)
-addon.mqtBg = mqtBg
+hsBg:SetColorTexture(backdropColor[1], backdropColor[2], backdropColor[3], backdropColor[4] or 1)
+addon.hsBg = hsBg
 
 local borderColor = (addon.Design and addon.Design.BORDER_COLOR) or nil
-local mqtBorderT, mqtBorderB, mqtBorderL, mqtBorderR = addon.CreateBorder(MQT, borderColor)
-addon.mqtBorderT, addon.mqtBorderB = mqtBorderT, mqtBorderB
-addon.mqtBorderL, addon.mqtBorderR = mqtBorderL, mqtBorderR
+local hsBorderT, hsBorderB, hsBorderL, hsBorderR = addon.CreateBorder(HS, borderColor)
+addon.hsBorderT, addon.hsBorderB = hsBorderT, hsBorderB
+addon.hsBorderL, addon.hsBorderR = hsBorderL, hsBorderR
 
 function addon.ApplyBackdropOpacity()
-    if not addon.mqtBg then return end
+    if not addon.hsBg then return end
     local a = tonumber(addon.GetDB("backdropOpacity", 0)) or 0
     local base = (addon.Design and addon.Design.BACKDROP_COLOR) or { 0.08, 0.08, 0.12, 0.90 }
-    addon.mqtBg:SetColorTexture(base[1], base[2], base[3], math.max(0, math.min(1, a)))
+    addon.hsBg:SetColorTexture(base[1], base[2], base[3], math.max(0, math.min(1, a)))
 end
 
 function addon.ApplyBorderVisibility()
     local show = addon.GetDB("showBorder", false)
-    if addon.mqtBorderT then addon.mqtBorderT:SetShown(show) end
-    if addon.mqtBorderB then addon.mqtBorderB:SetShown(show) end
-    if addon.mqtBorderL then addon.mqtBorderL:SetShown(show) end
-    if addon.mqtBorderR then addon.mqtBorderR:SetShown(show) end
+    if addon.hsBorderT then addon.hsBorderT:SetShown(show) end
+    if addon.hsBorderB then addon.hsBorderB:SetShown(show) end
+    if addon.hsBorderL then addon.hsBorderL:SetShown(show) end
+    if addon.hsBorderR then addon.hsBorderR:SetShown(show) end
 end
 
-local headerShadow = MQT:CreateFontString(nil, "BORDER")
+local headerShadow = HS:CreateFontString(nil, "BORDER")
 headerShadow:SetFontObject(addon.HeaderFont)
 headerShadow:SetTextColor(0, 0, 0, addon.SHADOW_A)
 headerShadow:SetJustifyH("LEFT")
 headerShadow:SetText("OBJECTIVES")
 
-local headerText = MQT:CreateFontString(nil, "OVERLAY")
+local headerText = HS:CreateFontString(nil, "OVERLAY")
 headerText:SetFontObject(addon.HeaderFont)
 headerText:SetTextColor(addon.HEADER_COLOR[1], addon.HEADER_COLOR[2], addon.HEADER_COLOR[3], 1)
 headerText:SetJustifyH("LEFT")
-headerText:SetPoint("TOPLEFT", MQT, "TOPLEFT", addon.PADDING, -addon.PADDING)
+headerText:SetPoint("TOPLEFT", HS, "TOPLEFT", addon.PADDING, -addon.PADDING)
 headerText:SetText("OBJECTIVES")
 headerShadow:SetPoint("CENTER", headerText, "CENTER", addon.SHADOW_OX, addon.SHADOW_OY)
 
-local countText = MQT:CreateFontString(nil, "OVERLAY")
+local countText = HS:CreateFontString(nil, "OVERLAY")
 countText:SetFontObject(addon.ObjFont)
 countText:SetTextColor(0.60, 0.65, 0.75, 1)
 countText:SetJustifyH("RIGHT")
-countText:SetPoint("TOPRIGHT", MQT, "TOPRIGHT", -addon.PADDING, -addon.PADDING - 3)
+countText:SetPoint("TOPRIGHT", HS, "TOPRIGHT", -addon.PADDING, -addon.PADDING - 3)
 
-local countShadow = MQT:CreateFontString(nil, "BORDER")
+local countShadow = HS:CreateFontString(nil, "BORDER")
 countShadow:SetFontObject(addon.ObjFont)
 countShadow:SetTextColor(0, 0, 0, addon.SHADOW_A)
 countShadow:SetJustifyH("RIGHT")
 countShadow:SetPoint("CENTER", countText, "CENTER", addon.SHADOW_OX, addon.SHADOW_OY)
 
-local chevron = MQT:CreateFontString(nil, "OVERLAY")
+local chevron = HS:CreateFontString(nil, "OVERLAY")
 chevron:SetFontObject(addon.ObjFont)
 chevron:SetTextColor(0.60, 0.65, 0.75, 1)
 chevron:SetJustifyH("RIGHT")
 chevron:SetPoint("RIGHT", countText, "LEFT", -6, 0)
 chevron:SetText("-")
 
-local optionsBtn = CreateFrame("Button", nil, MQT)
+local optionsBtn = CreateFrame("Button", nil, HS)
 local optionsLabel = optionsBtn:CreateFontString(nil, "OVERLAY")
 optionsLabel:SetFontObject(addon.ObjFont)
 optionsLabel:SetTextColor(0.60, 0.65, 0.75, 1)
@@ -214,7 +219,7 @@ optionsBtn:SetSize(math.max(optionsLabel:GetStringWidth() + 4, 44), 20)
 optionsBtn:SetPoint("RIGHT", chevron, "LEFT", -6, 0)
 optionsLabel:SetPoint("RIGHT", optionsBtn, "RIGHT", -2, 0)
 optionsBtn:SetScript("OnClick", function()
-    if _G.ModernQuestTracker_ShowOptions then _G.ModernQuestTracker_ShowOptions() end
+    if _G.HorizonSuite_ShowOptions then _G.HorizonSuite_ShowOptions() end
 end)
 optionsBtn:SetScript("OnEnter", function(self)
     optionsLabel:SetTextColor(0.85, 0.85, 0.90, 1)
@@ -229,9 +234,9 @@ optionsBtn:SetScript("OnLeave", function()
     if GameTooltip then GameTooltip:Hide() end
 end)
 
-local divider = MQT:CreateTexture(nil, "ARTWORK")
+local divider = HS:CreateTexture(nil, "ARTWORK")
 divider:SetSize(addon.GetPanelWidth() - addon.PADDING * 2, addon.DIVIDER_HEIGHT)
-divider:SetPoint("TOP", MQT, "TOPLEFT", addon.GetPanelWidth() / 2, -(addon.PADDING + addon.HEADER_HEIGHT))
+divider:SetPoint("TOP", HS, "TOPLEFT", addon.GetPanelWidth() / 2, -(addon.PADDING + addon.HEADER_HEIGHT))
 divider:SetColorTexture(addon.DIVIDER_COLOR[1], addon.DIVIDER_COLOR[2], addon.DIVIDER_COLOR[3], addon.DIVIDER_COLOR[4])
 
 function addon.GetContentTop()
@@ -247,9 +252,9 @@ function addon.GetCollapsedHeight()
     return addon.PADDING + addon.HEADER_HEIGHT + 6
 end
 
-local scrollFrame = CreateFrame("ScrollFrame", nil, MQT)
-scrollFrame:SetPoint("TOPLEFT", MQT, "TOPLEFT", 0, addon.GetContentTop())
-scrollFrame:SetPoint("BOTTOMRIGHT", MQT, "BOTTOMRIGHT", 0, addon.PADDING)
+local scrollFrame = CreateFrame("ScrollFrame", nil, HS)
+scrollFrame:SetPoint("TOPLEFT", HS, "TOPLEFT", 0, addon.GetContentTop())
+scrollFrame:SetPoint("BOTTOMRIGHT", HS, "BOTTOMRIGHT", 0, addon.PADDING)
 
 local scrollChild = CreateFrame("Frame", nil, scrollFrame)
 scrollChild:SetWidth(addon.GetPanelWidth())
@@ -270,13 +275,13 @@ end
 scrollFrame:EnableMouseWheel(true)
 scrollFrame:SetScript("OnMouseWheel", function(_, delta) HandleScroll(delta) end)
 
-MQT:EnableMouseWheel(true)
-MQT:SetScript("OnMouseWheel", function(_, delta) HandleScroll(delta) end)
+HS:EnableMouseWheel(true)
+HS:SetScript("OnMouseWheel", function(_, delta) HandleScroll(delta) end)
 
-MQT:SetMovable(true)
-MQT:EnableMouse(true)
-MQT:RegisterForDrag("LeftButton")
-MQT:SetScript("OnDragStart", function(self)
+HS:SetMovable(true)
+HS:EnableMouse(true)
+HS:RegisterForDrag("LeftButton")
+HS:SetScript("OnDragStart", function(self)
     if InCombatLockdown() then return end
     if HorizonDB and HorizonDB.lockPosition then return end
     self:StartMoving()
@@ -285,27 +290,27 @@ end)
 local function SavePanelPosition()
     if InCombatLockdown() then return end
     local uiRight = UIParent:GetRight() or 0
-    local right   = MQT:GetRight()
+    local right   = HS:GetRight()
     if not right then return end
     addon.EnsureDB()
     if addon.GetDB("growUp", false) then
-        local bottom = MQT:GetBottom()
+        local bottom = HS:GetBottom()
         local uiBottom = UIParent:GetBottom() or 0
         if not bottom then return end
         local x, y = right - uiRight, bottom - uiBottom
-        MQT:ClearAllPoints()
-        MQT:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", x, y)
+        HS:ClearAllPoints()
+        HS:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", x, y)
         HorizonDB.point    = "BOTTOMRIGHT"
         HorizonDB.relPoint = "BOTTOMRIGHT"
         HorizonDB.x        = x
         HorizonDB.y        = y
     else
-        local top = MQT:GetTop()
+        local top = HS:GetTop()
         local uiTop = UIParent:GetTop() or 0
         if not top then return end
         local x, y = right - uiRight, top - uiTop
-        MQT:ClearAllPoints()
-        MQT:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", x, y)
+        HS:ClearAllPoints()
+        HS:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", x, y)
         HorizonDB.point    = "TOPRIGHT"
         HorizonDB.relPoint = "TOPRIGHT"
         HorizonDB.x        = x
@@ -313,7 +318,7 @@ local function SavePanelPosition()
     end
 end
 
-MQT:SetScript("OnDragStop", function(self)
+HS:SetScript("OnDragStop", function(self)
     self:StopMovingOrSizing()
     self:SetUserPlaced(false)
     if InCombatLockdown() then return end
@@ -327,9 +332,9 @@ local headerAreaResize = addon.PADDING + addon.HEADER_HEIGHT + addon.DIVIDER_HEI
 local RESIZE_HEIGHT_MAX = headerAreaResize + 1000 + addon.PADDING
 local RESIZE_CONTENT_HEIGHT_MIN, RESIZE_CONTENT_HEIGHT_MAX = 200, 1000
 
-local resizeHandle = CreateFrame("Frame", nil, MQT)
+local resizeHandle = CreateFrame("Frame", nil, HS)
 resizeHandle:SetSize(20, 20)
-resizeHandle:SetPoint("BOTTOMRIGHT", MQT, "BOTTOMRIGHT", 0, 0)
+resizeHandle:SetPoint("BOTTOMRIGHT", HS, "BOTTOMRIGHT", 0, 0)
 resizeHandle:EnableMouse(true)
 resizeHandle:SetScript("OnEnter", function(self)
     if GameTooltip then
@@ -358,8 +363,8 @@ local function ResizeOnUpdate(self, elapsed)
     local deltaY = curY - startMouseY
     local newWidth = math.max(RESIZE_MIN, math.min(RESIZE_MAX, startWidth + deltaX))
     local newHeight = math.max(RESIZE_HEIGHT_MIN, math.min(RESIZE_HEIGHT_MAX, startHeight - deltaY))
-    MQT:SetWidth(newWidth)
-    MQT:SetHeight(newHeight)
+    HS:SetWidth(newWidth)
+    HS:SetHeight(newHeight)
     addon.targetHeight = newHeight
     addon.currentHeight = newHeight
     if addon.ApplyDimensions then addon.ApplyDimensions(newWidth) end
@@ -368,8 +373,8 @@ resizeHandle:SetScript("OnDragStart", function(self)
     if HorizonDB and HorizonDB.lockPosition then return end
     if InCombatLockdown() then return end
     isResizing = true
-    startWidth = MQT:GetWidth()
-    startHeight = MQT:GetHeight()
+    startWidth = HS:GetWidth()
+    startHeight = HS:GetHeight()
     local scale = UIParent and UIParent:GetEffectiveScale() or 1
     startMouseX = select(1, GetCursorPosition()) / scale
     startMouseY = select(2, GetCursorPosition()) / scale
@@ -380,8 +385,8 @@ resizeHandle:SetScript("OnDragStop", function(self)
     isResizing = false
     self:SetScript("OnUpdate", nil)
     addon.EnsureDB()
-    HorizonDB.panelWidth = MQT:GetWidth()
-    local h = MQT:GetHeight()
+    HorizonDB.panelWidth = HS:GetWidth()
+    local h = HS:GetHeight()
     local contentH = math.max(RESIZE_CONTENT_HEIGHT_MIN, math.min(RESIZE_CONTENT_HEIGHT_MAX, h - headerAreaResize - addon.PADDING))
     HorizonDB.maxContentHeight = contentH
     if addon.ApplyDimensions then addon.ApplyDimensions() end
@@ -407,20 +412,20 @@ addon.UpdateResizeHandleVisibility()
 local function RestoreSavedPosition()
     if not HorizonDB or not HorizonDB.point then return end
     local db = HorizonDB
-    MQT:ClearAllPoints()
-    MQT:SetPoint(db.point, UIParent, db.relPoint or db.point, db.x, db.y)
+    HS:ClearAllPoints()
+    HS:SetPoint(db.point, UIParent, db.relPoint or db.point, db.x, db.y)
 end
 
 local function ApplyGrowUpAnchor()
     if not addon.GetDB("growUp", false) then return end
-    local right = MQT:GetRight()
-    local bottom = MQT:GetBottom()
+    local right = HS:GetRight()
+    local bottom = HS:GetBottom()
     if not right or not bottom then return end
     local uiRight = UIParent:GetRight() or 0
     local uiBottom = UIParent:GetBottom() or 0
     local x, y = right - uiRight, bottom - uiBottom
-    MQT:ClearAllPoints()
-    MQT:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", x, y)
+    HS:ClearAllPoints()
+    HS:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", x, y)
     addon.EnsureDB()
     HorizonDB.point    = "BOTTOMRIGHT"
     HorizonDB.relPoint = "BOTTOMRIGHT"
@@ -458,7 +463,7 @@ end
 addon.RARE_ADDED_SOUND = (SOUNDKIT and SOUNDKIT.UI_AUTO_QUEST_COMPLETE) or 61969
 
 -- Export to addon table
-addon.MQT                 = MQT
+addon.HS                  = HS
 addon.scrollFrame         = scrollFrame
 addon.scrollChild         = scrollChild
 addon.headerText          = headerText

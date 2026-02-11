@@ -3,7 +3,7 @@
     Constants, colors, fonts, labels, and group order. Loaded after Utilities, before Core.
 ]]
 
-local addon = _G.ModernQuestTracker
+local addon = _G.HorizonSuite
 if not addon then return end
 
 -- ============================================================================
@@ -135,6 +135,22 @@ addon.SECTION_COLORS = {
 }
 
 addon.GROUP_ORDER = { "DUNGEON", "NEARBY", "COMPLETE", "WORLD", "WEEKLY", "DAILY", "RARES", "AVAILABLE", "CAMPAIGN", "IMPORTANT", "LEGENDARY", "DEFAULT" }
+
+-- Category keys (enum-style) for consistent string usage across modules.
+addon.CATEGORY_KEYS = {
+    DUNGEON = "DUNGEON", AVAILABLE = "AVAILABLE", NEARBY = "NEARBY", CAMPAIGN = "CAMPAIGN",
+    IMPORTANT = "IMPORTANT", LEGENDARY = "LEGENDARY", WORLD = "WORLD", WEEKLY = "WEEKLY",
+    DAILY = "DAILY", RARES = "RARES", RARE = "RARE", DEFAULT = "DEFAULT", COMPLETE = "COMPLETE",
+    CALLING = "CALLING",
+}
+
+-- Quest type atlas names (Blizzard texture atlases for quest icons).
+addon.ATLAS_QUEST_TURNIN = "QuestTurnin"
+addon.ATLAS_QUEST_CAMPAIGN = "Quest-Campaign-Available"
+addon.ATLAS_QUEST_RECURRING = "quest-recurring-available"
+addon.ATLAS_QUEST_IMPORTANT = "importantavailablequesticon"
+addon.ATLAS_QUEST_LEGENDARY = "UI-QuestPoiLegendary-QuestBang"
+addon.ATLAS_QUEST_PVP = "questlog-questtypeicon-pvp"
 
 addon.CATEGORY_TO_GROUP = {
     COMPLETE  = "COMPLETE",

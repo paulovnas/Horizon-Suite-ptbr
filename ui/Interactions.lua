@@ -3,7 +3,7 @@
     Mouse scripts on pool entries (click, tooltip, scroll).
 ]]
 
-local addon = _G.ModernQuestTracker
+local addon = _G.HorizonSuite
 
 -- ============================================================================
 -- INTERACTIONS

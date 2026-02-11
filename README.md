@@ -17,7 +17,7 @@ The logic that drives your efficiency.
 - **Proximity Priority** - Dynamically floats "Nearby" quests to the top of the list so you never have to hunt for your next objective. Quest grouping into "Current Zone" works correctly in sub-zones and micro-dungeons (e.g. Foundation Hall within Dornogal) on initial load, without needing to open the map first.
 
 **Dynamic Scanning**
-- **Rare Boss Tracker** - Scans for nearby Rare vignettes and adds them to the tracker with a single click to super-track on the map.
+- **Rare Boss Tracker** - Scans for nearby Rare vignettes and adds them to the tracker with a single click to super-track on the map. Optional sound when a rare is added (Options → Content).
 - **World Map Sync** - Opening the world map automatically pulls active World Quests and Available quests into your tracker, keeping your UI in sync with your planning.
 - **Weeklies & Dailies in Zone** - Weekly and daily quests that appear in your current zone are auto-added to the tracker (WEEKLY QUESTS and DAILY QUESTS sections). Quests you have not yet accepted show an "— Available" label so you can see what is ready to pick up.
 
@@ -44,11 +44,23 @@ The aesthetic that defines your interface.
 **Total Customization**
 - **The Color Matrix** - Define your own hex-code reality. Customize the colors for every quest category and objective state via `/horizon options`.
 - **Typography Suite** - Total control over fonts, sizes, outlines, and text shadows for Headers, Titles, and Objectives.
+- **Compact mode** - Reduce spacing between quest entries for a denser list.
+- **Quest level display** - Show quest level next to the title.
+- **Completed count** - Show X/Y objective progress in the quest title.
+- **Objective numbers** - Prefix objectives with 1., 2., 3.
+- **Dim non-super-tracked** - Slightly dim quests that are not super-tracked.
+- **Panel & content height** - Resize the tracker via the bottom-right grip; max content height is saved in Options → General.
+- **Shadow customization** - Options → Style: shadow X/Y offset and alpha.
+- **Backdrop opacity** - Control tracker panel background opacity (0–1).
+- **Border visibility** - Toggle the panel border on or off.
+- **Highlight alpha & bar width** - Style the super-tracked quest bar or background (2–6 px bar width).
+- **Section header colors** - Options → Colors: category label colors.
 
 **Fluid Motion**
 - **Entry/Exit Animations** - Quests slide and fade into view with modern, smooth transitions.
 - **Objective Flash** - A subtle green pulse provides tactile feedback the moment you complete a requirement.
 - **Adaptive Layout** - Smoothly animates height changes and supports "Grow Upward" anchoring to protect your action bar space.
+- **Mythic+ block** - Options → Content: show timer, completion %, and affixes when in a Mythic+ dungeon (position: top or bottom).
 
 ---
 
@@ -64,9 +76,18 @@ The aesthetic that defines your interface.
 **Mouse Interactions**
 | Action | Result |
 |--------|--------|
-| **Left-Click** | Set as Super-Tracked (Map Pin) |
+| **Left-Click** | Set as Super-Tracked (Map Pin) (or open quest log if "Click title to open quest log" is on) |
 | **Double-Click** | Open Quest Log or Map details |
+| **Right double-click** | Abandon quest (with confirmation) when "Right double-click to abandon" is enabled |
 | **Right-Click** | Remove from tracker / Untrack |
+
+**Instance visibility** - Options → General: show or hide the tracker in dungeon, raid, battleground, and arena.
+**Grow upward** - Anchor the tracker by its bottom edge so the list expands upward.
+**Lock position** - Prevent dragging to reposition the tracker.
+**Start collapsed** - Objectives panel starts collapsed (header only) until you expand it.
+**Super-minimal mode** - Hide the OBJECTIVES header for a pure text list.
+**Options search** - Use the search box in the options panel to find settings by name or description.
+**Category reorder** - Options → Categories: drag to reorder Focus category order.
 
 Key binding available: Collapse Tracker can be bound in Key Bindings under Horizon Suite - Focus.
 

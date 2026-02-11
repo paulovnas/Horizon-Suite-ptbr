@@ -3,14 +3,14 @@
     Timer, completion %, affixes when in M+ dungeon.
 ]]
 
-local addon = _G.ModernQuestTracker
+local addon = _G.HorizonSuite
 
 -- ============================================================================
 -- MYTHIC+ BLOCK (TIMER, COMPLETION %, AFFIXES)
 -- ============================================================================
 
 local scrollFrame = addon.scrollFrame
-local mplusBlock = CreateFrame("Frame", nil, addon.MQT)
+local mplusBlock = CreateFrame("Frame", nil, addon.HS)
 mplusBlock:SetSize(addon.GetPanelWidth() - addon.PADDING * 2, 40)
 mplusBlock:SetPoint("BOTTOM", scrollFrame, "TOP", 0, -4)
 mplusBlock:Hide()

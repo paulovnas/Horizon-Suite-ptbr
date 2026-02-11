@@ -3,12 +3,15 @@
     Quests on map (GetNearbyQuestIDs), world/calling watch list, merge into tracker.
 ]]
 
-local addon = _G.ModernQuestTracker
+local addon = _G.HorizonSuite
 
 -- ============================================================================
 -- WORLD QUEST AND QUESTS-ON-MAP LOGIC
 -- ============================================================================
 
+--- Build sets of quest IDs visible on the player's current map(s) and from task/WQ APIs.
+-- @return table nearbySet Set of questID -> true for quests on player map or parent/children
+-- @return table taskQuestOnlySet Set of questID -> true for quests coming only from task/WQ map APIs
 local function GetNearbyQuestIDs()
     local nearbySet = {}
     local taskQuestOnlySet = {}

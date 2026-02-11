@@ -3,7 +3,7 @@
     PopulateEntry, FullLayout, ToggleCollapse, AcquireEntry, section headers, header button, keybind, floating item, M+ block.
 ]]
 
-local addon = _G.ModernQuestTracker
+local addon = _G.HorizonSuite
 
 -- ============================================================================
 -- LAYOUT ENGINE
@@ -29,9 +29,7 @@ local function hideAllHighlight(entry)
 end
 
 local function ApplyHighlightStyle(entry, questData)
-    local rawHighlight = addon.GetDB("activeQuestHighlight", "bar-left")
-    if rawHighlight == "bar" then rawHighlight = "bar-left" end
-    local highlightStyle = rawHighlight == "highlight" and "highlight" or rawHighlight
+    local highlightStyle = addon.NormalizeHighlightStyle(addon.GetDB("activeQuestHighlight", "bar-left")) or "bar-left"
     local hc = addon.GetDB("highlightColor", nil)
     if not hc or #hc < 3 then hc = { 0.40, 0.70, 1.00 } end
     local ha = tonumber(addon.GetDB("highlightAlpha", 0.25)) or 0.25
@@ -175,6 +173,10 @@ local function ApplyShadowColors(entry, questData, highlightStyle, hc, ha)
     end
 end
 
+--- Populate a single quest/rare entry frame with title, zone, objectives, highlight, and track bar.
+-- @param entry table Pool entry frame (from addon.pool)
+-- @param questData table Quest or rare data (title, objectives, color, isSuperTracked, etc.)
+-- @return number Total height of the entry in pixels
 local function PopulateEntry(entry, questData)
     local hasItem = questData.itemTexture and true or false
     local showItemBtn = hasItem and addon.GetDB("showQuestItemButtons", false)
@@ -500,9 +502,9 @@ function addon.StartGroupCollapse(groupKey)
     end
 end
 
-local headerBtn = CreateFrame("Button", nil, addon.MQT)
-headerBtn:SetPoint("TOPLEFT", addon.MQT, "TOPLEFT", 0, 0)
-headerBtn:SetPoint("TOPRIGHT", addon.MQT, "TOPRIGHT", 0, 0)
+local headerBtn = CreateFrame("Button", nil, addon.HS)
+headerBtn:SetPoint("TOPLEFT", addon.HS, "TOPLEFT", 0, 0)
+headerBtn:SetPoint("TOPRIGHT", addon.HS, "TOPRIGHT", 0, 0)
 headerBtn:SetHeight(addon.PADDING + addon.HEADER_HEIGHT)
 headerBtn:RegisterForClicks("LeftButtonUp")
 headerBtn:SetScript("OnClick", function()
@@ -512,17 +514,17 @@ headerBtn:RegisterForDrag("LeftButton")
 headerBtn:SetScript("OnDragStart", function()
     if HorizonDB and HorizonDB.lockPosition then return end
     if InCombatLockdown() then return end
-    addon.MQT:StartMoving()
+    addon.HS:StartMoving()
 end)
 headerBtn:SetScript("OnDragStop", function()
     if HorizonDB and HorizonDB.lockPosition then return end
-    addon.MQT:StopMovingOrSizing()
-    addon.MQT:SetUserPlaced(false)
+    addon.HS:StopMovingOrSizing()
+    addon.HS:SetUserPlaced(false)
     if InCombatLockdown() then return end
     addon.SavePanelPosition()
 end)
 
-local collapseKeybindBtn = CreateFrame("Button", "MQTCollapseButton", nil)
+local collapseKeybindBtn = CreateFrame("Button", "HSCollapseButton", nil)
 collapseKeybindBtn:SetScript("OnClick", function()
     ToggleCollapse()
 end)
@@ -540,6 +542,7 @@ local function ShouldShowInInstance()
 end
 
 --- Full layout of the objectives panel.
+-- @brief Computes and applies the complete tracker layout: visibility, quest list, section headers, entry positions, scroll height.
 -- Algorithm: (1) Bail if disabled or in combat. (2) Hide panel if instance visibility
 -- forbids. (3) Apply grow-up anchor and header visibility from DB. (4) When collapsed,
 -- update floating item and header count then return. (5) Read and sort/group quests,
@@ -556,14 +559,14 @@ local function FullLayout()
     addon.layoutPendingAfterCombat = false
 
     if not ShouldShowInInstance() then
-        addon.MQT:Hide()
+        addon.HS:Hide()
         addon.UpdateFloatingQuestItem(nil)
         addon.UpdateMplusBlock()
         return
     end
 
     if addon.ShouldHideInCombat() then
-        addon.MQT:Hide()
+        addon.HS:Hide()
         addon.UpdateFloatingQuestItem(nil)
         addon.UpdateMplusBlock()
         return
@@ -593,8 +596,8 @@ local function FullLayout()
         headerBtn:SetHeight(addon.PADDING + addon.HEADER_HEIGHT)
     end
     scrollFrame:ClearAllPoints()
-    scrollFrame:SetPoint("TOPLEFT", addon.MQT, "TOPLEFT", 0, addon.GetContentTop())
-    scrollFrame:SetPoint("BOTTOMRIGHT", addon.MQT, "BOTTOMRIGHT", 0, addon.PADDING)
+    scrollFrame:SetPoint("TOPLEFT", addon.HS, "TOPLEFT", 0, addon.GetContentTop())
+    scrollFrame:SetPoint("BOTTOMRIGHT", addon.HS, "BOTTOMRIGHT", 0, addon.PADDING)
 
     addon.UpdateMplusBlock()
 
@@ -626,8 +629,8 @@ local function FullLayout()
         addon.UpdateFloatingQuestItem(quests)
         addon.UpdateHeaderQuestCount(#quests)
         if #quests > 0 then
-            if addon.combatFadeState == "in" then addon.MQT:SetAlpha(0) end
-            addon.MQT:Show()
+            if addon.combatFadeState == "in" then addon.HS:SetAlpha(0) end
+            addon.HS:Show()
         end
         return
     end
@@ -746,8 +749,8 @@ local function FullLayout()
     addon.targetHeight  = math.max(addon.MIN_HEIGHT, headerArea + visibleH + addon.PADDING)
 
     if #quests > 0 then
-        if addon.combatFadeState == "in" then addon.MQT:SetAlpha(0) end
-        addon.MQT:Show()
+        if addon.combatFadeState == "in" then addon.HS:SetAlpha(0) end
+        addon.HS:Show()
     end
 end
 

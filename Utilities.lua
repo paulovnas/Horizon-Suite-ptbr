@@ -3,10 +3,10 @@
     Shared helpers for design tokens, borders, text, logging, and quest/map helpers.
 ]]
 
-local addon = _G.ModernQuestTracker or _G.HorizonSuite
+local addon = _G.HorizonSuite
 if not addon then
     addon = {}
-    _G.ModernQuestTracker = addon
+    _G.HorizonSuite = addon
 end
 
 -- ============================================================================
@@ -95,14 +95,26 @@ end
 -- LOGGING
 -- ============================================================================
 
+addon.PRINT_PREFIX = "|cFF00CCFFHorizon Suite - Focus:|r "
+
 --- Standardized print helper with colored Horizon Suite prefix.
 function addon.HSPrint(msg)
-    local prefix = "|cFF00CCFFHorizon Suite - Focus:|r "
+    local prefix = addon.PRINT_PREFIX
     if msg == nil then
         print(prefix)
     else
         print(prefix .. tostring(msg))
     end
+end
+
+-- ============================================================================
+-- OPTION HELPERS
+-- ============================================================================
+
+--- Normalize legacy "bar" to "bar-left". Returns valid highlight style for layout/options.
+function addon.NormalizeHighlightStyle(style)
+    if style == "bar" then return "bar-left" end
+    return style
 end
 
 -- ============================================================================

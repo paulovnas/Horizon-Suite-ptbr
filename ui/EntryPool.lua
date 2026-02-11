@@ -3,7 +3,7 @@
     Quest entry frames, section headers, ApplyTypography, ApplyDimensions.
 ]]
 
-local addon = _G.ModernQuestTracker
+local addon = _G.HorizonSuite
 
 -- ============================================================================
 -- ENTRY POOL
@@ -64,7 +64,7 @@ local function CreateQuestEntry(parent, index)
     e.highlightBorderR:SetColorTexture(0.40, 0.70, 1.00, 0.6)
     e.highlightBorderR:Hide()
 
-    local btnName = "MQTItemBtn" .. index
+    local btnName = "HSItemBtn" .. index
     e.itemBtn = CreateFrame("Button", btnName, e, "SecureActionButtonTemplate")
     e.itemBtn:SetSize(addon.ITEM_BTN_SIZE, addon.ITEM_BTN_SIZE)
     e.itemBtn:SetPoint("TOPRIGHT", e, "TOPRIGHT", 0, 2)
@@ -278,9 +278,9 @@ end
 
 local function ApplyDimensions(widthOverride)
     local w = (widthOverride and type(widthOverride) == "number") and widthOverride or addon.GetPanelWidth()
-    addon.MQT:SetSize(w, addon.MQT:GetHeight() or addon.MIN_HEIGHT)
+    addon.HS:SetSize(w, addon.HS:GetHeight() or addon.MIN_HEIGHT)
     addon.divider:SetSize(w - addon.PADDING * 2, addon.DIVIDER_HEIGHT)
-    addon.divider:SetPoint("TOP", addon.MQT, "TOPLEFT", w / 2, -(addon.PADDING + addon.HEADER_HEIGHT))
+    addon.divider:SetPoint("TOP", addon.HS, "TOPLEFT", w / 2, -(addon.PADDING + addon.HEADER_HEIGHT))
     addon.scrollChild:SetWidth(w)
     for i = 1, addon.POOL_SIZE do
         local e = pool[i]

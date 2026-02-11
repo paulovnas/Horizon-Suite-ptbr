@@ -4,7 +4,7 @@
     Modern Cinematic styling. All widgets expose :Refresh() and .searchText for search indexing.
 ]]
 
-local addon = _G.ModernQuestTracker
+local addon = _G.HorizonSuite
 if not addon then return end
 
 -- Design tokens (Modern Cinematic). Panel can override FontPath/HeaderSize via SetDef.
@@ -511,6 +511,14 @@ local REORDER_ROW_HEIGHT = 24
 local REORDER_AUTOSCROLL_MARGIN = 40
 local REORDER_AUTOSCROLL_STEP = 10
 
+--- Create a drag-to-reorder list widget (e.g. for Focus category order). Rows show labelMap[key]; opt.get/set provide order array.
+-- @param parent table Parent frame
+-- @param anchor table Anchor for TOPLEFT
+-- @param opt table Option descriptor: get(), set(order), labelMap, name, tooltip
+-- @param scrollFrameRef table Scroll frame for auto-scroll during drag
+-- @param panelRef table Options panel for scroll region
+-- @param notifyMainAddonFn function Called when order changes (e.g. to refresh tracker)
+-- @return table Container frame
 function OptionsWidgets_CreateReorderList(parent, anchor, opt, scrollFrameRef, panelRef, notifyMainAddonFn)
     local keys = opt.get and opt.get() or {}
     if type(keys) == "function" then keys = keys() end

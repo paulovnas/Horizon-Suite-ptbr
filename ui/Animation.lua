@@ -1,15 +1,15 @@
 --[[
     Horizon Suite - Focus - Animation Engine
-    MQT OnUpdate: height lerp, entry fade/slide/collapse, objective flash, auto-hide.
+    HS OnUpdate: height lerp, entry fade/slide/collapse, objective flash, auto-hide.
 ]]
 
-local addon = _G.ModernQuestTracker
+local addon = _G.HorizonSuite
 
 -- ============================================================================
 -- ANIMATION ENGINE
 -- ============================================================================
 
-local MQT         = addon.MQT
+local HS          = addon.HS
 local pool         = addon.pool
 local scrollChild  = addon.scrollChild
 local scrollFrame  = addon.scrollFrame
@@ -17,38 +17,39 @@ local scrollFrame  = addon.scrollFrame
 local function SetPanelHeight(h)
     if InCombatLockdown() then return end
     if addon.GetDB("growUp", false) then
-        MQT:SetHeight(h)
+        HS:SetHeight(h)
         return
     end
-    local topBefore = MQT:GetTop()
+    local topBefore = HS:GetTop()
     if not topBefore then return end
-    MQT:SetHeight(h)
-    local topAfter = MQT:GetTop()
+    HS:SetHeight(h)
+    local topAfter = HS:GetTop()
     if not topAfter then return end
     local drift = topAfter - topBefore
     if math.abs(drift) < 0.1 then return end
     local uiTop   = UIParent:GetTop()   or 0
     local uiRight = UIParent:GetRight() or 0
-    local right   = MQT:GetRight()      or 0
-    MQT:ClearAllPoints()
-    MQT:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", right - uiRight, topBefore - uiTop)
+    local right   = HS:GetRight()      or 0
+    HS:ClearAllPoints()
+    HS:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", right - uiRight, topBefore - uiTop)
 end
 
-MQT:SetScript("OnUpdate", function(self, dt)
-    if addon.enabled and C_Map and C_Map.GetBestMapForUnit then
-        addon.lastMapCheckTime = addon.lastMapCheckTime + dt
-        if addon.lastMapCheckTime >= 0.5 then
-            addon.lastMapCheckTime = 0
-            local mapID = C_Map.GetBestMapForUnit("player")
-            if mapID and mapID ~= addon.lastPlayerMapID then
-                addon.lastPlayerMapID = mapID
-                if addon.ScheduleRefresh then addon.ScheduleRefresh() end
-            elseif not addon.lastPlayerMapID and mapID then
-                addon.lastPlayerMapID = mapID
-            end
+local function UpdateMapCheck(dt)
+    if not addon.enabled or not C_Map or not C_Map.GetBestMapForUnit then return end
+    addon.lastMapCheckTime = addon.lastMapCheckTime + dt
+    if addon.lastMapCheckTime >= 0.5 then
+        addon.lastMapCheckTime = 0
+        local mapID = C_Map.GetBestMapForUnit("player")
+        if mapID and mapID ~= addon.lastPlayerMapID then
+            addon.lastPlayerMapID = mapID
+            if addon.ScheduleRefresh then addon.ScheduleRefresh() end
+        elseif not addon.lastPlayerMapID and mapID then
+            addon.lastPlayerMapID = mapID
         end
     end
+end
 
+local function UpdatePanelHeight(dt)
     local targetHeight  = addon.targetHeight
     local currentHeight = addon.currentHeight
     if math.abs(currentHeight - targetHeight) > 0.5 then
@@ -58,58 +59,58 @@ MQT:SetScript("OnUpdate", function(self, dt)
         addon.currentHeight = targetHeight
         SetPanelHeight(addon.currentHeight)
     end
+end
 
-    -- Combat hide-in-combat fade in/out
+local function UpdateCombatFade(dt, useAnim)
     local combatState = addon.combatFadeState
-    if combatState then
-        local dur = addon.COMBAT_FADE_DUR or 0.4
-        addon.combatFadeTime = addon.combatFadeTime + dt
-        local useAnim = addon.GetDB("animations", true)
-        local floatingBtn = _G.MQTFloatingQuestItem
+    if not combatState then return end
+    local dur = addon.COMBAT_FADE_DUR or 0.4
+    addon.combatFadeTime = addon.combatFadeTime + dt
+    local floatingBtn = _G.HSFloatingQuestItem
 
-        if combatState == "out" then
-            if not useAnim then
-                MQT:Hide()
+    if combatState == "out" then
+        if not useAnim then
+            HS:Hide()
+            if floatingBtn then floatingBtn:Hide() end
+            if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
+            if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
+            addon.combatFadeState = nil
+            addon.combatFadeTime = 0
+        else
+            local p = math.min(addon.combatFadeTime / dur, 1)
+            HS:SetAlpha(1 - p)
+            if floatingBtn and floatingBtn:IsShown() then floatingBtn:SetAlpha(1 - p) end
+            if p >= 1 then
+                HS:Hide()
                 if floatingBtn then floatingBtn:Hide() end
                 if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
                 if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
                 addon.combatFadeState = nil
                 addon.combatFadeTime = 0
-            else
-                local p = math.min(addon.combatFadeTime / dur, 1)
-                MQT:SetAlpha(1 - p)
-                if floatingBtn and floatingBtn:IsShown() then floatingBtn:SetAlpha(1 - p) end
-                if p >= 1 then
-                    MQT:Hide()
-                    if floatingBtn then floatingBtn:Hide() end
-                    if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
-                    if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
-                    addon.combatFadeState = nil
-                    addon.combatFadeTime = 0
-                end
             end
-        elseif combatState == "in" then
-            if not useAnim then
-                MQT:SetAlpha(1)
+        end
+    elseif combatState == "in" then
+        if not useAnim then
+            HS:SetAlpha(1)
+            if floatingBtn and floatingBtn:IsShown() then floatingBtn:SetAlpha(1) end
+            addon.combatFadeState = nil
+            addon.combatFadeTime = 0
+        else
+            local p = math.min(addon.combatFadeTime / dur, 1)
+            if HS:IsShown() then HS:SetAlpha(p) end
+            if floatingBtn and floatingBtn:IsShown() then floatingBtn:SetAlpha(p) end
+            if p >= 1 then
+                HS:SetAlpha(1)
                 if floatingBtn and floatingBtn:IsShown() then floatingBtn:SetAlpha(1) end
                 addon.combatFadeState = nil
                 addon.combatFadeTime = 0
-            else
-                local p = math.min(addon.combatFadeTime / dur, 1)
-                if MQT:IsShown() then MQT:SetAlpha(p) end
-                if floatingBtn and floatingBtn:IsShown() then floatingBtn:SetAlpha(p) end
-                if p >= 1 then
-                    MQT:SetAlpha(1)
-                    if floatingBtn and floatingBtn:IsShown() then floatingBtn:SetAlpha(1) end
-                    addon.combatFadeState = nil
-                    addon.combatFadeTime = 0
-                end
             end
         end
     end
+end
 
+local function UpdateEntryAnimations(dt, useAnim)
     local anyAnimating = false
-    local useAnim = addon.GetDB("animations", true)
     for i = 1, addon.POOL_SIZE do
         local e = pool[i]
 
@@ -202,32 +203,36 @@ MQT:SetScript("OnUpdate", function(self, dt)
             anyAnimating = true
         end
     end
+    return anyAnimating
+end
 
-    if addon.collapseAnimating then
-        local stillCollapsing = false
-        for i = 1, addon.POOL_SIZE do
-            if pool[i].animState == "collapsing" then
-                stillCollapsing = true
-                break
-            end
-        end
-        if not stillCollapsing then
-            addon.collapseAnimating = false
-            scrollFrame:Hide()
-            addon.targetHeight = addon.GetCollapsedHeight()
-            for i = 1, addon.POOL_SIZE do
-                if pool[i].animState == "idle" and (pool[i].questID or pool[i].entryKey) then
-                    addon.ClearEntry(pool[i], false)
-                end
-            end
-            wipe(addon.activeMap)
+local function UpdateCollapseAnimations()
+    if not addon.collapseAnimating then return end
+    local stillCollapsing = false
+    for i = 1, addon.POOL_SIZE do
+        if pool[i].animState == "collapsing" then
+            stillCollapsing = true
+            break
         end
     end
+    if not stillCollapsing then
+        addon.collapseAnimating = false
+        scrollFrame:Hide()
+        addon.targetHeight = addon.GetCollapsedHeight()
+        for i = 1, addon.POOL_SIZE do
+            if pool[i].animState == "idle" and (pool[i].questID or pool[i].entryKey) then
+                addon.ClearEntry(pool[i], false)
+            end
+        end
+        wipe(addon.activeMap)
+    end
+end
 
-    -- Group collapse completion: when no entries in a group are collapsing anymore,
-    -- mark that group as collapsed and trigger a layout refresh.
-    if addon.groupCollapses then
-        for groupKey, startTime in pairs(addon.groupCollapses) do
+-- Group collapse completion: when no entries in a group are collapsing anymore,
+-- mark that group as collapsed and trigger a layout refresh.
+local function UpdateGroupCollapseCompletion()
+    if not addon.groupCollapses then return end
+    for groupKey, startTime in pairs(addon.groupCollapses) do
             local stillCollapsing = false
             for i = 1, addon.POOL_SIZE do
                 local e = pool[i]
@@ -260,7 +265,19 @@ MQT:SetScript("OnUpdate", function(self, dt)
                 break
             end
         end
-    end
+end
+
+--- OnUpdate: map check, panel height lerp, combat fade, entry/collapse animations, auto-hide when empty.
+-- @param _ table Frame (unused)
+-- @param dt number Elapsed time since last frame
+HS:SetScript("OnUpdate", function(_, dt)
+    local useAnim = addon.GetDB("animations", true)
+    UpdateMapCheck(dt)
+    UpdatePanelHeight(dt)
+    UpdateCombatFade(dt, useAnim)
+    local anyAnimating = UpdateEntryAnimations(dt, useAnim)
+    UpdateCollapseAnimations()
+    UpdateGroupCollapseCompletion()
 
     if not anyAnimating then
         local hasActive = false
@@ -268,7 +285,7 @@ MQT:SetScript("OnUpdate", function(self, dt)
             if pool[i].questID or pool[i].entryKey then hasActive = true; break end
         end
         if not hasActive and not addon.collapsed then
-            MQT:Hide()
+            HS:Hide()
         end
     end
 end)

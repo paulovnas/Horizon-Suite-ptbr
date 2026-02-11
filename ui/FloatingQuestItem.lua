@@ -3,15 +3,15 @@
     Extra Action style button for super-tracked or first quest item.
 ]]
 
-local addon = _G.ModernQuestTracker
+local addon = _G.HorizonSuite
 
 -- ============================================================================
 -- FLOATING QUEST ITEM BUTTON
 -- ============================================================================
 
-local floatingQuestItemBtn = CreateFrame("Button", "MQTFloatingQuestItem", UIParent, "SecureActionButtonTemplate")
+local floatingQuestItemBtn = CreateFrame("Button", "HSFloatingQuestItem", UIParent, "SecureActionButtonTemplate")
 floatingQuestItemBtn:SetSize(addon.GetDB("floatingQuestItemSize", 36) or 36, addon.GetDB("floatingQuestItemSize", 36) or 36)
-floatingQuestItemBtn:SetPoint("RIGHT", addon.MQT, "LEFT", -12, 0)
+floatingQuestItemBtn:SetPoint("RIGHT", addon.HS, "LEFT", -12, 0)
 floatingQuestItemBtn:SetAttribute("type", "item")
 floatingQuestItemBtn:RegisterForClicks("AnyUp")
 floatingQuestItemBtn:Hide()
@@ -62,13 +62,13 @@ local function UpdateFloatingQuestItem(questsFlat)
         local oy = tonumber(addon.GetDB("floatingQuestItemOffsetY", 0)) or 0
         floatingQuestItemBtn:ClearAllPoints()
         if anchor == "LEFT" then
-            floatingQuestItemBtn:SetPoint("RIGHT", addon.MQT, "LEFT", ox, oy)
+            floatingQuestItemBtn:SetPoint("RIGHT", addon.HS, "LEFT", ox, oy)
         elseif anchor == "RIGHT" then
-            floatingQuestItemBtn:SetPoint("LEFT", addon.MQT, "RIGHT", ox, oy)
+            floatingQuestItemBtn:SetPoint("LEFT", addon.HS, "RIGHT", ox, oy)
         elseif anchor == "TOP" then
-            floatingQuestItemBtn:SetPoint("BOTTOM", addon.MQT, "TOP", ox, oy)
+            floatingQuestItemBtn:SetPoint("BOTTOM", addon.HS, "TOP", ox, oy)
         else
-            floatingQuestItemBtn:SetPoint("TOP", addon.MQT, "BOTTOM", ox, oy)
+            floatingQuestItemBtn:SetPoint("TOP", addon.HS, "BOTTOM", ox, oy)
         end
         if addon.combatFadeState == "in" then floatingQuestItemBtn:SetAlpha(0) end
         floatingQuestItemBtn:Show()

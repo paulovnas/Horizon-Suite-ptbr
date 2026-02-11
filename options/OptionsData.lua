@@ -4,7 +4,7 @@
 ]]
 
 if not HorizonDB then HorizonDB = {} end
-local addon = _G.ModernQuestTracker
+local addon = _G.HorizonSuite
 if not addon then return end
 
 -- ---------------------------------------------------------------------------
@@ -22,10 +22,7 @@ local TYPOGRAPHY_KEYS = {
 }
 
 function OptionsData_GetDB(key, default)
-    if not HorizonDB then return default end
-    local v = HorizonDB[key]
-    if v == nil then return default end
-    return v
+    return addon.GetDB(key, default)
 end
 
 local updateOptionsPanelFontsRef
@@ -34,8 +31,7 @@ function OptionsData_SetUpdateFontsRef(fn)
 end
 
 function OptionsData_SetDB(key, value)
-    addon.EnsureDB()
-    HorizonDB[key] = value
+    addon.SetDB(key, value)
     if key == "fontPath" and updateOptionsPanelFontsRef then
         updateOptionsPanelFontsRef()
     end
@@ -49,20 +45,20 @@ function OptionsData_SetDB(key, value)
 end
 
 function OptionsData_NotifyMainAddon()
-    local applyTy = _G.ModernQuestTracker_ApplyTypography or addon.ApplyTypography
+    local applyTy = _G.HorizonSuite_ApplyTypography or addon.ApplyTypography
     if applyTy then applyTy() end
-    if _G.ModernQuestTracker_ApplyDimensions then _G.ModernQuestTracker_ApplyDimensions() end
+    if _G.HorizonSuite_ApplyDimensions then _G.HorizonSuite_ApplyDimensions() end
     if addon.ApplyBackdropOpacity then addon.ApplyBackdropOpacity() end
     if addon.ApplyBorderVisibility then addon.ApplyBorderVisibility() end
-    if _G.ModernQuestTracker_RequestRefresh then _G.ModernQuestTracker_RequestRefresh() end
-    if _G.ModernQuestTracker_FullLayout and not InCombatLockdown() then _G.ModernQuestTracker_FullLayout() end
+    if _G.HorizonSuite_RequestRefresh then _G.HorizonSuite_RequestRefresh() end
+    if _G.HorizonSuite_FullLayout and not InCombatLockdown() then _G.HorizonSuite_FullLayout() end
 end
 
 -- ---------------------------------------------------------------------------
 -- Option value helpers (used in category descriptors)
 -- ---------------------------------------------------------------------------
 
-local function getDB(k, d) return OptionsData_GetDB(k, d) end
+local function getDB(k, d) return addon.GetDB(k, d) end
 local function setDB(k, v) return OptionsData_SetDB(k, v) end
 
 local defaultFontPath = (addon.GetDefaultFontPath and addon.GetDefaultFontPath()) or "Fonts\\FRIZQT__.TTF"
@@ -100,16 +96,7 @@ local MPLUS_POSITION_OPTIONS = {
     { "Top", "top" },
     { "Bottom", "bottom" },
 }
-local QUEST_COLOR_DEFAULTS = {
-    DEFAULT = { 0.90, 0.90, 0.90 },
-    CAMPAIGN = { 1.00, 0.82, 0.20 },
-    LEGENDARY = { 1.00, 0.50, 0.00 },
-    WORLD = { 0.60, 0.20, 1.00 },
-    WEEKLY = { 0.25, 0.88, 0.92 },
-    DAILY = { 0.25, 0.88, 0.92 },
-    COMPLETE = { 0.20, 1.00, 0.40 },
-    RARE = { 1.00, 0.55, 0.25 },
-}
+-- Use addon.QUEST_COLORS from Config as single source for quest type colors.
 local COLOR_KEYS_ORDER = { "DEFAULT", "CAMPAIGN", "LEGENDARY", "WORLD", "WEEKLY", "DAILY", "COMPLETE", "RARE" }
 local ZONE_COLOR_DEFAULT = { 0.55, 0.65, 0.75 }
 local OBJ_COLOR_DEFAULT = { 0.78, 0.78, 0.78 }
@@ -121,8 +108,7 @@ local VALID_HIGHLIGHT_STYLES = {
     ["outline"] = true, ["glow"] = true, ["bar-both"] = true, ["pill-left"] = true, ["highlight"] = true,
 }
 local function getActiveQuestHighlight()
-    local v = getDB("activeQuestHighlight", "bar-left")
-    if v == "bar" then v = "bar-left" end
+    local v = addon.NormalizeHighlightStyle(getDB("activeQuestHighlight", "bar-left"))
     if not VALID_HIGHLIGHT_STYLES[v] then return "bar-left" end
     return v
 end
@@ -215,7 +201,7 @@ local OptionCategories = {
         name = "Colors",
         options = {
             { type = "section", name = "Quest type colors" },
-            { type = "colorMatrix", name = "Colors", dbKey = "questColors", keys = COLOR_KEYS_ORDER, defaultMap = QUEST_COLOR_DEFAULTS, resetSectionKeys = true,
+            { type = "colorMatrix", name = "Colors", dbKey = "questColors", keys = COLOR_KEYS_ORDER, defaultMap = addon.QUEST_COLORS, resetSectionKeys = true,
                 overrides = {
                     { dbKey = "zoneColor", name = "Zone label", default = ZONE_COLOR_DEFAULT, tooltip = "Zone name under quest title." },
                     { dbKey = "objectiveColor", name = "Objective text", default = OBJ_COLOR_DEFAULT, tooltip = "Active objectives." },
@@ -272,7 +258,6 @@ addon.OptionsData_NotifyMainAddon = OptionsData_NotifyMainAddon
 addon.OptionsData_SetUpdateFontsRef = OptionsData_SetUpdateFontsRef
 addon.OptionCategories = OptionCategories
 addon.OptionsData_BuildSearchIndex = OptionsData_BuildSearchIndex
-addon.QUEST_COLOR_DEFAULTS = QUEST_COLOR_DEFAULTS
 addon.COLOR_KEYS_ORDER = COLOR_KEYS_ORDER
 addon.ZONE_COLOR_DEFAULT = ZONE_COLOR_DEFAULT
 addon.OBJ_COLOR_DEFAULT = OBJ_COLOR_DEFAULT

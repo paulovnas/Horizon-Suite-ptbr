@@ -3,7 +3,7 @@
     State, quest/rare/zone helpers, ReadTrackedQuests, SortAndGroupQuests.
 ]]
 
-local addon = _G.ModernQuestTracker
+local addon = _G.HorizonSuite
 
 -- ============================================================================
 -- QUEST DATA
@@ -193,6 +193,9 @@ local function GetMythicDungeonName()
     return name or nil
 end
 
+--- Build the full list of quests (and rares) to show: watch list, zone WQs/callings, weeklies/dailies, dungeon quests, super-tracked WQ.
+-- Respects filterByZone and test data injection (addon.testQuests). Each entry has questID, title, objectives, color, category, etc.
+-- @return table Array of quest/rare entry tables for the tracker
 local function ReadTrackedQuests()
     -- Allow test data injection from Slash.lua for /horizon test.
     if addon.testQuests then

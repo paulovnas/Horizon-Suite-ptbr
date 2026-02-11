@@ -1,9 +1,9 @@
 --[[
     Horizon Suite - Focus - Blizzard Suppression
-    Hide default objective tracker when MQT is enabled.
+    Hide default objective tracker when Horizon Suite is enabled.
 ]]
 
-local addon = _G.ModernQuestTracker
+local addon = _G.HorizonSuite
 
 -- ============================================================================
 -- BLIZZARD SUPPRESSION

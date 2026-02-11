@@ -3,7 +3,7 @@
     Main panel frame, title bar, search bar, sidebar, content scroll, BuildCategory, FilterBySearch, animations.
 ]]
 
-local addon = _G.ModernQuestTracker
+local addon = _G.HorizonSuite
 if not addon or not addon.OptionCategories then return end
 
 local Def = addon.OptionsWidgetsDef or {}
@@ -31,7 +31,7 @@ local function notifyMainAddon() return addon.OptionsData_NotifyMainAddon() end
 -- ---------------------------------------------------------------------------
 -- Panel frame
 -- ---------------------------------------------------------------------------
-local panel = CreateFrame("Frame", "ModernQuestTrackerOptionsPanel", UIParent)
+local panel = CreateFrame("Frame", "HorizonSuiteOptionsPanel", UIParent)
 panel.name = "Horizon Suite - Focus"
 panel:SetSize(PAGE_WIDTH, PAGE_HEIGHT)
 panel:SetFrameStrata("DIALOG")
@@ -81,7 +81,7 @@ SetTextColor(closeLabel, Def.TextColorLabel)
 closeLabel:SetText("Close")
 closeLabel:SetPoint("CENTER", closeBtn, "CENTER", 0, 0)
 closeBtn:SetScript("OnClick", function()
-    if _G.ModernQuestTracker_OptionsRequestClose then _G.ModernQuestTracker_OptionsRequestClose() else panel:Hide() end
+    if _G.HorizonSuite_OptionsRequestClose then _G.HorizonSuite_OptionsRequestClose() else panel:Hide() end
 end)
 closeBtn:SetScript("OnEnter", function() SetTextColor(closeLabel, Def.TextColorHighlight) end)
 closeBtn:SetScript("OnLeave", function() SetTextColor(closeLabel, Def.TextColorLabel) end)
@@ -138,7 +138,7 @@ for i = 2, #tabFrames do tabFrames[i]:Hide() end
 local versionLabel = sidebar:CreateFontString(nil, "OVERLAY")
 versionLabel:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.SectionSize or 10, "OUTLINE")
 SetTextColor(versionLabel, Def.TextColorSection)
-versionLabel:SetText("v0.6.6")
+versionLabel:SetText("v" .. (GetAddOnMetadata and GetAddOnMetadata("HorizonSuite", "Version") or "0.6.6"))
 versionLabel:SetPoint("BOTTOMLEFT", sidebar, "BOTTOMLEFT", 8, 8)
 
 -- ---------------------------------------------------------------------------
@@ -151,6 +151,10 @@ local function FinalizeCard(card)
     card:SetHeight(card.contentHeight + CardPadding)
 end
 
+--- Build one options category: section cards, toggles, sliders, dropdowns, color matrix, reorder list; wires get/set and refreshers.
+-- @param tab table Tab frame with topAnchor
+-- @param options table Array of option descriptors (type, name, dbKey, get, set, etc.)
+-- @param refreshers table Array to which refreshable widgets are appended
 local function BuildCategory(tab, options, refreshers)
     local anchor = tab.topAnchor
     local currentCard = nil
@@ -194,7 +198,7 @@ local function BuildCategory(tab, options, refreshers)
             currentCard.contentHeight = CardPadding + RowHeights.sectionLabel
             anchor = currentCard
             local keys = opt.keys or addon.COLOR_KEYS_ORDER
-            local defaultMap = opt.defaultMap or addon.QUEST_COLOR_DEFAULTS
+            local defaultMap = opt.defaultMap or addon.QUEST_COLORS
             local sub = OptionsWidgets_CreateSectionHeader(currentCard, "Quest type colors")
             sub:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -SectionGap)
             currentCard.contentAnchor = sub
@@ -411,7 +415,7 @@ panel:SetScript("OnShow", function()
     end)
 end)
 
-function _G.ModernQuestTracker_OptionsRequestClose()
+function _G.HorizonSuite_OptionsRequestClose()
     if panel.animating == "out" then return end
     panel.animating = "out"
     panel.animStart = GetTime()
@@ -422,13 +426,15 @@ function _G.ModernQuestTracker_OptionsRequestClose()
     end)
 end
 
-function _G.ModernQuestTracker_ShowOptions()
-    local p = _G.ModernQuestTrackerOptionsPanel
+function _G.HorizonSuite_ShowOptions()
+    local p = _G.HorizonSuiteOptionsPanel
     if p then
         if p:IsShown() then
-            if _G.ModernQuestTracker_OptionsRequestClose then _G.ModernQuestTracker_OptionsRequestClose() else p:Hide() end
+            if _G.HorizonSuite_OptionsRequestClose then _G.HorizonSuite_OptionsRequestClose() else p:Hide() end
         else p:Show() end
     end
 end
 
--- (Edit panel stub removed — reserved for a future fully implemented editor.)
+function _G.HorizonSuite_ShowEditPanel()
+    if _G.HorizonSuite_ShowOptions then _G.HorizonSuite_ShowOptions() end
+end

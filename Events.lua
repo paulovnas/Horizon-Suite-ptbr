@@ -4,7 +4,7 @@
     global API for Options. Cache helpers use addon.ParseTaskPOIs (Utilities).
 ]]
 
-local A = _G.ModernQuestTracker
+local addon = _G.HorizonSuite
 
 -- ============================================================================
 -- EVENT DISPATCH
@@ -30,36 +30,36 @@ eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
 eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 
 local function ScheduleRefresh()
-    if A.refreshPending then return end
-    A.refreshPending = true
+    if addon.refreshPending then return end
+    addon.refreshPending = true
     C_Timer.After(0.05, function()
-        A.refreshPending = false
-        A.FullLayout()
+        addon.refreshPending = false
+        addon.FullLayout()
     end)
 end
 
-A.ScheduleRefresh = ScheduleRefresh
+addon.ScheduleRefresh = ScheduleRefresh
 
 -- On map close: sync world quest watch list so untracked-on-map quests drop from tracker.
 local function OnWorldMapClosed()
-    if not A.GetCurrentWorldQuestWatchSet then return end
-    local currentSet = A.GetCurrentWorldQuestWatchSet()
-    local lastSet = A.lastWorldQuestWatchSet
+    if not addon.GetCurrentWorldQuestWatchSet then return end
+    local currentSet = addon.GetCurrentWorldQuestWatchSet()
+    local lastSet = addon.lastWorldQuestWatchSet
     if lastSet and next(lastSet) then
-        if not A.recentlyUntrackedWorldQuests then A.recentlyUntrackedWorldQuests = {} end
+        if not addon.recentlyUntrackedWorldQuests then addon.recentlyUntrackedWorldQuests = {} end
         for questID, _ in pairs(lastSet) do
             if not currentSet[questID] then
-                A.recentlyUntrackedWorldQuests[questID] = true
+                addon.recentlyUntrackedWorldQuests[questID] = true
             end
         end
     end
-    A.lastWorldQuestWatchSet = currentSet
+    addon.lastWorldQuestWatchSet = currentSet
     ScheduleRefresh()
 end
 
 local function HookWorldMapOnHide()
-    if WorldMapFrame and not WorldMapFrame._MQTOnHideHooked then
-        WorldMapFrame._MQTOnHideHooked = true
+    if WorldMapFrame and not WorldMapFrame._HSOnHideHooked then
+        WorldMapFrame._HSOnHideHooked = true
         WorldMapFrame:HookScript("OnHide", OnWorldMapClosed)
     end
 end
@@ -80,44 +80,44 @@ end
 
 -- Cache task-quest (WQ) IDs for a map using shared ParseTaskPOIs. Returns true if any IDs were added.
 local function CacheTaskQuestsForMap(cache, mapID)
-    if not mapID or not A.GetTaskQuestsForMap then return false end
-    local taskPOIs = A.GetTaskQuestsForMap(mapID, mapID) or A.GetTaskQuestsForMap(mapID)
+    if not mapID or not addon.GetTaskQuestsForMap then return false end
+    local taskPOIs = addon.GetTaskQuestsForMap(mapID, mapID) or addon.GetTaskQuestsForMap(mapID)
     if not taskPOIs then return false end
     cache[mapID] = cache[mapID] or {}
-    local n = A.ParseTaskPOIs and A.ParseTaskPOIs(taskPOIs, cache[mapID]) or 0
+    local n = addon.ParseTaskPOIs and addon.ParseTaskPOIs(taskPOIs, cache[mapID]) or 0
     return n > 0
 end
 
 -- When the world map is opened, cache quest IDs from GetQuestsOnMap (map pins) and TaskQuest for displayed + player zone.
 local function OnWorldMapShown()
     C_Timer.After(0.5, function()
-        if not A.enabled or not WorldMapFrame then return end
-        A.zoneTaskQuestCache = A.zoneTaskQuestCache or {}
+        if not addon.enabled or not WorldMapFrame then return end
+        addon.zoneTaskQuestCache = addon.zoneTaskQuestCache or {}
         local didCache = false
         if WorldMapFrame.mapID then
-            if CacheQuestsOnMapForMap(A.zoneTaskQuestCache, WorldMapFrame.mapID) then didCache = true end
-            if CacheTaskQuestsForMap(A.zoneTaskQuestCache, WorldMapFrame.mapID) then didCache = true end
+            if CacheQuestsOnMapForMap(addon.zoneTaskQuestCache, WorldMapFrame.mapID) then didCache = true end
+            if CacheTaskQuestsForMap(addon.zoneTaskQuestCache, WorldMapFrame.mapID) then didCache = true end
         end
         local playerMapID = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
         if playerMapID and playerMapID ~= WorldMapFrame.mapID then
-            if CacheQuestsOnMapForMap(A.zoneTaskQuestCache, playerMapID) then didCache = true end
-            if CacheTaskQuestsForMap(A.zoneTaskQuestCache, playerMapID) then didCache = true end
+            if CacheQuestsOnMapForMap(addon.zoneTaskQuestCache, playerMapID) then didCache = true end
+            if CacheTaskQuestsForMap(addon.zoneTaskQuestCache, playerMapID) then didCache = true end
         end
         if didCache then ScheduleRefresh() end
     end)
 end
 
 local function HookWorldMapOnShow()
-    if WorldMapFrame and not WorldMapFrame._MQTOnShowHooked then
-        WorldMapFrame._MQTOnShowHooked = true
+    if WorldMapFrame and not WorldMapFrame._HSOnShowHooked then
+        WorldMapFrame._HSOnShowHooked = true
         WorldMapFrame:HookScript("OnShow", OnWorldMapShown)
     end
 end
 
 -- Count quests in cache for a map (for the on-map debug indicator).
 local function GetCachedWQCount(mapID)
-    if not A.zoneTaskQuestCache or not mapID then return 0 end
-    local t = A.zoneTaskQuestCache[mapID]
+    if not addon.zoneTaskQuestCache or not mapID then return 0 end
+    local t = addon.zoneTaskQuestCache[mapID]
     if not t then return 0 end
     local n = 0
     for _ in pairs(t) do n = n + 1 end
@@ -141,7 +141,7 @@ end
 
 -- Update the debug indicator on the world map (map + player zone cache counts).
 local function UpdateWQMapIndicator(fromDelayed, mapID, playerMapID)
-    local f = A.WQMapIndicator
+    local f = addon.WQMapIndicator
     if not f or not f.text then return end
     mapID = mapID or GetWorldMapMapID()
     playerMapID = playerMapID or (C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player"))
@@ -156,29 +156,29 @@ local function UpdateWQMapIndicator(fromDelayed, mapID, playerMapID)
 end
 
 local function ShowWQIndicatorScanning()
-    if A.WQMapIndicator and A.WQMapIndicator.text then
-        A.WQMapIndicator.text:SetText("HS WQ scanning...")
-        if A.WQMapIndicator.shadow then A.WQMapIndicator.shadow:SetText("HS WQ scanning...") end
-        A.WQMapIndicator:Show()
+    if addon.WQMapIndicator and addon.WQMapIndicator.text then
+        addon.WQMapIndicator.text:SetText("HS WQ scanning...")
+        if addon.WQMapIndicator.shadow then addon.WQMapIndicator.shadow:SetText("HS WQ scanning...") end
+        addon.WQMapIndicator:Show()
     end
 end
 
 local function HideWQIndicator()
-    if A.WQMapIndicator then A.WQMapIndicator:Hide() end
+    if addon.WQMapIndicator then addon.WQMapIndicator:Hide() end
 end
 
 -- Run WQT-style cache for displayed map and player zone; refresh objective list if we got data.
 local function RunWQTMapCache(fromDelayed)
     if not WorldMapFrame or not WorldMapFrame:IsVisible() then return end
-    A.zoneTaskQuestCache = A.zoneTaskQuestCache or {}
+    addon.zoneTaskQuestCache = addon.zoneTaskQuestCache or {}
     local mapID = GetWorldMapMapID()
     local playerMapID = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
     UpdateWQMapIndicator(fromDelayed, mapID, playerMapID)
-    if not A.enabled or not mapID then return end
+    if not addon.enabled or not mapID then return end
     local didCache = false
-    if CacheTaskQuestsForMap(A.zoneTaskQuestCache, mapID) then didCache = true end
+    if CacheTaskQuestsForMap(addon.zoneTaskQuestCache, mapID) then didCache = true end
     if playerMapID and playerMapID ~= mapID then
-        if CacheTaskQuestsForMap(A.zoneTaskQuestCache, playerMapID) then didCache = true end
+        if CacheTaskQuestsForMap(addon.zoneTaskQuestCache, playerMapID) then didCache = true end
     end
     if didCache then ScheduleRefresh() end
     UpdateWQMapIndicator(fromDelayed, mapID, playerMapID)
@@ -200,14 +200,14 @@ local function CreateWQMapIndicator()
     local bg = f:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(0.10, 0.10, 0.15, 0.72)
-    A.CreateBorder(f, { 0.35, 0.38, 0.45, 0.45 })
+    addon.CreateBorder(f, { 0.35, 0.38, 0.45, 0.45 })
     local shadow = f:CreateFontString(nil, "BORDER")
-    shadow:SetFontObject(A.SectionFont or GameFontNormalSmall)
-    shadow:SetPoint("LEFT", f, "LEFT", 6 + (A.SHADOW_OX or 2), (A.SHADOW_OY or -2))
+    shadow:SetFontObject(addon.SectionFont or GameFontNormalSmall)
+    shadow:SetPoint("LEFT", f, "LEFT", 6 + (addon.SHADOW_OX or 2), (addon.SHADOW_OY or -2))
     shadow:SetJustifyH("LEFT")
-    shadow:SetTextColor(0, 0, 0, A.SHADOW_A or 0.8)
+    shadow:SetTextColor(0, 0, 0, addon.SHADOW_A or 0.8)
     local text = f:CreateFontString(nil, "OVERLAY")
-    text:SetFontObject(A.SectionFont or GameFontNormalSmall)
+    text:SetFontObject(addon.SectionFont or GameFontNormalSmall)
     text:SetPoint("LEFT", f, "LEFT", 6, 0)
     text:SetJustifyH("LEFT")
     text:SetTextColor(0.55, 0.65, 0.75, 1)
@@ -227,7 +227,7 @@ local function CreateWQMapIndicator()
             RunWQTMapCache(false)
         end
     end)
-    A.WQMapIndicator = f
+    addon.WQMapIndicator = f
     return f
 end
 
@@ -251,7 +251,7 @@ end
 
 -- Hidden heartbeat: when map is open run cache for map + player zone; when map is closed run cache for player zone only so WQs appear without opening map.
 local function StartMapCacheHeartbeat()
-    if A._mapCacheHeartbeat then return end
+    if addon._mapCacheHeartbeat then return end
     local f = CreateFrame("Frame", nil, UIParent)
     f:SetSize(1, 1)
     f:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", -1000, -1000)
@@ -266,12 +266,12 @@ local function StartMapCacheHeartbeat()
         else
             -- Map closed: cache player's current zone (and parent maps) so quests show without opening map.
             local playerMapID = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
-            if A.enabled and playerMapID then
+            if addon.enabled and playerMapID then
                 local didCache = false
-                if CacheTaskQuestsForMap(A.zoneTaskQuestCache, playerMapID) then didCache = true end
+                if CacheTaskQuestsForMap(addon.zoneTaskQuestCache, playerMapID) then didCache = true end
                 -- Cache GetQuestsOnMap: city (Zone) = player map only; subzone (Micro/Dungeon) = player map + one parent.
-                if A.zoneTaskQuestCache and C_Map and C_Map.GetMapInfo then
-                    if CacheQuestsOnMapForMap(A.zoneTaskQuestCache, playerMapID) then didCache = true end
+                if addon.zoneTaskQuestCache and C_Map and C_Map.GetMapInfo then
+                    if CacheQuestsOnMapForMap(addon.zoneTaskQuestCache, playerMapID) then didCache = true end
                     local myMapInfo = (C_Map.GetMapInfo and C_Map.GetMapInfo(playerMapID)) or nil
                     local myMapType = myMapInfo and myMapInfo.mapType
                     if myMapType ~= nil and myMapType >= 4 then
@@ -281,7 +281,7 @@ local function StartMapCacheHeartbeat()
                             local parentMapInfo = (C_Map.GetMapInfo and C_Map.GetMapInfo(parentMapID)) or nil
                             local mapType = parentMapInfo and parentMapInfo.mapType
                             if mapType == nil or mapType >= 3 then
-                                if CacheQuestsOnMapForMap(A.zoneTaskQuestCache, parentMapID) then didCache = true end
+                                if CacheQuestsOnMapForMap(addon.zoneTaskQuestCache, parentMapID) then didCache = true end
                             end
                         end
                     end
@@ -290,7 +290,7 @@ local function StartMapCacheHeartbeat()
             end
         end
     end)
-    A._mapCacheHeartbeat = f
+    addon._mapCacheHeartbeat = f
 end
 
 -- Mirror WQT: OnMapChanged runs immediately, then 0.5s delayed (like WQT's check_for_quests_on_unknown_map).
@@ -302,16 +302,16 @@ local function OnMapChanged()
 end
 
 local function HookWorldMapOnMapChanged()
-    if WorldMapFrame and not WorldMapFrame._MQTOnMapChangedHooked then
-        WorldMapFrame._MQTOnMapChangedHooked = true
+    if WorldMapFrame and not WorldMapFrame._HSOnMapChangedHooked then
+        WorldMapFrame._HSOnMapChangedHooked = true
         hooksecurefunc(WorldMapFrame, "OnMapChanged", OnMapChanged)
     end
 end
 
-_G.ModernQuestTracker_ApplyTypography  = A.ApplyTypography
-_G.ModernQuestTracker_ApplyDimensions  = A.ApplyDimensions
-_G.ModernQuestTracker_RequestRefresh   = ScheduleRefresh
-_G.ModernQuestTracker_FullLayout       = A.FullLayout
+_G.HorizonSuite_ApplyTypography  = addon.ApplyTypography
+_G.HorizonSuite_ApplyDimensions  = addon.ApplyDimensions
+_G.HorizonSuite_RequestRefresh   = ScheduleRefresh
+_G.HorizonSuite_FullLayout       = addon.FullLayout
 
 -- ============================================================================
 -- EVENT HANDLERS (table dispatch)
@@ -319,17 +319,17 @@ _G.ModernQuestTracker_FullLayout       = A.FullLayout
 
 local function OnAddonLoaded(addonName)
         if addonName == "HorizonSuite" then
-            A.RestoreSavedPosition()
-            A.ApplyTypography()
-            A.ApplyDimensions()
-            if A.ApplyBackdropOpacity then A.ApplyBackdropOpacity() end
-            if A.ApplyBorderVisibility then A.ApplyBorderVisibility() end
+            addon.RestoreSavedPosition()
+            addon.ApplyTypography()
+            addon.ApplyDimensions()
+            if addon.ApplyBackdropOpacity then addon.ApplyBackdropOpacity() end
+            if addon.ApplyBorderVisibility then addon.ApplyBorderVisibility() end
             if HorizonDB and HorizonDB.collapsed then
-                A.collapsed = true
-                A.chevron:SetText("+")
-                A.scrollFrame:Hide()
-                A.targetHeight  = A.GetCollapsedHeight()
-                A.currentHeight = A.GetCollapsedHeight()
+                addon.collapsed = true
+                addon.chevron:SetText("+")
+                addon.scrollFrame:Hide()
+                addon.targetHeight  = addon.GetCollapsedHeight()
+                addon.currentHeight = addon.GetCollapsedHeight()
             end
             StartMapCacheHeartbeat()
             CreateWQMapIndicator()
@@ -355,7 +355,7 @@ local function OnAddonLoaded(addonName)
             -- When the map refreshes its world quest data (same source as the pins on the map), cache that list so our objective list can show it.
             C_Timer.After(0.5, function()
                 local ok, err = pcall(function()
-                    if not (WorldQuestDataProviderMixin and WorldQuestDataProviderMixin.RefreshAllData and A and A.zoneTaskQuestCache) then return end
+                    if not (WorldQuestDataProviderMixin and WorldQuestDataProviderMixin.RefreshAllData and A and addon.zoneTaskQuestCache) then return end
                     hooksecurefunc(WorldQuestDataProviderMixin, "RefreshAllData", function(self, fromOnShow)
                         local mapID
                         if self.GetMap and self:GetMap() and self:GetMap().GetMapID then
@@ -366,75 +366,75 @@ local function OnAddonLoaded(addonName)
                             if map and map.GetMapID then mapID = map:GetMapID() end
                         end
                         if not mapID and WorldMapFrame then mapID = WorldMapFrame.mapID or GetWorldMapMapID() end
-                        if mapID and A.enabled then
-                            if CacheTaskQuestsForMap(A.zoneTaskQuestCache, mapID) then ScheduleRefresh() end
+                        if mapID and addon.enabled then
+                            if CacheTaskQuestsForMap(addon.zoneTaskQuestCache, mapID) then ScheduleRefresh() end
                         end
                     end)
                 end)
-                if not ok and A and A.HSPrint then A.HSPrint("WorldQuestDataProviderMixin hook failed: " .. tostring(err)) end
+                if not ok and A and addon.HSPrint then addon.HSPrint("WorldQuestDataProviderMixin hook failed: " .. tostring(err)) end
             end)
         elseif addonName == "Blizzard_ObjectiveTracker" then
-            if A.enabled then A.TrySuppressTracker() end
+            if addon.enabled then addon.TrySuppressTracker() end
         end
 end
 
 local function OnPlayerRegenDisabled()
-    if A.GetDB("hideInCombat", false) and A.enabled then
-        local useAnim = A.GetDB("animations", true)
-        if useAnim and A.MQT:IsShown() then
-            A.combatFadeState = "out"
-            A.combatFadeTime  = 0
+    if addon.GetDB("hideInCombat", false) and addon.enabled then
+        local useAnim = addon.GetDB("animations", true)
+        if useAnim and addon.HS:IsShown() then
+            addon.combatFadeState = "out"
+            addon.combatFadeTime  = 0
         else
-            A.MQT:Hide()
-            if A.UpdateFloatingQuestItem then A.UpdateFloatingQuestItem(nil) end
-            if A.UpdateMplusBlock then A.UpdateMplusBlock() end
+            addon.HS:Hide()
+            if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
+            if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
         end
     end
 end
 
 local function OnPlayerRegenEnabled()
-    if A.layoutPendingAfterCombat then
-        A.layoutPendingAfterCombat = nil
-        if A.GetDB("hideInCombat", false) and A.enabled then
-            A.combatFadeState = "in"
-            A.combatFadeTime  = 0
+    if addon.layoutPendingAfterCombat then
+        addon.layoutPendingAfterCombat = nil
+        if addon.GetDB("hideInCombat", false) and addon.enabled then
+            addon.combatFadeState = "in"
+            addon.combatFadeTime  = 0
         end
-        A.FullLayout()
-    elseif A.GetDB("hideInCombat", false) and A.enabled then
-        A.combatFadeState = "in"
-        A.combatFadeTime  = 0
+        addon.FullLayout()
+    elseif addon.GetDB("hideInCombat", false) and addon.enabled then
+        addon.combatFadeState = "in"
+        addon.combatFadeTime  = 0
         ScheduleRefresh()
     end
 end
 
 local function OnPlayerLoginOrEnteringWorld()
-    if A.enabled then
-        A.zoneJustChanged = true
-        A.TrySuppressTracker()
+    if addon.enabled then
+        addon.zoneJustChanged = true
+        addon.TrySuppressTracker()
         ScheduleRefresh()
-        C_Timer.After(0.4, function() if A.enabled then A.FullLayout() end end)
-        C_Timer.After(1.5, function() if A.enabled then ScheduleRefresh() end end)
+        C_Timer.After(0.4, function() if addon.enabled then addon.FullLayout() end end)
+        C_Timer.After(1.5, function() if addon.enabled then ScheduleRefresh() end end)
     end
 end
 
 local function OnQuestTurnedIn(questID)
-    for i = 1, A.POOL_SIZE do
-        if A.pool[i].questID == questID and A.pool[i].animState ~= "fadeout" then
-            local e = A.pool[i]
-            e.titleText:SetTextColor(A.QUEST_COLORS.COMPLETE[1], A.QUEST_COLORS.COMPLETE[2], A.QUEST_COLORS.COMPLETE[3], 1)
+    for i = 1, addon.POOL_SIZE do
+        if addon.pool[i].questID == questID and addon.pool[i].animState ~= "fadeout" then
+            local e = addon.pool[i]
+            e.titleText:SetTextColor(addon.QUEST_COLORS.COMPLETE[1], addon.QUEST_COLORS.COMPLETE[2], addon.QUEST_COLORS.COMPLETE[3], 1)
             e.animState = "completing"
             e.animTime  = 0
-            A.activeMap[questID] = nil
+            addon.activeMap[questID] = nil
         end
     end
     ScheduleRefresh()
 end
 
 local function OnQuestWatchUpdate(questID)
-    if questID and A.GetDB("objectiveProgressFlash", true) then
-        for i = 1, A.POOL_SIZE do
-            if A.pool[i].questID == questID then
-                A.pool[i].flashTime = A.FLASH_DUR
+    if questID and addon.GetDB("objectiveProgressFlash", true) then
+        for i = 1, addon.POOL_SIZE do
+            if addon.pool[i].questID == questID then
+                addon.pool[i].flashTime = addon.FLASH_DUR
             end
         end
     end
@@ -442,26 +442,26 @@ local function OnQuestWatchUpdate(questID)
 end
 
 local function OnQuestWatchListChanged(questID, added)
-    if questID and A.IsQuestWorldQuest and A.IsQuestWorldQuest(questID) then
-        if not A.recentlyUntrackedWorldQuests then A.recentlyUntrackedWorldQuests = {} end
+    if questID and addon.IsQuestWorldQuest and addon.IsQuestWorldQuest(questID) then
+        if not addon.recentlyUntrackedWorldQuests then addon.recentlyUntrackedWorldQuests = {} end
         if added then
-            A.recentlyUntrackedWorldQuests[questID] = nil
+            addon.recentlyUntrackedWorldQuests[questID] = nil
         else
-            A.recentlyUntrackedWorldQuests[questID] = true
+            addon.recentlyUntrackedWorldQuests[questID] = true
         end
     end
     ScheduleRefresh()
 end
 
 local function OnZoneChanged(event)
-    A.zoneJustChanged = true
-    if A.recentlyUntrackedWorldQuests then wipe(A.recentlyUntrackedWorldQuests) end
-    if event == "ZONE_CHANGED_NEW_AREA" and A.zoneTaskQuestCache then
-        wipe(A.zoneTaskQuestCache)
+    addon.zoneJustChanged = true
+    if addon.recentlyUntrackedWorldQuests then wipe(addon.recentlyUntrackedWorldQuests) end
+    if event == "ZONE_CHANGED_NEW_AREA" and addon.zoneTaskQuestCache then
+        wipe(addon.zoneTaskQuestCache)
     end
     ScheduleRefresh()
-    C_Timer.After(0.4, function() if A.enabled then A.FullLayout() end end)
-    C_Timer.After(1.5, function() if A.enabled then ScheduleRefresh() end end)
+    C_Timer.After(0.4, function() if addon.enabled then addon.FullLayout() end end)
+    C_Timer.After(1.5, function() if addon.enabled then ScheduleRefresh() end end)
 end
 
 local eventHandlers = {
@@ -479,6 +479,10 @@ local eventHandlers = {
     ZONE_CHANGED_NEW_AREA    = function(_, evt) OnZoneChanged(evt) end,
 }
 
+--- OnEvent: table-dispatch to eventHandlers[event]; falls back to ScheduleRefresh for unhandled events.
+-- @param self table Event frame
+-- @param event string WoW event name (e.g. QUEST_WATCH_LIST_CHANGED, ADDON_LOADED)
+-- @param ... any Event payload (varargs)
 eventFrame:SetScript("OnEvent", function(self, event, ...)
     local fn = eventHandlers[event]
     if fn then

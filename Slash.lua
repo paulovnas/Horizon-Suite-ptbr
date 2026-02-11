@@ -3,7 +3,7 @@
     /horizon and subcommands.
 ]]
 
-local addon = _G.ModernQuestTracker
+local addon = _G.HorizonSuite
 if not addon then return end
 local HSPrint = addon.HSPrint or function(msg)
     print("|cFF00CCFFHorizon Suite - Focus:|r " .. tostring(msg or ""))
@@ -29,7 +29,7 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
             HSPrint("|cFF00FF00Enabled|r")
         else
             addon.RestoreTracker()
-            addon.MQT:Hide()
+            addon.HS:Hide()
             for i = 1, addon.POOL_SIZE do addon.ClearEntry(addon.pool[i]) end
             wipe(addon.activeMap)
             addon.HideAllSectionHeaders()
@@ -156,8 +156,8 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
         HSPrint("Reset tracker to live data.")
 
     elseif cmd == "resetpos" then
-        addon.MQT:ClearAllPoints()
-        addon.MQT:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", addon.PANEL_X, addon.PANEL_Y)
+        addon.HS:ClearAllPoints()
+        addon.HS:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", addon.PANEL_X, addon.PANEL_Y)
         if HorizonDB then
             HorizonDB.point    = nil
             HorizonDB.relPoint = nil
@@ -167,15 +167,15 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
         HSPrint("Position reset to default.")
 
     elseif cmd == "options" or cmd == "config" then
-        if _G.ModernQuestTracker_ShowOptions then
-            _G.ModernQuestTracker_ShowOptions()
+        if _G.HorizonSuite_ShowOptions then
+            _G.HorizonSuite_ShowOptions()
         else
             HSPrint("Options not loaded.")
         end
 
     elseif cmd == "edit" then
-        if _G.ModernQuestTracker_ShowEditPanel then
-            _G.ModernQuestTracker_ShowEditPanel()
+        if _G.HorizonSuite_ShowEditPanel then
+            _G.HorizonSuite_ShowEditPanel()
         else
             HSPrint("Edit panel not loaded.")
         end
