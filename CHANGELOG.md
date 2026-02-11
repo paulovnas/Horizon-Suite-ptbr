@@ -10,6 +10,26 @@ All notable changes to Horizon Suite - Focus are documented here.
 
 ---
 
+## [0.6.6] – 2026-02-11
+
+### New Features
+
+- **Weekly quests** — New category for weekly (recurring) quests with its own section in the tracker. Weekly quests in your current zone are auto-added like world quests. Quest classification now uses a single source of truth for determining world quests.
+
+- **Daily quests** — Daily quests are supported with their own section and labeling. Daily quests in your current zone are auto-added to the tracker. Quests that are available to accept but not yet accepted show an **"— Available"** label.
+
+- **Focus sort mode** — In Options → Categories, you can choose how entries are ordered within each category: **Alphabetical**, **Quest Type**, **Zone**, or **Quest Level**. A new options section controls sorting within categories.
+
+### Improvements
+
+- **Quest caching** — Quest caching logic improved for your current zone and parent maps so quests display correctly without needing to open the map first.
+
+- **Quest bar layout** — Left offset for quest bars adjusted for more consistent layout.
+
+- **Database refactor** — All references updated from `HorizonSuiteDB` to `HorizonDB` for consistency. Options panel and quest tracking aligned to the new saved variable name; TOC and changelog updated accordingly.
+
+---
+
 ## [0.6.5] – 2025-02-10
 
 ### New Features
