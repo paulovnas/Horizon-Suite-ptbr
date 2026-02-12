@@ -30,6 +30,9 @@ addon.OBJ_INDENT      = 12
 addon.COMPACT_TITLE_SPACING = 4
 addon.COMPACT_OBJ_SPACING   = 1
 addon.COMPACT_OBJ_INDENT    = 8
+-- Delve-specific spacing (slightly more room between entries and objectives).
+addon.DELVE_ENTRY_SPACING   = 12
+addon.DELVE_OBJ_SPACING     = 4
 addon.MIN_HEIGHT      = 50
 
 addon.MAX_CONTENT_HEIGHT = 480
@@ -45,6 +48,7 @@ addon.BAR_LEFT_OFFSET      = 9
 addon.TRACKED_OTHER_ZONE_ICON_SIZE = 12
 addon.WQ_TIMER_BAR_HEIGHT = 6
 addon.SCENARIO_TIMER_BAR_SLOTS = 5
+addon.DELVE_TIER_ATLAS = "delves-scenario-flag"  -- Blizzard atlas for Delve tier/flag (TierFrame.Flag)
 
 addon.SHADOW_OX       = 2
 addon.SHADOW_OY       = -2
@@ -75,6 +79,7 @@ addon.QUEST_COLORS = {
     CAMPAIGN  = { 1.00, 0.82, 0.20 },
     IMPORTANT = { 1.00, 0.45, 0.80 },  -- pink to match importantavailablequesticon
     LEGENDARY = { 1.00, 0.50, 0.00 },
+    DELVES    = { 0.32, 0.72, 0.68 },  -- teal/seafoam: Delve steps (distinct from all other categories)
     SCENARIO  = { 0.38, 0.52, 0.88 },  -- deep blue: event/scenario steps (Twilight's Call etc.)
     WORLD     = { 0.60, 0.20, 1.00 },
     WEEKLY    = { 0.25, 0.88, 0.92 },  -- match quest-recurring-available icon (cyan)
@@ -109,6 +114,7 @@ addon.SectionFont:SetFont(addon.FONT_PATH, addon.SECTION_SIZE, "OUTLINE")
 
 addon.SECTION_LABELS = {
     DUNGEON   = "IN THIS DUNGEON",
+    DELVES    = "DELVES",
     SCENARIO  = "SCENARIO EVENTS",
     AVAILABLE = "AVAILABLE IN ZONE",
     NEARBY    = "CURRENT ZONE",
@@ -125,6 +131,7 @@ addon.SECTION_LABELS = {
 
 addon.SECTION_COLORS = {
     DUNGEON   = { 0.60, 0.40, 1.00 },
+    DELVES    = { 0.32, 0.72, 0.68 },  -- teal: Delve section
     SCENARIO  = { 0.38, 0.52, 0.88 },  -- deep blue: event/scenario steps
     AVAILABLE = { 0.25, 0.88, 0.92 },  -- cyan/teal (available to pick up)
     NEARBY    = { 0.35, 0.75, 0.98 },  -- sky blue (accepted, in zone)
@@ -139,11 +146,11 @@ addon.SECTION_COLORS = {
     COMPLETE  = { 0.20, 1.00, 0.40 },
 }
 
-addon.GROUP_ORDER = { "SCENARIO", "DUNGEON", "NEARBY", "COMPLETE", "WORLD", "WEEKLY", "DAILY", "RARES", "AVAILABLE", "CAMPAIGN", "IMPORTANT", "LEGENDARY", "DEFAULT" }
+addon.GROUP_ORDER = { "DELVES", "SCENARIO", "DUNGEON", "NEARBY", "COMPLETE", "WORLD", "WEEKLY", "DAILY", "RARES", "AVAILABLE", "CAMPAIGN", "IMPORTANT", "LEGENDARY", "DEFAULT" }
 
 -- Category keys (enum-style) for consistent string usage across modules.
 addon.CATEGORY_KEYS = {
-    DUNGEON = "DUNGEON", SCENARIO = "SCENARIO", AVAILABLE = "AVAILABLE", NEARBY = "NEARBY", CAMPAIGN = "CAMPAIGN",
+    DUNGEON = "DUNGEON", DELVES = "DELVES", SCENARIO = "SCENARIO", AVAILABLE = "AVAILABLE", NEARBY = "NEARBY", CAMPAIGN = "CAMPAIGN",
     IMPORTANT = "IMPORTANT", LEGENDARY = "LEGENDARY", WORLD = "WORLD", WEEKLY = "WEEKLY",
     DAILY = "DAILY", RARES = "RARES", RARE = "RARE", DEFAULT = "DEFAULT", COMPLETE = "COMPLETE",
     CALLING = "CALLING",
@@ -159,6 +166,7 @@ addon.ATLAS_QUEST_PVP = "questlog-questtypeicon-pvp"
 
 addon.CATEGORY_TO_GROUP = {
     COMPLETE  = "COMPLETE",
+    DELVES    = "DELVES",
     SCENARIO  = "SCENARIO",
     LEGENDARY = "LEGENDARY",
     IMPORTANT = "IMPORTANT",

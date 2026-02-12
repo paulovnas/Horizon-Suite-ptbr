@@ -91,6 +91,8 @@ local function ApplyObjectives(entry, questData, textWidth, prevAnchor, totalH, 
     local objTextWidth = textWidth - objIndent
     if objTextWidth < 1 then objTextWidth = addon.GetPanelWidth() - addon.PADDING * 2 - objIndent - (addon.CONTENT_RIGHT_PADDING or 0) end
 
+    local objSpacing = (questData.category == "DELVES" and addon.DELVE_OBJ_SPACING) or addon.GetObjSpacing()
+
     local objColor = addon.GetDB("objectiveColor", nil)
     if not objColor or #objColor < 3 then objColor = c end
     local doneColor = addon.GetDB("objectiveDoneColor", nil)
@@ -120,13 +122,13 @@ local function ApplyObjectives(entry, questData, textWidth, prevAnchor, totalH, 
 
             obj.text:ClearAllPoints()
             local indent = (shownObjs == 0 and prevAnchor == entry.titleText) and objIndent or 0
-            obj.text:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", indent, -addon.GetObjSpacing())
+            obj.text:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", indent, -objSpacing)
             obj.text:Show()
             obj.shadow:Show()
 
             local objH = obj.text:GetStringHeight()
             if not objH or objH < 1 then objH = addon.OBJ_SIZE + 2 end
-            totalH = totalH + addon.GetObjSpacing() + objH
+            totalH = totalH + objSpacing + objH
 
             prevAnchor = obj.text
             shownObjs = shownObjs + 1
@@ -144,12 +146,12 @@ local function ApplyObjectives(entry, questData, textWidth, prevAnchor, totalH, 
         obj.text:SetTextColor(doneColor[1], doneColor[2], doneColor[3], 1)
         obj.text:ClearAllPoints()
         local turnInIndent = (prevAnchor == entry.titleText) and objIndent or 0
-        obj.text:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", turnInIndent, -addon.GetObjSpacing())
+        obj.text:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", turnInIndent, -objSpacing)
         obj.text:Show()
         obj.shadow:Show()
         local objH = obj.text:GetStringHeight()
         if not objH or objH < 1 then objH = addon.OBJ_SIZE + 2 end
-        totalH = totalH + addon.GetObjSpacing() + objH
+        totalH = totalH + objSpacing + objH
         prevAnchor = obj.text
     end
 
@@ -171,6 +173,17 @@ local function FormatTimeLeftMinutes(minutes)
 end
 
 local function ApplyScenarioOrWQTimerBar(entry, questData, textWidth, prevAnchor, totalH)
+    -- Delves: no timer or progress bar; show only delve name and objectives.
+    if questData.category == "DELVES" then
+        entry.wqTimerText:Hide()
+        entry.wqProgressBg:Hide()
+        entry.wqProgressFill:Hide()
+        entry.wqProgressText:Hide()
+        if entry.scenarioTimerBars then
+            for _, bar in ipairs(entry.scenarioTimerBars) do bar:Hide() end
+        end
+        return totalH
+    end
     local isWorld = questData.category == "WORLD" or questData.category == "CALLING"
     local isScenario = questData.category == "SCENARIO"
     if (not isWorld and not isScenario) or questData.isRare then
@@ -254,7 +267,7 @@ local function ApplyScenarioOrWQTimerBar(entry, questData, textWidth, prevAnchor
             entry.wqTimerText:ClearAllPoints()
             entry.wqTimerText:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", objIndent, -spacing)
             if isScenario then
-                local sc = addon.GetQuestColor and addon.GetQuestColor("SCENARIO") or (addon.QUEST_COLORS and addon.QUEST_COLORS.SCENARIO) or { 0.38, 0.52, 0.88 }
+                local sc = addon.GetQuestColor and addon.GetQuestColor(questData.category) or (addon.QUEST_COLORS and addon.QUEST_COLORS[questData.category]) or { 0.38, 0.52, 0.88 }
                 entry.wqTimerText:SetTextColor(sc[1], sc[2], sc[3], 1)
             else
                 entry.wqTimerText:SetTextColor(1, 1, 1, 1)
@@ -298,7 +311,7 @@ local function ApplyScenarioOrWQTimerBar(entry, questData, textWidth, prevAnchor
         entry.wqProgressFill:ClearAllPoints()
         entry.wqProgressFill:SetPoint("TOPLEFT", entry.wqProgressBg, "TOPLEFT", 0, 0)
         if isScenario then
-            local sc = addon.GetQuestColor and addon.GetQuestColor("SCENARIO") or (addon.QUEST_COLORS and addon.QUEST_COLORS.SCENARIO) or { 0.38, 0.52, 0.88 }
+            local sc = addon.GetQuestColor and addon.GetQuestColor(questData.category) or (addon.QUEST_COLORS and addon.QUEST_COLORS[questData.category]) or { 0.38, 0.52, 0.88 }
             local fillOpacity = tonumber(addon.GetDB("scenarioBarOpacity", 0.85)) or 0.85
             entry.wqProgressFill:SetColorTexture(sc[1], sc[2], sc[3], fillOpacity)
         else
@@ -362,7 +375,10 @@ local function PopulateEntry(entry, questData)
     -- All titles share the same X offset; we are no longer indenting off-map quests.
     local titleLeftOffset = 0
 
-    if hasIcon then
+    if questData.category == "DELVES" then
+        entry.questTypeIcon:SetAtlas(addon.DELVE_TIER_ATLAS)
+        entry.questTypeIcon:Show()
+    elseif hasIcon then
         entry.questTypeIcon:SetAtlas(questData.questTypeAtlas)
         entry.questTypeIcon:Show()
     else
@@ -385,8 +401,11 @@ local function PopulateEntry(entry, questData)
     if addon.GetDB("showQuestLevel", false) and questData.level then
         displayTitle = ("%s [L%d]"):format(displayTitle, questData.level)
     end
-    -- Indicator for quests that are available to accept but not yet accepted (not for rares or scenario).
-    if not questData.isAccepted and questData.category ~= "RARE" and questData.category ~= "SCENARIO" then
+    if questData.category == "DELVES" and type(questData.delveTier) == "number" then
+        displayTitle = displayTitle .. (" (Tier %d)"):format(questData.delveTier)
+    end
+    -- Indicator for quests that are available to accept but not yet accepted (not for rares, scenario, or delve).
+    if not questData.isAccepted and questData.category ~= "RARE" and questData.category ~= "SCENARIO" and questData.category ~= "DELVES" then
         displayTitle = displayTitle .. "  — Available"
     end
     entry.titleText:SetText(displayTitle)
@@ -428,6 +447,7 @@ local function PopulateEntry(entry, questData)
     local totalH = titleH
 
     local prevAnchor = entry.titleText
+    local titleToContentSpacing = (questData.category == "DELVES" and addon.DELVE_OBJ_SPACING) or addon.GetObjSpacing()
     if addon.GetDB("showZoneLabels", true) and questData.zoneName and not questData.isNearby then
         local zoneLabel = questData.zoneName
         -- For off-map WORLD quests, prefix the zone with a clear marker so they are easy to spot.
@@ -440,12 +460,12 @@ local function PopulateEntry(entry, questData)
         if not zoneColor or #zoneColor < 3 then zoneColor = addon.ZONE_COLOR end
         entry.zoneText:SetTextColor(zoneColor[1], zoneColor[2], zoneColor[3], 1)
         entry.zoneText:ClearAllPoints()
-        entry.zoneText:SetPoint("TOPLEFT", entry.titleText, "BOTTOMLEFT", addon.GetObjIndent(), -addon.GetObjSpacing())
+        entry.zoneText:SetPoint("TOPLEFT", entry.titleText, "BOTTOMLEFT", addon.GetObjIndent(), -titleToContentSpacing)
         entry.zoneText:Show()
         entry.zoneShadow:Show()
         local zoneH = entry.zoneText:GetStringHeight()
         if not zoneH or zoneH < 1 then zoneH = addon.ZONE_SIZE + 2 end
-        totalH = totalH + addon.GetObjSpacing() + zoneH
+        totalH = totalH + titleToContentSpacing + zoneH
         prevAnchor = entry.zoneText
     else
         entry.zoneText:Hide()
@@ -889,6 +909,7 @@ local function FullLayout()
                 end
             end
         else
+            local entrySpacing = (grp.key == "DELVES" and addon.DELVE_ENTRY_SPACING) or addon.GetTitleSpacing()
             for _, qData in ipairs(grp.quests) do
                 local key = qData.entryKey or qData.questID
                 local entry = activeMap[key]
@@ -902,7 +923,7 @@ local function FullLayout()
                     entry:ClearAllPoints()
                     entry:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", addon.PADDING + addon.ICON_COLUMN_WIDTH, yOff)
                     entry:Show()
-                    yOff = yOff - entry.entryHeight - addon.GetTitleSpacing()
+                    yOff = yOff - entry.entryHeight - entrySpacing
                 end
             end
         end

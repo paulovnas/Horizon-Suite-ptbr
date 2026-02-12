@@ -56,6 +56,30 @@ local function GetQuestTimerInfo(questID)
     return nil, nil
 end
 
+--- True when the player is in an active Delve (guarded API).
+local function IsDelveActive()
+    if C_PartyInfo and C_PartyInfo.IsDelveInProgress then
+        local ok, inDelve = pcall(C_PartyInfo.IsDelveInProgress)
+        if ok and inDelve then return true end
+    end
+    return false
+end
+
+--- Current Delve tier (1-11) or nil if unknown/not in delve. Guarded API.
+-- Uses CVar "lastSelectedDelvesTier" written by Blizzard's DelvesDifficultyPicker (1-indexed).
+-- Other APIs tested and ruled out: GetActiveDelveGossip() always returns orderIndex=0 inside;
+-- difficultyID=208 is a single ID for all tiers; difficultyName is just "Delves" (no tier).
+local function GetActiveDelveTier()
+    if not IsDelveActive() then return nil end
+    if GetCVarNumberOrDefault then
+        local ok, cvarTier = pcall(GetCVarNumberOrDefault, "lastSelectedDelvesTier")
+        if ok and type(cvarTier) == "number" and cvarTier >= 1 and cvarTier <= 11 then
+            return cvarTier
+        end
+    end
+    return nil
+end
+
 local function IsScenarioActive()
     if not C_Scenario then return false end
     if C_Scenario.IsInScenario then
@@ -93,7 +117,10 @@ local function ReadScenarioEntries()
     if not C_Scenario then return out end
     if not IsScenarioActive() then return out end
 
-    local scenarioColor = addon.GetQuestColor and addon.GetQuestColor("SCENARIO") or addon.QUEST_COLORS and addon.QUEST_COLORS.SCENARIO or { 0.38, 0.52, 0.88 }
+    local isDelve = IsDelveActive()
+    local category = isDelve and "DELVES" or "SCENARIO"
+    local scenarioColor = addon.GetQuestColor and addon.GetQuestColor(category) or (addon.QUEST_COLORS and addon.QUEST_COLORS[category]) or { 0.38, 0.52, 0.88 }
+    local delveTier = isDelve and GetActiveDelveTier() or nil
 
     -- Main step
     if C_Scenario.GetStepInfo and C_ScenarioInfo and C_ScenarioInfo.GetCriteriaInfo then
@@ -156,13 +183,13 @@ local function ReadScenarioEntries()
                     timerDuration and "yes" or "no", (timerDuration and timerStartTime) and "yes" or "no")
             end
 
-            out[#out + 1] = {
+            local mainEntry = {
                 entryKey          = "scenario-main",
                 questID           = rewardQuestID,
                 title             = stageName,
                 objectives        = objectives,
                 color             = scenarioColor,
-                category          = "SCENARIO",
+                category          = category,
                 isComplete        = false,
                 isSuperTracked    = false,
                 isNearby          = true,
@@ -177,6 +204,8 @@ local function ReadScenarioEntries()
                 timerDuration     = timerDuration,
                 timerStartTime    = timerStartTime,
             }
+            if delveTier then mainEntry.delveTier = delveTier end
+            out[#out + 1] = mainEntry
         end
     end
 
@@ -239,13 +268,13 @@ local function ReadScenarioEntries()
                         end
                     end
 
-                    out[#out + 1] = {
+                    local bonusEntry = {
                         entryKey          = "scenario-bonus-" .. tostring(stepIndex),
                         questID           = nil,
                         title             = title or ("Bonus " .. tostring(stepIndex)),
                         objectives        = objectives,
                         color             = scenarioColor,
-                        category          = "SCENARIO",
+                        category          = category,
                         isComplete        = false,
                         isSuperTracked    = false,
                         isNearby          = true,
@@ -260,6 +289,8 @@ local function ReadScenarioEntries()
                         timerDuration     = timerDuration,
                         timerStartTime    = timerStartTime,
                     }
+                    if delveTier then bonusEntry.delveTier = delveTier end
+                    out[#out + 1] = bonusEntry
                 end
             end
         end
@@ -269,4 +300,5 @@ local function ReadScenarioEntries()
 end
 
 addon.ReadScenarioEntries = ReadScenarioEntries
-addon.IsScenarioActive = IsScenarioActive
+addon.IsScenarioActive   = IsScenarioActive
+addon.IsDelveActive      = IsDelveActive

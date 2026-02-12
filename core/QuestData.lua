@@ -104,7 +104,7 @@ local function GetSectionColor(groupKey)
         return HorizonDB.sectionColors[groupKey]
     end
     local questCategory = (groupKey == "RARES") and "RARE" or groupKey
-    if questCategory == "CAMPAIGN" or questCategory == "LEGENDARY" or questCategory == "WORLD" or questCategory == "WEEKLY" or questCategory == "DAILY" or questCategory == "COMPLETE" or questCategory == "RARE" or questCategory == "SCENARIO" or questCategory == "DEFAULT" then
+    if questCategory == "CAMPAIGN" or questCategory == "LEGENDARY" or questCategory == "WORLD" or questCategory == "WEEKLY" or questCategory == "DAILY" or questCategory == "COMPLETE" or questCategory == "RARE" or questCategory == "DELVES" or questCategory == "SCENARIO" or questCategory == "DEFAULT" then
         return GetQuestColor(questCategory)
     end
     return addon.SECTION_COLORS[groupKey] or addon.SECTION_COLORS.DEFAULT
@@ -322,6 +322,17 @@ local function ReadTrackedQuests()
         end
     end
 
+    -- In a Delve, include all nearby quests so both Delve objectives show (e.g. Kriegval's Rest).
+    if addon.IsDelveActive and addon.IsDelveActive() then
+        for questID, _ in pairs(nearbySet) do
+            if not seen[questID] and not IsQuestWorldQuest(questID) then
+                if not (C_QuestLog.IsQuestCalling and C_QuestLog.IsQuestCalling(questID)) then
+                    addQuest(questID, { isTracked = false, forceCategory = "DELVES" })
+                end
+            end
+        end
+    end
+
     -- Always show super-tracked quest in the list even if not on current map or watch list (e.g. super-tracked from map).
     if superTracked and superTracked > 0 and not seen[superTracked] and not scenarioRewardQuestIDs[superTracked] then
         addQuest(superTracked, { isTracked = true })
@@ -353,7 +364,7 @@ end
 -- Category order for questType sort (lower = earlier)
 local CATEGORY_SORT_ORDER = {
     COMPLETE = 1, CAMPAIGN = 2, IMPORTANT = 3, LEGENDARY = 4,
-    SCENARIO = 5, WORLD = 6, WEEKLY = 7, DAILY = 8, CALLING = 9, RARE = 10, DEFAULT = 11,
+    DELVES = 5, SCENARIO = 5, WORLD = 6, WEEKLY = 7, DAILY = 8, CALLING = 9, RARE = 10, DEFAULT = 11,
 }
 
 local function CompareEntriesBySortMode(a, b)
@@ -395,6 +406,8 @@ local function SortAndGroupQuests(quests)
             groups["RARES"][#groups["RARES"] + 1] = q
         elseif q.isDungeonQuest then
             groups["DUNGEON"][#groups["DUNGEON"] + 1] = q
+        elseif q.category == "DELVES" then
+            groups["DELVES"][#groups["DELVES"] + 1] = q
         elseif q.category == "SCENARIO" then
             groups["SCENARIO"][#groups["SCENARIO"] + 1] = q
         elseif q.category == "WORLD" or q.category == "CALLING" then
@@ -421,6 +434,17 @@ local function SortAndGroupQuests(quests)
         if #groups[key] > 0 then
             result[#result + 1] = { key = key, quests = groups[key] }
         end
+    end
+    -- When in a Delve and setting is on, show only the DELVES group.
+    if addon.IsDelveActive and addon.IsDelveActive() and addon.GetDB("hideOtherCategoriesInDelve", false) then
+        local delveOnly = {}
+        for _, grp in ipairs(result) do
+            if grp.key == "DELVES" then
+                delveOnly[#delveOnly + 1] = grp
+                break
+            end
+        end
+        return delveOnly
     end
     return result
 end

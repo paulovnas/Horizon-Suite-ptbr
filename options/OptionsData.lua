@@ -97,7 +97,7 @@ local MPLUS_POSITION_OPTIONS = {
     { "Bottom", "bottom" },
 }
 -- Use addon.QUEST_COLORS from Config as single source for quest type colors.
-local COLOR_KEYS_ORDER = { "DEFAULT", "CAMPAIGN", "LEGENDARY", "WORLD", "SCENARIO", "WEEKLY", "DAILY", "COMPLETE", "RARE" }
+local COLOR_KEYS_ORDER = { "DEFAULT", "CAMPAIGN", "LEGENDARY", "WORLD", "DELVES", "SCENARIO", "WEEKLY", "DAILY", "COMPLETE", "RARE" }
 local ZONE_COLOR_DEFAULT = { 0.55, 0.65, 0.75 }
 local OBJ_COLOR_DEFAULT = { 0.78, 0.78, 0.78 }
 local OBJ_DONE_COLOR_DEFAULT = { 0.30, 0.80, 0.30 }
@@ -169,8 +169,9 @@ local OptionCategories = {
             { type = "section", name = "Mythic+" },
             { type = "toggle", name = "Show Mythic+ block", desc = "Show timer, completion %, and affixes when in a Mythic+ dungeon.", dbKey = "showMythicPlusBlock", get = function() return getDB("showMythicPlusBlock", false) end, set = function(v) setDB("showMythicPlusBlock", v) end },
             { type = "dropdown", name = "M+ block position", desc = "Position of the Mythic+ block relative to the quest list.", dbKey = "mplusBlockPosition", options = MPLUS_POSITION_OPTIONS, get = function() return getDB("mplusBlockPosition", "top") end, set = function(v) setDB("mplusBlockPosition", v) end },
-            { type = "section", name = "Scenario events" },
-            { type = "toggle", name = "Show scenario events", desc = "Show active scenario activities (main step and bonus steps) in a dedicated SCENARIO EVENTS section.", dbKey = "showScenarioEvents", get = function() return getDB("showScenarioEvents", true) end, set = function(v) setDB("showScenarioEvents", v) end },
+            { type = "section", name = "Scenario & Delve events" },
+            { type = "toggle", name = "Show scenario events", desc = "Show active scenario and Delve activities (main and bonus steps). Delves appear in a dedicated DELVES section with all in-delve objectives; other scenarios use SCENARIO EVENTS.", dbKey = "showScenarioEvents", get = function() return getDB("showScenarioEvents", true) end, set = function(v) setDB("showScenarioEvents", v) end },
+            { type = "toggle", name = "Hide other categories in Delve", desc = "When in a Delve, show only the DELVES section and hide all other categories (quests, rares, scenarios, etc.).", dbKey = "hideOtherCategoriesInDelve", get = function() return getDB("hideOtherCategoriesInDelve", false) end, set = function(v) setDB("hideOtherCategoriesInDelve", v) end },
             { type = "toggle", name = "Cinematic scenario bar", desc = "Show the timer and progress bar for scenario entries with a clean cinematic style.", dbKey = "cinematicScenarioBar", get = function() return getDB("cinematicScenarioBar", true) end, set = function(v) setDB("cinematicScenarioBar", v) end },
             { type = "slider", name = "Scenario bar opacity", desc = "Opacity of the scenario timer/progress bar (0–1).", dbKey = "scenarioBarOpacity", min = 0.3, max = 1, get = function() return tonumber(getDB("scenarioBarOpacity", 0.85)) or 0.85 end, set = function(v) setDB("scenarioBarOpacity", v) end },
             { type = "slider", name = "Scenario bar height", desc = "Height of the scenario progress bar in pixels (4–8).", dbKey = "scenarioBarHeight", min = 4, max = 8, get = function() return math.max(4, math.min(8, tonumber(getDB("scenarioBarHeight", 6)) or 6)) end, set = function(v) setDB("scenarioBarHeight", math.max(4, math.min(8, v))) end },
@@ -222,7 +223,7 @@ local OptionCategories = {
         name = "Categories",
         options = {
             { type = "section", name = "Focus order" },
-            { type = "reorderList", name = "Focus category order", labelMap = addon.SECTION_LABELS, get = function() return addon.GetGroupOrder() end, set = function(order) addon.SetGroupOrder(order) end, tooltip = "Drag to reorder categories in the Focus list. SCENARIO EVENTS is always pinned first." },
+            { type = "reorderList", name = "Focus category order", labelMap = addon.SECTION_LABELS, get = function() return addon.GetGroupOrder() end, set = function(order) addon.SetGroupOrder(order) end, tooltip = "Drag to reorder categories in the Focus list. DELVES and SCENARIO EVENTS are always pinned first and second." },
             { type = "section", name = "Sort within categories" },
             { type = "dropdown", name = "Focus sort mode", desc = "How entries are ordered within each category.", dbKey = "entrySortMode", options = { { "Alphabetical", "alpha" }, { "Quest Type", "questType" }, { "Zone", "zone" }, { "Quest Level", "level" } }, get = function() return getDB("entrySortMode", "questType") end, set = function(v) setDB("entrySortMode", v) end },
             { type = "section", name = "Effects" },

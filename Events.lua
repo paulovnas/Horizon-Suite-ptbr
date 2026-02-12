@@ -34,6 +34,7 @@ eventFrame:RegisterEvent("SCENARIO_CRITERIA_SHOW_STATE_UPDATE")
 eventFrame:RegisterEvent("SCENARIO_COMPLETED")
 eventFrame:RegisterEvent("SCENARIO_SPELL_UPDATE")
 eventFrame:RegisterEvent("CRITERIA_COMPLETE")
+pcall(function() eventFrame:RegisterEvent("ACTIVE_DELVE_DATA_UPDATE") end)
 
 local function ScheduleRefresh()
     if addon.refreshPending then return end
@@ -515,6 +516,7 @@ local eventHandlers = {
     SCENARIO_COMPLETED       = function() ScheduleRefresh() end,
     SCENARIO_SPELL_UPDATE    = function() ScheduleRefresh() end,
     CRITERIA_COMPLETE        = function() ScheduleRefresh() end,
+    ACTIVE_DELVE_DATA_UPDATE = function() ScheduleRefresh() end,
 }
 
 --- OnEvent: table-dispatch to eventHandlers[event]; falls back to ScheduleRefresh for unhandled events.

@@ -49,7 +49,7 @@ function addon.EnsureDB()
 end
 
 -- Persisted Focus category order (validated, fallback to addon.GROUP_ORDER).
--- SCENARIO is always pinned first; user reorder cannot displace it.
+-- DELVES and SCENARIO are always pinned first and second; user reorder cannot displace them.
 function addon.GetGroupOrder()
     local default = addon.GROUP_ORDER
     local saved = addon.GetDB("groupOrder", nil)
@@ -72,14 +72,21 @@ function addon.GetGroupOrder()
             result[#result + 1] = key
         end
     end
-    -- Pin SCENARIO first: remove from current position and prepend.
+    -- Pin DELVES first, SCENARIO second: remove from current positions and prepend.
     for i = #result, 1, -1 do
         if result[i] == "SCENARIO" then
             table.remove(result, i)
             break
         end
     end
+    for i = #result, 1, -1 do
+        if result[i] == "DELVES" then
+            table.remove(result, i)
+            break
+        end
+    end
     table.insert(result, 1, "SCENARIO")
+    table.insert(result, 1, "DELVES")
     return result
 end
 
@@ -103,14 +110,21 @@ function addon.SetGroupOrder(order)
             result[#result + 1] = key
         end
     end
-    -- Pin SCENARIO first before persisting.
+    -- Pin DELVES first, SCENARIO second before persisting.
     for i = #result, 1, -1 do
         if result[i] == "SCENARIO" then
             table.remove(result, i)
             break
         end
     end
+    for i = #result, 1, -1 do
+        if result[i] == "DELVES" then
+            table.remove(result, i)
+            break
+        end
+    end
     table.insert(result, 1, "SCENARIO")
+    table.insert(result, 1, "DELVES")
     HorizonDB.groupOrder = result
 end
 

@@ -226,6 +226,25 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
             HSPrint("GetNearbyDebugInfo not available.")
         end
 
+    elseif cmd == "delvedebug" then
+        HSPrint("|cFF00CCFF--- Delve / Tier debug (run inside a Delve) ---|r")
+        if C_PartyInfo and C_PartyInfo.IsDelveInProgress then
+            local ok, v = pcall(C_PartyInfo.IsDelveInProgress)
+            HSPrint("IsDelveInProgress: " .. tostring(ok and v or (ok and "false") or ("error: " .. tostring(v))))
+        else
+            HSPrint("IsDelveInProgress: not available")
+        end
+        if GetCVarNumberOrDefault then
+            local ok, cvarTier = pcall(GetCVarNumberOrDefault, "lastSelectedDelvesTier")
+            HSPrint("CVar lastSelectedDelvesTier: " .. (ok and tostring(cvarTier) or ("error: " .. tostring(cvarTier))))
+        end
+        if GetInstanceInfo then
+            local ok, name, instType, diffID, diffName = pcall(GetInstanceInfo)
+            if ok then
+                HSPrint("GetInstanceInfo: name=" .. tostring(name) .. " type=" .. tostring(instType) .. " diffID=" .. tostring(diffID) .. " diffName=" .. tostring(diffName))
+            end
+        end
+
     else
         HSPrint("Commands:")
         HSPrint("  /horizon            - Show this help")
@@ -240,6 +259,7 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
         HSPrint("  /horizon resetpos   - Reset panel to default position")
         HSPrint("  /horizon scendebug  - Toggle scenario timer debug logging")
         HSPrint("  /horizon nearbydebug - Print Current Zone / Nearby map and quest debug info")
+        HSPrint("  /horizon delvedebug  - Dump Delve/tier APIs (run inside a Delve to find tier number)")
         HSPrint("")
         HSPrint("  Click the header row to collapse / expand.")
         HSPrint("  Scroll with mouse wheel when content overflows.")
