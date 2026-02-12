@@ -149,9 +149,39 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
         end
         addon.FullLayout()
 
+    elseif cmd == "testitem" then
+        HSPrint("Injected one debug quest with a quest item (real quests remain). Use /horizon reset to clear.")
+        addon.testQuestItem = {
+            entryKey       = 89999,
+            questID        = 89999,
+            title          = "Debug: Quest Item",
+            objectives     = { { text = "Use the item button to test", finished = false } },
+            color          = addon.QUEST_COLORS and addon.QUEST_COLORS.DEFAULT or "|cFFFFFFFF",
+            category       = "DEFAULT",
+            isComplete     = false,
+            isSuperTracked = false,
+            isNearby       = true,
+            isAccepted     = true,
+            zoneName       = "Debug",
+            itemLink       = "item:12345:0:0:0:0:0:0:0",
+            itemTexture    = "Interface\\Icons\\INV_Misc_Rune_01",
+            questTypeAtlas = nil,
+            isDungeonQuest = false,
+            isTracked      = true,
+            level          = nil,
+        }
+        if addon.collapsed then
+            addon.collapsed = false
+            addon.chevron:SetText("-")
+            addon.scrollFrame:Show()
+            if HorizonDB then HorizonDB.collapsed = false end
+        end
+        addon.FullLayout()
+
     elseif cmd == "reset" then
         -- Clear any injected test data and return to live quest data.
         addon.testQuests = nil
+        addon.testQuestItem = nil
         addon.ScheduleRefresh()
         HSPrint("Reset tracker to live data.")
 
@@ -186,6 +216,16 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
         HSPrint("Scenario debug logging: " .. (v and "on" or "off"))
         if addon.ScheduleRefresh then addon.ScheduleRefresh() end
 
+    elseif cmd == "nearbydebug" or cmd == "zonedebug" then
+        if addon.GetNearbyDebugInfo then
+            HSPrint("|cFF00CCFF--- Nearby / Current Zone debug ---|r")
+            for _, line in ipairs(addon.GetNearbyDebugInfo()) do
+                HSPrint(line)
+            end
+        else
+            HSPrint("GetNearbyDebugInfo not available.")
+        end
+
     else
         HSPrint("Commands:")
         HSPrint("  /horizon            - Show this help")
@@ -195,9 +235,11 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
         HSPrint("  /horizon edit       - Open edit screen")
         HSPrint("  /horizon testsound  - Play the rare-added notification sound")
         HSPrint("  /horizon test       - Show with test data")
+        HSPrint("  /horizon testitem   - Inject one debug quest with item (real quests stay)")
         HSPrint("  /horizon reset      - Reset to live data")
         HSPrint("  /horizon resetpos   - Reset panel to default position")
         HSPrint("  /horizon scendebug  - Toggle scenario timer debug logging")
+        HSPrint("  /horizon nearbydebug - Print Current Zone / Nearby map and quest debug info")
         HSPrint("")
         HSPrint("  Click the header row to collapse / expand.")
         HSPrint("  Scroll with mouse wheel when content overflows.")

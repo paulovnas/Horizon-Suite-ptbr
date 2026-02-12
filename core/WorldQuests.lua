@@ -20,11 +20,17 @@ local function GetNearbyQuestIDs()
     local mapID = C_Map.GetBestMapForUnit("player")
     if not mapID then return nearbySet, taskQuestOnlySet end
 
+    local myMapInfo = C_Map.GetMapInfo and C_Map.GetMapInfo(mapID) or nil
+    local myMapType = myMapInfo and myMapInfo.mapType
+    -- Continent (2) or World (1): API returned too broad a map (e.g. Khaz Algar when in Isle of Dorn).
+    -- Only use Zone (3) or more specific so we never show "Current Zone" for the whole continent/world.
+    if myMapType ~= nil and myMapType < 3 then
+        return nearbySet, taskQuestOnlySet
+    end
+
     -- In a city (Zone type): only that map. In a subzone (Micro/Dungeon): that map + one parent so we see the city's quests (e.g. Foundation Hall + Dornogal).
     local mapIDsToCheck = { mapID }
     local seen = { [mapID] = true }
-    local myMapInfo = C_Map.GetMapInfo and C_Map.GetMapInfo(mapID) or nil
-    local myMapType = myMapInfo and myMapInfo.mapType
     if C_Map.GetMapInfo and myMapType ~= nil and myMapType >= 4 then
         local parentInfo = (C_Map.GetMapInfo and C_Map.GetMapInfo(mapID)) or nil
         local parentMapID = parentInfo and parentInfo.parentMapID and parentInfo.parentMapID ~= 0 and parentInfo.parentMapID or nil
@@ -98,22 +104,79 @@ local function GetNearbyQuestIDs()
         end
     end
 
-    -- Use cached zone WQ IDs for player map; only use parent's cache when we're in a subzone (Micro/Dungeon) so we don't pull in sibling zones from a broad parent cache.
+    -- Use cached zone WQ IDs only for the player's exact map (not parent) to avoid stale or overly-broad data.
     if addon.zoneTaskQuestCache then
-        for i, checkMapID in ipairs(mapIDsToCheck) do
-            if i == 1 or (myMapType ~= nil and myMapType >= 4) then
-                local cached = addon.zoneTaskQuestCache[checkMapID]
-                if cached then
-                    for id, _ in pairs(cached) do
-                        if id then
-                            nearbySet[id] = true
-                            taskQuestOnlySet[id] = true
+        local cached = addon.zoneTaskQuestCache[mapID]
+        if cached then
+            for id, _ in pairs(cached) do
+                if id then
+                    nearbySet[id] = true
+                    taskQuestOnlySet[id] = true
+                end
+            end
+        end
+    end
+
+    -- Post-filter: keep only quests we can verify are on one of our checked maps.
+    -- Removes: (1) quests whose zone is known and not in our list, (2) quests whose zone we cannot
+    -- determine, (3) quests whose zone name doesn't match (catches same-continent other zones).
+    local validMapIDs = {}
+    local validZoneNames = {}
+    for _, id in ipairs(mapIDsToCheck) do
+        validMapIDs[id] = true
+        local info = C_Map and C_Map.GetMapInfo and C_Map.GetMapInfo(id)
+        if info and info.name and info.name ~= "" then
+            validZoneNames[string.lower(strtrim(info.name))] = true
+        end
+    end
+    for questID in pairs(nearbySet) do
+        local questMapID = nil
+        if C_TaskQuest and C_TaskQuest.GetQuestInfoByQuestID then
+            local info = C_TaskQuest.GetQuestInfoByQuestID(questID)
+            questMapID = info and (info.mapID or info.uiMapID)
+        end
+        if not questMapID and C_QuestLog.GetNextWaypoint then
+            questMapID = C_QuestLog.GetNextWaypoint(questID)
+        end
+        if not questMapID or not validMapIDs[questMapID] then
+            nearbySet[questID] = nil
+            taskQuestOnlySet[questID] = nil
+        else
+            -- Zone-name check: if the quest's zone name is known and doesn't match our maps, remove it
+            -- (e.g. quest from Azj-Kahet showing up when we're in Isle of Dorn).
+            if addon.GetQuestZoneName then
+                local questZone = addon.GetQuestZoneName(questID)
+                if questZone and questZone ~= "" then
+                    local key = string.lower(strtrim(questZone))
+                    if not validZoneNames[key] then
+                        nearbySet[questID] = nil
+                        taskQuestOnlySet[questID] = nil
+                    end
+                end
+            end
+            -- Quest-log header cross-check: for quests in the log, verify their
+            -- header zone matches our maps.  Catches quests from another zone that
+            -- merely have a waypoint/objective in the current zone (e.g. Twilight
+            -- Highlands quest with a turn-in in Isle of Dorn).
+            if nearbySet[questID] and C_QuestLog.GetLogIndexForQuestID then
+                local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
+                if logIndex then
+                    for i = logIndex - 1, 1, -1 do
+                        local lInfo = C_QuestLog.GetInfo(i)
+                        if lInfo and lInfo.isHeader then
+                            local headerKey = string.lower(strtrim(lInfo.title or ""))
+                            if headerKey ~= "" and not validZoneNames[headerKey] then
+                                nearbySet[questID] = nil
+                                taskQuestOnlySet[questID] = nil
+                            end
+                            break
                         end
                     end
                 end
             end
         end
     end
+
     return nearbySet, taskQuestOnlySet
 end
 
@@ -229,6 +292,99 @@ local function RemoveWorldQuestWatch(questID)
     if (addon.IsQuestWorldQuest and addon.IsQuestWorldQuest(questID)) and C_QuestLog.RemoveWorldQuestWatch then
         C_QuestLog.RemoveWorldQuestWatch(questID)
     end
+end
+
+--- Return a table of strings describing current "Nearby" zone state for /horizon nearbydebug.
+local MAP_TYPE_NAMES = { [0] = "Cosmic", [1] = "World", [2] = "Continent", [3] = "Zone", [4] = "Dungeon", [5] = "Micro", [6] = "Orphan" }
+function addon.GetNearbyDebugInfo()
+    local out = {}
+    if not C_Map or not C_Map.GetBestMapForUnit then
+        out[#out + 1] = "C_Map.GetBestMapForUnit unavailable"
+        return out
+    end
+    local mapID = C_Map.GetBestMapForUnit("player")
+    if not mapID then
+        out[#out + 1] = "GetBestMapForUnit returned nil"
+        return out
+    end
+    local myMapInfo = C_Map.GetMapInfo and C_Map.GetMapInfo(mapID) or nil
+    local myMapType = myMapInfo and myMapInfo.mapType
+    local typeName = (myMapType ~= nil and MAP_TYPE_NAMES[myMapType]) or tostring(myMapType)
+    local zoneName = (myMapInfo and myMapInfo.name) or ("map " .. tostring(mapID))
+    out[#out + 1] = ("Player map: %s (%s) type=%s (%s)"):format(tostring(mapID), zoneName, tostring(myMapType), typeName)
+    if myMapType ~= nil and myMapType < 3 then
+        out[#out + 1] = "Nearby: skipped (continent/world - mapType < 3)"
+        out[#out + 1] = "nearbySet count: 0"
+        return out
+    end
+    local mapIDsToCheck = { mapID }
+    local seen = { [mapID] = true }
+    if C_Map.GetMapInfo and myMapType ~= nil and myMapType >= 4 then
+        local parentInfo = C_Map.GetMapInfo(mapID)
+        local parentMapID = parentInfo and parentInfo.parentMapID and parentInfo.parentMapID ~= 0 and parentInfo.parentMapID or nil
+        if parentMapID then
+            local parentMapInfo = C_Map.GetMapInfo(parentMapID)
+            local pt = parentMapInfo and parentMapInfo.mapType
+            if pt == nil or pt >= 3 then
+                if not seen[parentMapID] then
+                    seen[parentMapID] = true
+                    mapIDsToCheck[#mapIDsToCheck + 1] = parentMapID
+                end
+            end
+        end
+    end
+    if C_Map.GetMapChildrenInfo and myMapType ~= nil and myMapType >= 4 then
+        local children = C_Map.GetMapChildrenInfo(mapID, nil, true)
+        if children then
+            for _, child in ipairs(children) do
+                local cid = child and child.mapID
+                if cid and not seen[cid] then
+                    seen[cid] = true
+                    mapIDsToCheck[#mapIDsToCheck + 1] = cid
+                end
+            end
+        end
+    end
+    local mapLines = {}
+    for _, mid in ipairs(mapIDsToCheck) do
+        local info = C_Map.GetMapInfo(mid)
+        local name = (info and info.name) or ("map " .. tostring(mid))
+        mapLines[#mapLines + 1] = ("%s (%s)"):format(tostring(mid), name)
+    end
+    out[#out + 1] = "Maps checked: " .. table.concat(mapLines, ", ")
+    local nearbySet, taskQuestOnlySet = addon.GetNearbyQuestIDs()
+    local n = 0
+    for _ in pairs(nearbySet) do n = n + 1 end
+    out[#out + 1] = ("nearbySet count: %d"):format(n)
+    local maxShow = 8
+    local shown = 0
+    for questID in pairs(nearbySet) do
+        if shown < maxShow then
+            local title = (C_QuestLog and C_QuestLog.GetTitleForQuestID and C_QuestLog.GetTitleForQuestID(questID)) or ("quest " .. tostring(questID))
+            if #title > 40 then title = title:sub(1, 37) .. "..." end
+            local headerZone = ""
+            if C_QuestLog.GetLogIndexForQuestID then
+                local li = C_QuestLog.GetLogIndexForQuestID(questID)
+                if li then
+                    for j = li - 1, 1, -1 do
+                        local lInfo = C_QuestLog.GetInfo(j)
+                        if lInfo and lInfo.isHeader then
+                            headerZone = " [" .. (lInfo.title or "?") .. "]"
+                            break
+                        end
+                    end
+                end
+            end
+            out[#out + 1] = ("  [%d] %s%s"):format(questID, title, headerZone)
+            shown = shown + 1
+        else
+            break
+        end
+    end
+    if n > maxShow then
+        out[#out + 1] = ("  ... and %d more"):format(n - maxShow)
+    end
+    return out
 end
 
 addon.zoneTaskQuestCache = addon.zoneTaskQuestCache or {}

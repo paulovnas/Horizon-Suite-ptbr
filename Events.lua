@@ -84,6 +84,13 @@ local function CacheQuestsOnMapForMap(cache, mapID)
     return next(cache[mapID]) ~= nil
 end
 
+-- Helper: only treat Zone/Dungeon/Micro maps (and unknown) as valid for \"Nearby\".
+local function IsZoneLevelOrSmaller(mapID)
+    if not mapID or not C_Map or not C_Map.GetMapInfo then return true end
+    local info = C_Map.GetMapInfo(mapID)
+    return not info or info.mapType == nil or info.mapType >= 3
+end
+
 -- Cache task-quest (WQ) IDs for a map using shared ParseTaskPOIs. Returns true if any IDs were added.
 local function CacheTaskQuestsForMap(cache, mapID)
     if not mapID or not addon.GetTaskQuestsForMap then return false end
@@ -100,12 +107,12 @@ local function OnWorldMapShown()
         if not addon.enabled or not WorldMapFrame then return end
         addon.zoneTaskQuestCache = addon.zoneTaskQuestCache or {}
         local didCache = false
-        if WorldMapFrame.mapID then
+        if WorldMapFrame.mapID and IsZoneLevelOrSmaller(WorldMapFrame.mapID) then
             if CacheQuestsOnMapForMap(addon.zoneTaskQuestCache, WorldMapFrame.mapID) then didCache = true end
             if CacheTaskQuestsForMap(addon.zoneTaskQuestCache, WorldMapFrame.mapID) then didCache = true end
         end
         local playerMapID = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
-        if playerMapID and playerMapID ~= WorldMapFrame.mapID then
+        if playerMapID and playerMapID ~= WorldMapFrame.mapID and IsZoneLevelOrSmaller(playerMapID) then
             if CacheQuestsOnMapForMap(addon.zoneTaskQuestCache, playerMapID) then didCache = true end
             if CacheTaskQuestsForMap(addon.zoneTaskQuestCache, playerMapID) then didCache = true end
         end
@@ -182,8 +189,10 @@ local function RunWQTMapCache(fromDelayed)
     UpdateWQMapIndicator(fromDelayed, mapID, playerMapID)
     if not addon.enabled or not mapID then return end
     local didCache = false
-    if CacheTaskQuestsForMap(addon.zoneTaskQuestCache, mapID) then didCache = true end
-    if playerMapID and playerMapID ~= mapID then
+    if IsZoneLevelOrSmaller(mapID) then
+        if CacheTaskQuestsForMap(addon.zoneTaskQuestCache, mapID) then didCache = true end
+    end
+    if playerMapID and playerMapID ~= mapID and IsZoneLevelOrSmaller(playerMapID) then
         if CacheTaskQuestsForMap(addon.zoneTaskQuestCache, playerMapID) then didCache = true end
     end
     if didCache then ScheduleRefresh() end
@@ -272,7 +281,7 @@ local function StartMapCacheHeartbeat()
         else
             -- Map closed: cache player's current zone (and parent maps) so quests show without opening map.
             local playerMapID = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
-            if addon.enabled and playerMapID then
+            if addon.enabled and playerMapID and IsZoneLevelOrSmaller(playerMapID) then
                 local didCache = false
                 if CacheTaskQuestsForMap(addon.zoneTaskQuestCache, playerMapID) then didCache = true end
                 -- Cache GetQuestsOnMap: city (Zone) = player map only; subzone (Micro/Dungeon) = player map + one parent.
@@ -283,12 +292,8 @@ local function StartMapCacheHeartbeat()
                     if myMapType ~= nil and myMapType >= 4 then
                         local parentInfo = (C_Map.GetMapInfo and C_Map.GetMapInfo(playerMapID)) or nil
                         local parentMapID = parentInfo and parentInfo.parentMapID and parentInfo.parentMapID ~= 0 and parentInfo.parentMapID or nil
-                        if parentMapID then
-                            local parentMapInfo = (C_Map.GetMapInfo and C_Map.GetMapInfo(parentMapID)) or nil
-                            local mapType = parentMapInfo and parentMapInfo.mapType
-                            if mapType == nil or mapType >= 3 then
-                                if CacheQuestsOnMapForMap(addon.zoneTaskQuestCache, parentMapID) then didCache = true end
-                            end
+                        if parentMapID and IsZoneLevelOrSmaller(parentMapID) then
+                            if CacheQuestsOnMapForMap(addon.zoneTaskQuestCache, parentMapID) then didCache = true end
                         end
                     end
                 end
@@ -484,9 +489,8 @@ end
 local function OnZoneChanged(event)
     addon.zoneJustChanged = true
     if addon.recentlyUntrackedWorldQuests then wipe(addon.recentlyUntrackedWorldQuests) end
-    if event == "ZONE_CHANGED_NEW_AREA" and addon.zoneTaskQuestCache then
-        wipe(addon.zoneTaskQuestCache)
-    end
+    -- Any zone change should invalidate cached map quest data so \"Nearby\" never uses stale continent/zone info.
+    if addon.zoneTaskQuestCache then wipe(addon.zoneTaskQuestCache) end
     ScheduleRefresh()
     C_Timer.After(0.4, function() if addon.enabled then addon.FullLayout() end end)
     C_Timer.After(1.5, function() if addon.enabled then ScheduleRefresh() end end)

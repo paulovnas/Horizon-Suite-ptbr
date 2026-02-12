@@ -73,6 +73,8 @@ The aesthetic that defines your interface.
 | `/horizon options` | Open the full customization suite |
 | `/horizon collapse` | Toggle the entire tracker or specific categories |
 | `/horizon test` | Populate the tracker with sample data to help you style |
+| `/horizon testitem` | Inject one debug quest with a quest item (real quests stay); use to test per-row and floating quest item buttons without a live quest item |
+| `/horizon reset` | Clear test data and return to live quests (use after `/horizon test` or `/horizon testitem`) |
 | `/horizon resetpos` | Snap the tracker back to its default center position |
 
 **Mouse Interactions**

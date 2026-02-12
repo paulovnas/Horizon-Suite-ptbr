@@ -334,6 +334,11 @@ local function ReadTrackedQuests()
         end
     end
 
+    -- Optional single quest-with-item injection for /horizon testitem (leaves real quests visible).
+    if addon.testQuestItem then
+        table.insert(quests, 1, addon.testQuestItem)
+    end
+
     return quests
 end
 
