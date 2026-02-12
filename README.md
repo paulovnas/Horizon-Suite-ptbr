@@ -1,107 +1,68 @@
 # 🌌 Horizon Suite - Focus
 
-**Horizon Suite - Focus** is a cinematic replacement for the default World of Warcraft objective tracker. Built for the Midnight era, it moves away from the static, cluttered list of the past and gives you total agency over how and when your goals appear on your screen.
+**Horizon Suite - Focus** is a cinematic overhaul of the World of Warcraft objective tracker. Designed for the Midnight era, it replaces static, cluttered lists with a fluid interface that grants you total agency over your goals.
 
 <p align="center">
-  <img width="383" alt="Horizon Suite Preview" src="https://github.com/user-attachments/assets/72072df2-7ba3-4205-a984-df561eaf3ed4" />
+  <img width="400" alt="Horizon Suite Preview" src="https://github.com/user-attachments/assets/72072df2-7ba3-4205-a984-df561eaf3ed4" />
 </p>
 
 ---
 
-## 🧠 Intelligent Features
+## 🧠 Intelligent Logic
+The systems driving your efficiency.
 
-The logic that drives your efficiency.
-
-**Spatial Awareness**
-- **Current Zone Filter** - Automatically hides quests that aren't in your immediate area to cut through the noise.
-- **Proximity Priority** - Dynamically floats "Nearby" quests to the top of the list so you never have to hunt for your next objective. Quest grouping into "Current Zone" works correctly in sub-zones and micro-dungeons (e.g. Foundation Hall within Dornogal) on initial load, without needing to open the map first.
-
-**Dynamic Scanning**
-- **Scenario Events** - Surfaces active scenario activities (main step and bonus steps) in a dedicated SCENARIO EVENTS section. Supports Twilight's Call–style events with time remaining and cinematic progress bars. If a scenario row maps to a quest already in the list, the scenario row is shown and the duplicate quest row is suppressed (Options → Content).
-- **Delves** - When you are in a Delve (e.g. Kriegval's Rest), all Delve objectives appear in a separate **DELVES** section pinned at the top of the tracker. The display shows the delve name and its objectives. The current Delve tier (e.g. Tier 4) is shown next to the delve name when available.
-- **Rare Boss Tracker** - Scans for nearby Rare vignettes and adds them to the tracker with a single click to super-track on the map. Optional sound when a rare is added (Options → Content).
-- **World Map Sync** - Opening the world map automatically pulls active World Quests and Available quests into your tracker, keeping your UI in sync with your planning.
-- **World quest updates without map** - In-zone world quests and task quests can update without opening the world map, using the same source as the default objective tracker when available.
-- **Weeklies & Dailies in Zone** - Weekly and daily quests that appear in your current zone are auto-added to the tracker (WEEKLY QUESTS and DAILY QUESTS sections). Quests you have not yet accepted show an "— Available" label so you can see what is ready to pick up.
-
-**Combat & Utility**
-- **Hide in Combat** - Automatically vanishes the tracker during encounters to clear your screen for mechanics.
-- **Secure Quest Items** - High-performance quest item buttons built on secure templates, ensuring they work flawlessly mid-fight.
-- **ATT Integration** - Full support for All The Things. Displays collection data directly within your objectives.
-
-*Special thanks to the All The Things team for their incredible community data.*
+* **Spatial Awareness** – Automatically filters quests by zone and floats nearby objectives to the top. Tracks sub-zones and micro-dungeons instantly without requiring a map refresh.
+* **Dynamic Scanning** – Surfaces active Scenarios, Delves, and World Events in dedicated, high-priority sections. Includes support for cinematic progress bars, timers, and difficulty tiers.
+* **Rare Boss Tracker** – Scans for nearby vignettes, allowing you to super-track rares with a single click and optional audio alerts.
+* **Live Sync** – World Quests, Dailies, and Weeklies update dynamically. Unaccepted quests are marked as "Available" so you never miss a pickup.
+* **Secure Quest Items** – High-performance quest item buttons built on secure templates, ensuring they work flawlessly mid-fight without UI errors.
+* **ATT Integration** – Full native support for **All The Things**, displaying collection data directly within your objectives.
 
 ---
 
-## 🎨 Formatting & UI Design
+## 🎨 Visuals & UI Design
+An aesthetic that complements the modern game client.
 
-The aesthetic that defines your interface.
-
-**Visual Hierarchy**
-- **Quest Type Icons** - Distinct, high-fidelity icons for Campaign, World Quests, Weekly (recurring), Legendaries, and Callings for instant identification.
-- **Weekly & Daily Quests** - Recurring weekly and daily quests appear in "WEEKLY QUESTS" and "DAILY QUESTS" sections. Zone weeklies and dailies are auto-added like world quests. Quests available to accept but not yet accepted are labeled "— Available".
-- **Turn-in Highlights** - Quests "Ready for Turn-in" receive a unique visual highlight, giving you a clear signal that it's time to head back to the hub.
-- **Category Collapsing** - Granular control over your screen space. Collapse specific sections (like World Quests or Weekly Quests) while keeping your main Campaign visible.
-- **Focus sort mode** - In Options → Categories, choose how entries are ordered within each category: Alphabetical, Quest Type, Zone, or Quest Level.
-
-**Total Customization**
-- **The Color Matrix** - Define your own hex-code reality. Customize the colors for every quest category (Default, Campaign, Legendary, World, Delves, Scenario, Weekly, Daily, Complete, Rare) and objective state via `/horizon options`.
-- **Typography Suite** - Total control over fonts, sizes, outlines, and text shadows for Headers, Titles, and Objectives.
-- **Compact mode** - Reduce spacing between quest entries for a denser list.
-- **Quest level display** - Show quest level next to the title.
-- **Completed count** - Show X/Y objective progress in the quest title.
-- **Objective numbers** - Prefix objectives with 1., 2., 3.
-- **Dim non-super-tracked** - Slightly dim quests that are not super-tracked.
-- **Panel & content height** - Resize the tracker via the bottom-right grip; max content height is saved in Options → General.
-- **Shadow customization** - Options → Style: shadow X/Y offset and alpha.
-- **Backdrop opacity** - Control tracker panel background opacity (0–1).
-- **Border visibility** - Toggle the panel border on or off.
-- **Highlight alpha & bar width** - Style the super-tracked quest bar or background (2–6 px bar width).
-- **Section header colors** - Options → Colors: category label colors.
-
-**Fluid Motion**
-- **Entry/Exit Animations** - Quests slide and fade into view with modern, smooth transitions.
-- **Objective Flash** - A subtle green pulse provides tactile feedback the moment you complete a requirement.
-- **Adaptive Layout** - Smoothly animates height changes and supports "Grow Upward" anchoring to protect your action bar space.
-- **Mythic+ block** - Options → Content: show timer, completion %, and affixes when in a Mythic+ dungeon (position: top or bottom).
-- **Scenario & Delve events** - Options → Content: show or hide scenario and Delve activities. When in a Delve, the DELVES section appears pinned at the top (name + objectives only; no bar). You can enable "Hide other categories in Delve" to show only the DELVES section while in a Delve and hide all other categories. SCENARIO EVENTS use the cinematic scenario bar, bar opacity, and bar height; Delves do not show a timer or progress bar.
+* **Visual Hierarchy** – High-fidelity icons for Campaign, Legendary, and World Quests. 
+* **Turn-In Guidance** – Quests "Ready for Turn-in" receive a unique, high-contrast visual highlight and priority positioning, giving you a clear signal to head back to the hub.
+* **The Color Matrix** – Define your own aesthetic with full hex-code customization for every category and state via `/horizon options`.
+* **Typography Suite** – Total control over fonts, sizes, outlines, and text shadows for Headers, Titles, and Objectives.
+* **Fluid Motion** – Smooth entry/exit animations, a subtle "pulse" on objective completion, and adaptive layouts that support "Grow Upward" anchoring.
 
 ---
 
-## 🕹️ Controls & Commands
+## ⚔️ Performance & Utility
+Built for the heat of gameplay.
 
+* **Hide in Combat** – Maintain total focus during encounters. The tracker can be set to automatically vanish the moment you enter combat, clearing your screen for boss mechanics and reappearing instantly once the fight is over.
+* **Mythic+ Integration** – Clean, high-readability blocks for M+ timers, completion percentages, and active affixes with customizable positioning.
+* **Instance Visibility** – Granular control over where the tracker appears. Choose to show or hide the interface specifically for Dungeons, Raids, Battlegrounds, or Arenas.
+* **Compact & Minimal Modes** – Optimize your screen real estate with adjustable spacing, "Super-Minimal" headers, and backdrop opacity controls.
+
+---
+
+## 🕹️ Controls & Interaction
+
+### Slash Commands
 | Command | Action |
-|---------|--------|
-| `/horizon options` | Open the full customization suite |
-| `/horizon collapse` | Toggle the entire tracker or specific categories |
-| `/horizon test` | Populate the tracker with sample data to help you style |
-| `/horizon testitem` | Inject one debug quest with a quest item (real quests stay); use to test per-row and floating quest item buttons without a live quest item |
-| `/horizon reset` | Clear test data and return to live quests (use after `/horizon test` or `/horizon testitem`) |
-| `/horizon resetpos` | Snap the tracker back to its default center position |
+|:---|:---|
+| `/horizon options` | Launch the customization suite and search for settings. |
+| `/horizon collapse` | Toggle the entire tracker or specific categories. |
+| `/horizon test` | Populate sample data to preview your styling. |
+| `/horizon reset` | Clear test data and return to live objectives. |
+| `/horizon resetpos` | Snap the tracker back to its default screen position. |
 
-**Mouse Interactions**
-| Action | Result |
-|--------|--------|
-| **Left-Click** | Set as Super-Tracked (Map Pin) (or open quest log if "Click title to open quest log" is on) |
-| **Double-Click** | Open Quest Log or Map details |
-| **Right double-click** | Abandon quest (with confirmation) when "Right double-click to abandon" is enabled |
-| **Right-Click** | Remove from tracker / Untrack |
-
-**Instance visibility** - Options → General: show or hide the tracker in dungeon, raid, battleground, and arena.
-**Grow upward** - Anchor the tracker by its bottom edge so the list expands upward.
-**Lock position** - Prevent dragging to reposition the tracker.
-**Start collapsed** - Objectives panel starts collapsed (header only) until you expand it.
-**Super-minimal mode** - Hide the OBJECTIVES header for a pure text list.
-**Options search** - Use the search box in the options panel to find settings by name or description.
-**Category reorder** - Options → Categories: drag to reorder Focus category order. DELVES and SCENARIO EVENTS are always pinned first and second and cannot be moved.
-
-Key binding available: Collapse Tracker can be bound in Key Bindings under Horizon Suite - Focus.
+### Mouse Bindings
+* **Left-Click**: Set as Super-Tracked (Map Pin) or open Quest Log.
+* **Double-Click**: View Map details; **Right Double-Click** to abandon quest.
+* **Right-Click**: Untrack objective.
+* **Drag & Drop**: Reorder categories or resize the panel via the corner grip.
 
 ---
 
 ## 📥 Installation
 
-1. Download the repository and extract the `HorizonSuite` folder.
+1. Download the latest release and extract the `HorizonSuite` folder.
 2. Place it in your `World of Warcraft\_retail_\Interface\AddOns\` directory.
 3. Enable **Horizon Suite - Focus** in your AddOn list.
 4. Type `/horizon options` to begin tailoring your experience.
@@ -110,14 +71,13 @@ Key binding available: Collapse Tracker can be bound in Key Bindings under Horiz
 
 ## 💖 Support the Project
 
-Horizon is built for players who want a more intentional WoW experience. If this addon has cleaned up your UI, consider supporting its development for the Midnight expansion.
+Horizon is built for players who value an intentional, clean UI. If the suite has improved your journey through Azeroth, consider supporting its development for the Midnight expansion.
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/T6T71TX1Y1)
 
-[Join the Discord](https://discord.gg/RkkYJgB3PA) — Bug reports, feature requests, and discussion.
+**[Join the Discord](https://discord.gg/RkkYJgB3PA)** — Bug reports, feature requests, and community discussion.
 
 ---
 
 ## License
-
-MIT License. See [LICENSE](LICENSE).
+Distributed under the MIT License. See `LICENSE` for more information.
