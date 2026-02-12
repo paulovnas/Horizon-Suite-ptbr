@@ -28,6 +28,16 @@ function addon.GetMaxContentHeight()
     return tonumber(addon.GetDB("maxContentHeight", addon.MAX_CONTENT_HEIGHT)) or addon.MAX_CONTENT_HEIGHT
 end
 
+function addon.GetContentLeftOffset()
+    local base = addon.PADDING + addon.ICON_COLUMN_WIDTH
+    if addon.GetDB("showQuestItemButtons", false) then
+        local iconRight = (addon.BAR_LEFT_OFFSET or 12) + 2
+        local minLeft = iconRight + addon.QUEST_TYPE_ICON_SIZE + 4 + addon.ITEM_BTN_SIZE
+        return math.max(base, minLeft)
+    end
+    return base
+end
+
 function addon.GetDB(key, default)
     if not HorizonDB then return default end
     local v = HorizonDB[key]

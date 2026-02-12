@@ -367,10 +367,8 @@ local function PopulateEntry(entry, questData)
     -- Off-map WORLD quest that is tracked (only world quests, not normal quests).
     local isOffMapWorld = (questData.category == "WORLD") and questData.isTracked and not questData.isNearby
 
-    local textWidth = addon.GetPanelWidth() - addon.PADDING * 2 - (addon.CONTENT_RIGHT_PADDING or 0)
-    if showItemBtn then
-        textWidth = textWidth - addon.ITEM_BTN_SIZE - addon.ITEM_BTN_OFFSET
-    end
+    local leftOffset = addon.GetContentLeftOffset and addon.GetContentLeftOffset() or (addon.PADDING + addon.ICON_COLUMN_WIDTH)
+    local textWidth = addon.GetPanelWidth() - addon.PADDING - leftOffset - (addon.CONTENT_RIGHT_PADDING or 0)
 
     -- All titles share the same X offset; we are no longer indenting off-map quests.
     local titleLeftOffset = 0
@@ -887,7 +885,7 @@ local function FullLayout()
             local sec = AcquireSectionHeader(grp.key)
             if sec then
                 sec:ClearAllPoints()
-                sec:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", addon.PADDING + addon.ICON_COLUMN_WIDTH, yOff)
+                sec:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", addon.GetContentLeftOffset(), yOff)
                 yOff = yOff - (addon.SECTION_SIZE + 4) - 2
             end
         end
@@ -909,13 +907,13 @@ local function FullLayout()
                 local entry = activeMap[key]
                 if entry then
                     entry.groupKey = grp.key
-                    entry.finalX = addon.PADDING + addon.ICON_COLUMN_WIDTH
+                    entry.finalX = addon.GetContentLeftOffset()
                     entry.finalY = yOff
                     entry.staggerDelay = entryIndex * addon.ENTRY_STAGGER
                     entryIndex = entryIndex + 1
 
                     entry:ClearAllPoints()
-                    entry:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", addon.PADDING + addon.ICON_COLUMN_WIDTH, yOff)
+                    entry:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", addon.GetContentLeftOffset(), yOff)
                     entry:Show()
                     yOff = yOff - entry.entryHeight - entrySpacing
                 end

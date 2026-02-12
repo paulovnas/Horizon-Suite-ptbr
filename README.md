@@ -15,7 +15,7 @@ The systems driving your efficiency.
 * **Dynamic Scanning** – Surfaces active Scenarios, Delves, and World Events in dedicated, high-priority sections. Includes support for cinematic progress bars, timers, and difficulty tiers.
 * **Rare Boss Tracker** – Scans for nearby vignettes, allowing you to super-track rares with a single click and optional audio alerts.
 * **Live Sync** – World Quests, Dailies, and Weeklies update dynamically. Unaccepted quests are marked as "Available" so you never miss a pickup.
-* **Secure Quest Items** – High-performance quest item buttons built on secure templates, ensuring they work flawlessly mid-fight without UI errors.
+* **Secure Quest Items** – High-performance quest item buttons built on secure templates, ensuring they work flawlessly mid-fight without UI errors. When enabled, the usable quest item appears anchored outside to the left of the panel, in line with each quest row (to the left of the quest type icon).
 * **ATT Integration** – Full native support for **All The Things**, displaying collection data directly within your objectives.
 
 ---

@@ -14,6 +14,28 @@ floatingQuestItemBtn:SetSize(addon.GetDB("floatingQuestItemSize", 36) or 36, add
 floatingQuestItemBtn:SetPoint("RIGHT", addon.HS, "LEFT", -12, 0)
 floatingQuestItemBtn:SetAttribute("type", "item")
 floatingQuestItemBtn:RegisterForClicks("AnyUp")
+floatingQuestItemBtn:SetMovable(true)
+floatingQuestItemBtn:RegisterForDrag("LeftButton")
+floatingQuestItemBtn:SetScript("OnDragStart", function(self)
+    if addon.GetDB("lockFloatingQuestItemPosition", false) then return end
+    if InCombatLockdown() then return end
+    self:StartMoving()
+end)
+floatingQuestItemBtn:SetScript("OnDragStop", function(self)
+    self:StopMovingOrSizing()
+    self:SetUserPlaced(false)
+    if InCombatLockdown() then return end
+    addon.EnsureDB()
+    local l, b = self:GetLeft(), self:GetBottom()
+    if l and b then
+        addon.SetDB("floatingQuestItemPoint", "BOTTOMLEFT")
+        addon.SetDB("floatingQuestItemRelPoint", "BOTTOMLEFT")
+        addon.SetDB("floatingQuestItemX", l)
+        addon.SetDB("floatingQuestItemY", b)
+        self:ClearAllPoints()
+        self:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", l, b)
+    end
+end)
 floatingQuestItemBtn:Hide()
 local floatingQuestItemIcon = floatingQuestItemBtn:CreateTexture(nil, "ARTWORK")
 floatingQuestItemIcon:SetAllPoints()
@@ -57,18 +79,26 @@ local function UpdateFloatingQuestItem(questsFlat)
         floatingQuestItemBtn._itemLink = chosenLink
         local sz = tonumber(addon.GetDB("floatingQuestItemSize", 36)) or 36
         floatingQuestItemBtn:SetSize(sz, sz)
-        local anchor = addon.GetDB("floatingQuestItemAnchor", "LEFT") or "LEFT"
-        local ox = tonumber(addon.GetDB("floatingQuestItemOffsetX", -12)) or -12
-        local oy = tonumber(addon.GetDB("floatingQuestItemOffsetY", 0)) or 0
+        local savedPoint = addon.GetDB("floatingQuestItemPoint", nil)
         floatingQuestItemBtn:ClearAllPoints()
-        if anchor == "LEFT" then
-            floatingQuestItemBtn:SetPoint("RIGHT", addon.HS, "LEFT", ox, oy)
-        elseif anchor == "RIGHT" then
-            floatingQuestItemBtn:SetPoint("LEFT", addon.HS, "RIGHT", ox, oy)
-        elseif anchor == "TOP" then
-            floatingQuestItemBtn:SetPoint("BOTTOM", addon.HS, "TOP", ox, oy)
+        if savedPoint then
+            local relPoint = addon.GetDB("floatingQuestItemRelPoint", "BOTTOMLEFT") or "BOTTOMLEFT"
+            local sx = tonumber(addon.GetDB("floatingQuestItemX", 0)) or 0
+            local sy = tonumber(addon.GetDB("floatingQuestItemY", 0)) or 0
+            floatingQuestItemBtn:SetPoint(savedPoint, UIParent, relPoint, sx, sy)
         else
-            floatingQuestItemBtn:SetPoint("TOP", addon.HS, "BOTTOM", ox, oy)
+            local anchor = addon.GetDB("floatingQuestItemAnchor", "LEFT") or "LEFT"
+            local ox = tonumber(addon.GetDB("floatingQuestItemOffsetX", -12)) or -12
+            local oy = tonumber(addon.GetDB("floatingQuestItemOffsetY", 0)) or 0
+            if anchor == "LEFT" then
+                floatingQuestItemBtn:SetPoint("RIGHT", addon.HS, "LEFT", ox, oy)
+            elseif anchor == "RIGHT" then
+                floatingQuestItemBtn:SetPoint("LEFT", addon.HS, "RIGHT", ox, oy)
+            elseif anchor == "TOP" then
+                floatingQuestItemBtn:SetPoint("BOTTOM", addon.HS, "TOP", ox, oy)
+            else
+                floatingQuestItemBtn:SetPoint("TOP", addon.HS, "BOTTOM", ox, oy)
+            end
         end
         if addon.combatFadeState == "in" then floatingQuestItemBtn:SetAlpha(0) end
         floatingQuestItemBtn:Show()
