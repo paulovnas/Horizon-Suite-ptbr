@@ -370,7 +370,9 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                 hdrLabel:SetJustifyH("LEFT")
 
                 -- Swatch preview: show the title colour as a small swatch on the header.
-                local titleDef = (addon.QUEST_COLORS and addon.QUEST_COLORS[key]) or (addon.QUEST_COLORS and addon.QUEST_COLORS.DEFAULT) or { 0.9, 0.9, 0.9 }
+                local baseTitleColor = (addon.QUEST_COLORS and addon.QUEST_COLORS[key]) or (addon.QUEST_COLORS and addon.QUEST_COLORS.DEFAULT) or { 0.9, 0.9, 0.9 }
+                local baseSectionColor = (addon.SECTION_COLORS and addon.SECTION_COLORS[key]) or (addon.SECTION_COLORS and addon.SECTION_COLORS.DEFAULT) or { 0.7, 0.7, 0.7 }
+                local titleDef = (key == "NEARBY") and baseSectionColor or baseTitleColor  -- Current Zone: title matches section
 
                 -- Reset button (child of container so click does not toggle expand)
                 local resetBtn = CreateFrame("Button", nil, container)
@@ -408,14 +410,11 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                 container.rows = nil  -- created lazily
                 container.groupKey = key
 
-                local baseTitleColor = (addon.QUEST_COLORS and addon.QUEST_COLORS[key]) or (addon.QUEST_COLORS and addon.QUEST_COLORS.DEFAULT) or { 0.9, 0.9, 0.9 }
-                local baseSectionColor = (addon.SECTION_COLORS and addon.SECTION_COLORS[key]) or (addon.SECTION_COLORS and addon.SECTION_COLORS.DEFAULT) or { 0.7, 0.7, 0.7 }
                 local catDefs = {
-                    { subKey = "title",     suffix = "Title",     def = baseTitleColor },
-                    -- Default objective colour per category starts the same as the title/section tone
-                    { subKey = "objective", suffix = "Objective", def = baseTitleColor },
-                    { subKey = "zone",      suffix = "Zone",      def = addon.ZONE_COLOR or { 0.55, 0.65, 0.75 } },
                     { subKey = "section",   suffix = "Section",   def = baseSectionColor },
+                    { subKey = "title",     suffix = "Title",     def = titleDef },
+                    { subKey = "zone",      suffix = "Zone",      def = addon.ZONE_COLOR or { 0.55, 0.65, 0.75 } },
+                    { subKey = "objective", suffix = "Objective", def = titleDef },
                 }
 
                 -- Lazy-create the 4 color rows on first expand.
