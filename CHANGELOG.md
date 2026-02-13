@@ -10,6 +10,14 @@ All notable changes to Horizon Suite - Focus are documented here.
 
 ---
 
+## [0.7.0] – 2026-02-13
+
+### Improvements
+
+- **Version 0.7.0** — Release bump.
+
+---
+
 ## [0.6.9] – 2026-02-13
 
 ### New Features
