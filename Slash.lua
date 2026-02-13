@@ -45,6 +45,17 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
             print("|cFF00CCFFHorizon Suite - Focus:|r Panel expanded.")
         end
 
+    elseif cmd == "nearby" then
+        local show = not addon.GetDB("showNearbyGroup", true)
+        addon.SetDB("showNearbyGroup", show)
+        if _G.HorizonSuite_RequestRefresh then _G.HorizonSuite_RequestRefresh() end
+        if addon.FullLayout and not InCombatLockdown() then addon.FullLayout() end
+        if show then
+            print("|cFF00CCFFHorizon Suite - Focus:|r Nearby group shown.")
+        else
+            print("|cFF00CCFFHorizon Suite - Focus:|r Nearby group hidden.")
+        end
+
     elseif cmd == "testsound" then
         if PlaySound then
             local ok, err = pcall(PlaySound, addon.RARE_ADDED_SOUND)
@@ -250,6 +261,7 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
         HSPrint("  /horizon            - Show this help")
         HSPrint("  /horizon toggle     - Enable / disable")
         HSPrint("  /horizon collapse   - Collapse / expand panel")
+        HSPrint("  /horizon nearby     - Toggle Nearby (Current Zone) group")
         HSPrint("  /horizon options    - Open options window")
         HSPrint("  /horizon edit       - Open edit screen")
         HSPrint("  /horizon testsound  - Play the rare-added notification sound")

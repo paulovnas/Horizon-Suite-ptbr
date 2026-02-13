@@ -217,14 +217,18 @@ local function UpdateCollapseAnimations()
     end
     if not stillCollapsing then
         addon.collapseAnimating = false
-        scrollFrame:Hide()
-        addon.targetHeight = addon.GetCollapsedHeight()
         for i = 1, addon.POOL_SIZE do
             if pool[i].animState == "idle" and (pool[i].questID or pool[i].entryKey) then
                 addon.ClearEntry(pool[i], false)
             end
         end
         wipe(addon.activeMap)
+        if addon.GetDB("showSectionHeadersWhenCollapsed", false) then
+            if addon.FullLayout then addon.FullLayout() end
+        else
+            scrollFrame:Hide()
+            addon.targetHeight = addon.GetCollapsedHeight()
+        end
     end
 end
 

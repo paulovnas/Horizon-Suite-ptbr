@@ -555,8 +555,11 @@ local function AcquireSectionHeader(groupKey)
     s.text:SetTextColor(color[1], color[2], color[3], addon.SECTION_COLOR_A)
 
     -- Update chevron to reflect current collapsed state.
+    -- When panel is collapsed with headers visible, all show "+".
     if s.chevron then
-        if addon.IsCategoryCollapsed(groupKey) then
+        if addon.collapsed and addon.GetDB("showSectionHeadersWhenCollapsed", false) then
+            s.chevron:SetText("+")
+        elseif addon.IsCategoryCollapsed(groupKey) then
             s.chevron:SetText("+")
         else
             s.chevron:SetText("−")
@@ -574,6 +577,13 @@ local function AcquireSectionHeader(groupKey)
             addon.SetCategoryCollapsed(key, false)
             if self.chevron then
                 self.chevron:SetText("−")
+            end
+            if addon.collapsed then
+                addon.collapsed = false
+                addon.EnsureDB()
+                if HorizonDB then HorizonDB.collapsed = false end
+                addon.chevron:SetText("-")
+                scrollFrame:Show()
             end
             addon.FullLayout()
         else
@@ -627,19 +637,26 @@ local function ToggleCollapse()
             e.collapseDelay = 0
         end
 
-        for i = 1, addon.SECTION_POOL_SIZE do
-            if sectionPool[i].active then
-                sectionPool[i]:SetAlpha(0)
-                sectionPool[i]:Hide()
-                sectionPool[i].active = false
+        local showHeadersWhenCollapsed = addon.GetDB("showSectionHeadersWhenCollapsed", false)
+        if not showHeadersWhenCollapsed then
+            for i = 1, addon.SECTION_POOL_SIZE do
+                if sectionPool[i].active then
+                    sectionPool[i]:SetAlpha(0)
+                    sectionPool[i]:Hide()
+                    sectionPool[i].active = false
+                end
             end
         end
 
         addon.collapseAnimating = #visibleEntries > 0
         addon.collapseAnimStart = GetTime()
         if not addon.collapseAnimating then
-            scrollFrame:Hide()
-            addon.targetHeight = addon.GetCollapsedHeight()
+            if showHeadersWhenCollapsed then
+                addon.FullLayout()
+            else
+                scrollFrame:Hide()
+                addon.targetHeight = addon.GetCollapsedHeight()
+            end
         end
     else
         addon.chevron:SetText("-")
@@ -722,6 +739,13 @@ collapseKeybindBtn:SetScript("OnClick", function()
 end)
 collapseKeybindBtn:RegisterForClicks("AnyUp")
 
+local nearbyToggleKeybindBtn = CreateFrame("Button", "HSNearbyToggleButton", nil)
+nearbyToggleKeybindBtn:SetScript("OnClick", function()
+    addon.SetDB("showNearbyGroup", not addon.GetDB("showNearbyGroup", true))
+    if _G.HorizonSuite_RequestRefresh then _G.HorizonSuite_RequestRefresh() end
+    if _G.HorizonSuite_FullLayout and not InCombatLockdown() then _G.HorizonSuite_FullLayout() end
+end)
+nearbyToggleKeybindBtn:RegisterForClicks("AnyUp")
 
 local function ShouldShowInInstance()
     local inType = select(2, GetInstanceInfo())
@@ -817,12 +841,48 @@ local function FullLayout()
     end
 
     if addon.collapsed then
-        scrollFrame:Hide()
-        addon.targetHeight = addon.GetCollapsedHeight()
         local quests = addon.ReadTrackedQuests()
         for _, r in ipairs(rares) do quests[#quests + 1] = r end
         addon.UpdateFloatingQuestItem(quests)
         addon.UpdateHeaderQuestCount(#quests)
+
+        if addon.GetDB("showSectionHeadersWhenCollapsed", false) then
+            -- Collapsed-with-headers: show section headers only, no entries.
+            local grouped = addon.SortAndGroupQuests(quests)
+            local showSections = #grouped > 1 and addon.GetDB("showSectionHeaders", true)
+
+            if showSections and #grouped > 0 then
+                scrollFrame:Show()
+                HideAllSectionHeaders()
+                addon.sectionIdx = 0
+                local yOff = 0
+                for gi, grp in ipairs(grouped) do
+                    if gi > 1 then
+                        yOff = yOff - addon.SECTION_SPACING
+                    end
+                    local sec = AcquireSectionHeader(grp.key)
+                    if sec then
+                        sec:ClearAllPoints()
+                        sec:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", addon.GetContentLeftOffset(), yOff)
+                        yOff = yOff - (addon.SECTION_SIZE + 4) - 2
+                    end
+                end
+                local totalContentH = math.max(-yOff, 1)
+                scrollChild:SetHeight(totalContentH)
+                scrollFrame:SetVerticalScroll(0)
+                addon.scrollOffset = 0
+                local headerArea = addon.PADDING + addon.HEADER_HEIGHT + addon.DIVIDER_HEIGHT + 6
+                local visibleH = math.min(totalContentH, addon.GetMaxContentHeight())
+                addon.targetHeight = math.max(addon.MIN_HEIGHT, headerArea + visibleH + addon.PADDING)
+            else
+                scrollFrame:Hide()
+                addon.targetHeight = addon.GetCollapsedHeight()
+            end
+        else
+            scrollFrame:Hide()
+            addon.targetHeight = addon.GetCollapsedHeight()
+        end
+
         if #quests > 0 then
             if addon.combatFadeState == "in" then addon.HS:SetAlpha(0) end
             addon.HS:Show()

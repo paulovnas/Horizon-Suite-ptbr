@@ -11,7 +11,7 @@
 ## 🧠 Intelligent Logic
 The systems driving your efficiency.
 
-* **Spatial Awareness** – Automatically filters quests by zone and floats nearby objectives to the top. Tracks sub-zones and micro-dungeons instantly without requiring a map refresh.
+* **Spatial Awareness** – Automatically filters quests by zone and floats nearby objectives to the top. Tracks sub-zones and micro-dungeons instantly without requiring a map refresh. The "Current Zone" (Nearby) grouping can be toggled on or off via keybind, `/horizon nearby`, or Content options.
 * **Dynamic Scanning** – Surfaces active Scenarios, Delves, and World Events in dedicated, high-priority sections. Includes support for cinematic progress bars, timers, and difficulty tiers.
 * **Rare Boss Tracker** – Scans for nearby vignettes, allowing you to super-track rares with a single click and optional audio alerts.
 * **Live Sync** – World Quests, Dailies, and Weeklies update dynamically. Unaccepted quests are marked as "Available" so you never miss a pickup.
@@ -48,9 +48,12 @@ Built for the heat of gameplay.
 |:---|:---|
 | `/horizon options` | Launch the customization suite and search for settings. |
 | `/horizon collapse` | Toggle the entire tracker or specific categories. |
+| `/horizon nearby` | Toggle the Nearby (Current Zone) grouping on or off; when off, in-zone quests appear in their normal category (e.g. Dailies, Campaign). |
 | `/horizon test` | Populate sample data to preview your styling. |
 | `/horizon reset` | Clear test data and return to live objectives. |
 | `/horizon resetpos` | Snap the tracker back to its default screen position. |
+
+Key bindings for **Collapse Tracker** and **Toggle Nearby Group** can be set under *Key Bindings → Horizon Suite - Focus*. The option "Show Nearby (Current Zone) group" in Content → List controls the same Nearby grouping. "Show category headers when collapsed" (Content → List) keeps section headers (Campaign, World Quests, etc.) visible when the tracker is collapsed; click a header to expand that category.
 
 ### Mouse Bindings
 * **Left-Click**: Set as Super-Tracked (Map Pin) or open Quest Log.

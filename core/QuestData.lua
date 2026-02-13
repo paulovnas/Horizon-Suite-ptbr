@@ -422,8 +422,13 @@ local function SortAndGroupQuests(quests)
         elseif q.isNearby and not q.isAccepted then
             groups["AVAILABLE"][#groups["AVAILABLE"] + 1] = q
         elseif q.isNearby and q.isAccepted then
-            -- Accepted quests that are in the current zone.
-            groups["NEARBY"][#groups["NEARBY"] + 1] = q
+            -- Accepted quests that are in the current zone. When showNearbyGroup is off, use their real category (e.g. daily → DAILY).
+            if addon.GetDB("showNearbyGroup", true) then
+                groups["NEARBY"][#groups["NEARBY"] + 1] = q
+            else
+                local grp = addon.CATEGORY_TO_GROUP[q.category] or "DEFAULT"
+                groups[grp][#groups[grp] + 1] = q
+            end
         else
             local grp = addon.CATEGORY_TO_GROUP[q.category] or "DEFAULT"
             groups[grp][#groups[grp] + 1] = q
