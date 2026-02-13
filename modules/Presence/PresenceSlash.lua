@@ -1,6 +1,6 @@
 --[[
     Horizon Suite - Presence - Slash Commands
-    /horizon presence [zone|discover|level|boss|ach|quest|wq|accept|update|all]
+    /horizon presence [zone|discover|level|boss|ach|quest|wq|wqaccept|accept|update|all]
 ]]
 
 local addon = _G.HorizonSuite
@@ -26,6 +26,8 @@ local function HandlePresenceSlash(msg)
         addon.Presence.QueueOrPlay("QUEST_COMPLETE", "QUEST COMPLETE", "Objective Secured")
     elseif cmd == "wq" then
         addon.Presence.QueueOrPlay("WORLD_QUEST", "WORLD QUEST", "Azerite Mining")
+    elseif cmd == "wqaccept" then
+        addon.Presence.QueueOrPlay("WORLD_QUEST_ACCEPT", "WORLD QUEST ACCEPTED", "Azerite Mining")
     elseif cmd == "accept" then
         addon.Presence.QueueOrPlay("QUEST_ACCEPT", "QUEST ACCEPTED", "The Fate of the Horde")
     elseif cmd == "update" then
@@ -36,11 +38,12 @@ local function HandlePresenceSlash(msg)
         addon.Presence.SetPendingDiscovery()
         addon.Presence.QueueOrPlay("ZONE_CHANGE", "The Waking Shores", "Obsidian Citadel")
     elseif cmd == "all" then
-        HSPrint("Presence: Playing demo reel (10 notifications)...")
+        HSPrint("Presence: Playing demo reel (11 notifications)...")
         local demos = {
-            { "SUBZONE_CHANGE", "The Seat of Aspects",  ""                          },
-            { "QUEST_ACCEPT",   "QUEST ACCEPTED",       "The Fate of the Horde"     },
-            { "QUEST_UPDATE",   "QUEST UPDATE",         "Dragon Glyphs: 3/5"        },
+            { "SUBZONE_CHANGE",      "The Seat of Aspects",  ""                          },
+            { "QUEST_ACCEPT",        "QUEST ACCEPTED",       "The Fate of the Horde"     },
+            { "WORLD_QUEST_ACCEPT",  "WORLD QUEST ACCEPTED", "Azerite Mining"            },
+            { "QUEST_UPDATE",        "QUEST UPDATE",         "Dragon Glyphs: 3/5"        },
             { "ZONE_CHANGE",    "Valdrakken",           "Thaldraszus"               },
             { "ZONE_CHANGE",    "The Waking Shores",    "Obsidian Citadel",  true  },
             { "QUEST_COMPLETE", "QUEST COMPLETE",       "Aiding the Accord"         },
@@ -64,6 +67,7 @@ local function HandlePresenceSlash(msg)
         HSPrint("  /horizon presence boss     - Test Boss Emote")
         HSPrint("  /horizon presence ach      - Test Achievement")
         HSPrint("  /horizon presence accept   - Test Quest Accepted")
+        HSPrint("  /horizon presence wqaccept - Test World Quest Accepted")
         HSPrint("  /horizon presence quest    - Test Quest Complete")
         HSPrint("  /horizon presence wq       - Test World Quest")
         HSPrint("  /horizon presence update   - Test Quest Update")

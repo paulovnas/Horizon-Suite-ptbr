@@ -1,0 +1,13 @@
+---
+description: Horizon Suite release workflow — changelog, version bump, push, tag
+alwaysApply: false
+---
+
+# Release Workflow
+
+When the user asks to release, do a version bump, or says "release vX.Y.Z" or similar:
+
+1. **Changelog** — Add a new `## [X.Y.Z]` section to CHANGELOG.md using entries from pipeline.md (Changelog section). Group into New Features, Improvements, Fixes.
+2. **TOC** — Update `HorizonSuite.toc` `## Version:` to the new version.
+3. **Clear pipeline** — Clear the Changelog section in pipeline.md so the next release does not re-add the same entries.
+4. **Git** — Stage relevant files, commit with message like "vX.Y.Z - summary", push to main, create and push tag `vX.Y.Z`.

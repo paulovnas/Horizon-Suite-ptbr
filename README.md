@@ -18,7 +18,7 @@ The systems driving your efficiency.
 * **Live Sync** – World Quests, Dailies, and Weeklies update dynamically so you never miss a pickup. Dailies available to accept but not yet accepted show an "— Available" label. Dungeon objectives are supported and appear in the tracker. The world quest list is re-evaluated when you move between zones. World quest visibility can be toggled in Features → Show world quests. When off, world quests you explicitly track (Shift+Click) or super-track still appear; only auto-discovered in-zone WQs are hidden.
 * **Secure Quest Items** – High-performance quest item buttons built on secure templates, ensuring they work flawlessly mid-fight without UI errors.
 * **ATT Integration** – Full native support for **All The Things**, displaying collection data directly within your objectives.
-* **Presence Notifications** – Cinematic zone text, subzone changes, and "Discovered" lines. Level-up, boss emotes, achievements, quest accept/complete/update, and world quest banners appear as styled notifications with priority queueing and smooth entrance/exit animations. Off by default (still being refined); enable in Modules → Enable Presence module if desired.
+* **Presence Notifications** – Cinematic zone text, subzone changes, and "Discovered" lines. Level-up, boss emotes, achievements, quest accept/complete/update, world quest accept, and world quest complete banners appear as styled notifications with priority queueing and smooth entrance/exit animations. Off by default (still being refined); enable in Modules → Enable Presence module if desired.
 
 ---
 
@@ -56,7 +56,7 @@ Built for the heat of gameplay.
 | `/horizon reset` | Clear test data and return to live objectives. |
 | `/horizon resetpos` | Snap the tracker back to its default screen position. |
 | `/horizon mplusdebug` | Toggle the Mythic+ block preview with example timer, completion %, and affixes so you can tune its appearance outside a dungeon. |
-| `/horizon presence` | Presence test commands. Use `zone`, `discover`, `level`, `boss`, `ach`, `quest`, `wq`, `accept`, `update`, or `all` for a demo reel. |
+| `/horizon presence` | Presence test commands. Use `zone`, `discover`, `level`, `boss`, `ach`, `quest`, `wq`, `wqaccept`, `accept`, `update`, or `all` for a demo reel. |
 
 ### 🎛️ Settings Panel
 

@@ -4,6 +4,14 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [Unreleased]
+
+### Improvements
+
+- **Presence — World Quest Accept** — World quest accepts now use a dedicated purple-style notification type (`WORLD_QUEST_ACCEPT`) instead of sharing the standard quest accept style.
+
+---
+
 ## [1.0.2] – 2026-02-13
 
 ### New Features

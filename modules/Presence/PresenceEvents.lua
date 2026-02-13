@@ -78,7 +78,11 @@ end
 local function OnQuestAccepted(_, questID)
     if C_QuestLog and C_QuestLog.GetTitleForQuestID then
         local title = C_QuestLog.GetTitleForQuestID(questID) or "New Quest"
-        addon.Presence.QueueOrPlay("QUEST_ACCEPT", "QUEST ACCEPTED", title)
+        if C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(questID) then
+            addon.Presence.QueueOrPlay("WORLD_QUEST_ACCEPT", "WORLD QUEST ACCEPTED", title)
+        else
+            addon.Presence.QueueOrPlay("QUEST_ACCEPT", "QUEST ACCEPTED", title)
+        end
     else
         addon.Presence.QueueOrPlay("QUEST_ACCEPT", "QUEST ACCEPTED", "New Quest")
     end

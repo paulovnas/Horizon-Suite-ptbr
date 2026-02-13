@@ -42,8 +42,9 @@ local TYPES = {
     QUEST_COMPLETE = { pri = 2, color = {0, 0.8, 1},     sub = {1, 1, 1},    sz = 48, dur = 4.0 },
     WORLD_QUEST    = { pri = 2, color = {0.6, 0.2, 1},   sub = {1, 1, 1},    sz = 48, dur = 4.0 },
     ZONE_CHANGE    = { pri = 2, color = {1, 1, 1},       sub = {1, 0.82, 0}, sz = 48, dur = 4.0 },
-    QUEST_ACCEPT   = { pri = 1, color = {1, 0.85, 0.3},   sub = {1, 1, 1},    sz = 36, dur = 3.0 },
-    QUEST_UPDATE   = { pri = 1, color = {0.4, 0.8, 1},   sub = {1, 1, 1},    sz = 20, dur = 2.5 },
+    QUEST_ACCEPT       = { pri = 1, color = {1, 0.85, 0.3},   sub = {1, 1, 1},    sz = 36, dur = 3.0 },
+    WORLD_QUEST_ACCEPT = { pri = 1, color = {0.6, 0.2, 1},   sub = {1, 1, 1},    sz = 36, dur = 3.0 },
+    QUEST_UPDATE       = { pri = 1, color = {0.4, 0.8, 1},   sub = {1, 1, 1},    sz = 20, dur = 2.5 },
     SUBZONE_CHANGE = { pri = 1, color = {0.9, 0.9, 0.9}, sub = {1, 0.82, 0}, sz = 36, dur = 3.0 },
 }
 
