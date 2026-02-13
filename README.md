@@ -30,6 +30,7 @@ An aesthetic that complements the modern game client.
 * **The Color Matrix** – Define your own aesthetic with per-category colour customization (Title, Objective, Zone, Section) via `/horizon options`. Each category group is collapsible with a reset button. Current Zone and Ready to Turn in colours are grouped under Grouping Overrides.
 * **Typography Suite** – Total control over fonts, sizes, outlines, and text shadows for Headers, Titles, and Objectives. Optional text case: set the main OBJECTIVES header, section headers and quest titles to Lower Case, Upper Case, or Proper (title case).
 * **Fluid Motion** – Smooth entry/exit animations, a subtle "pulse" on objective completion, and adaptive layouts that support "Grow Upward" anchoring.
+* **Granular Spacing** – Adjust vertical gaps via sliders in Display → Spacing: between quest entries, before and after category headers, and between objectives. Compact mode applies a preset (4 px entries, 1 px objectives); sliders let you fine-tune each gap independently.
 
 ---
 
@@ -39,7 +40,7 @@ Built for the heat of gameplay.
 * **Hide in Combat** – Maintain total focus during encounters. The tracker can be set to automatically vanish the moment you enter combat, clearing your screen for boss mechanics and reappearing instantly once the fight is over.
 * **Mythic+ Integration** – Cinematic banner for dungeon name, keystone level, timer, completion %, and affixes. Hover the banner to see detailed modifier descriptions.
 * **Instance Visibility** – Granular control over where the tracker appears. Choose to show or hide the interface specifically for Dungeons, Raids, Battlegrounds, or Arenas. Filter by zone to hide quests outside your current zone entirely.
-* **Compact & Minimal Modes** – Optimize your screen real estate with adjustable spacing, "Super-Minimal" headers (hides the OBJECTIVES header and quest count for a pure text list), and backdrop opacity controls.
+* **Compact & Minimal Modes** – Optimize your screen real estate with adjustable spacing, "Super-Minimal" headers (hides the OBJECTIVES header and quest count for a pure text list), and backdrop opacity controls. Header count format (Display → Header): choose **Tracked / in log** (e.g. 4/19, default) or **In log / max slots** (e.g. 19/35); tracked excludes world/live-in-zone quests.
 
 ---
 

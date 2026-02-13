@@ -6,7 +6,9 @@ All notable changes to Horizon Suite are documented here.
 
 ## [Unreleased]
 
-*Nothing yet.*
+### Fixes
+
+- **Focus Tracker — ADDON_ACTION_BLOCKED** — Fixed error when `HSFrame:Hide()` was called during combat. Protected Hide() calls are now guarded by InCombatLockdown() and deferred until PLAYER_REGEN_ENABLED.
 
 ---
 

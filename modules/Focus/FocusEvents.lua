@@ -90,9 +90,11 @@ local function OnPlayerRegenDisabled()
             addon.combatFadeTime  = 0
             if addon.EnsureFocusUpdateRunning then addon.EnsureFocusUpdateRunning() end
         else
-            addon.HS:Hide()
-            if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
-            if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
+            -- Cannot call HS:Hide() here; we are entering combat (protected action blocked).
+            addon.combatFadeState = "out"
+            addon.combatFadeTime  = 0
+            addon.pendingHideAfterCombat = true
+            if addon.EnsureFocusUpdateRunning then addon.EnsureFocusUpdateRunning() end
         end
     end
 end
@@ -210,6 +212,15 @@ local eventHandlers = {
 -- @param event string WoW event name (e.g. QUEST_WATCH_LIST_CHANGED, ADDON_LOADED)
 -- @param ... any Event payload (varargs)
 eventFrame:SetScript("OnEvent", function(self, event, ...)
+    -- Process pending hide before addon.enabled check (handles module disabled in combat).
+    if event == "PLAYER_REGEN_ENABLED" and addon.pendingHideAfterCombat and addon.HS then
+        addon.pendingHideAfterCombat = nil
+        addon.HS:Hide()
+        local floatingBtn = _G.HSFloatingQuestItem
+        if floatingBtn then floatingBtn:Hide() end
+        if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
+        if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
+    end
     if event ~= "ADDON_LOADED" and not addon.enabled then
         return
     end

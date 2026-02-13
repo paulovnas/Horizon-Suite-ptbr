@@ -251,6 +251,13 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
             HSPrint("GetNearbyDebugInfo not available.")
         end
 
+    elseif cmd == "headercountdebug" then
+        if addon.DebugHeaderCount then
+            addon.DebugHeaderCount()
+        else
+            HSPrint("DebugHeaderCount not available.")
+        end
+
     elseif cmd == "delvedebug" then
         HSPrint("|cFF00CCFF--- Delve / Tier debug (run inside a Delve) ---|r")
         if C_PartyInfo and C_PartyInfo.IsDelveInProgress then
@@ -284,8 +291,9 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
         HSPrint("  /horizon reset      - Reset to live data")
         HSPrint("  /horizon resetpos   - Reset panel to default position")
         HSPrint("  /horizon scendebug  - Toggle scenario timer debug logging")
-        HSPrint("  /horizon nearbydebug - Print Current Zone / Nearby map and quest debug info")
-        HSPrint("  /horizon delvedebug  - Dump Delve/tier APIs (run inside a Delve to find tier number)")
+        HSPrint("  /horizon nearbydebug     - Print Current Zone / Nearby map and quest debug info")
+        HSPrint("  /horizon headercountdebug - Print header count (in-log) breakdown for debugging")
+        HSPrint("  /horizon delvedebug      - Dump Delve/tier APIs (run inside a Delve to find tier number)")
         HSPrint("")
         HSPrint("  Click the header row to collapse / expand.")
         HSPrint("  Scroll with mouse wheel when content overflows.")

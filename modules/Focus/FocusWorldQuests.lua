@@ -94,6 +94,12 @@ local function GetNearbyQuestIDs()
                 if qid then questIDsToCheck[qid] = true end
             end
         end
+        if C_QuestLog.GetNumWorldQuestWatches and C_QuestLog.GetQuestIDForWorldQuestWatchIndex then
+            for i = 1, C_QuestLog.GetNumWorldQuestWatches() do
+                local qid = C_QuestLog.GetQuestIDForWorldQuestWatchIndex(i)
+                if qid then questIDsToCheck[qid] = true end
+            end
+        end
         if C_QuestLog.GetNumQuestLogEntries then
             for i = 1, C_QuestLog.GetNumQuestLogEntries() do
                 local info = C_QuestLog.GetInfo(i)
@@ -105,8 +111,13 @@ local function GetNearbyQuestIDs()
         for questID, _ in pairs(questIDsToCheck) do
             if not nearbySet[questID] then
                 local waypointMapID = C_QuestLog.GetNextWaypoint(questID)
-                if waypointMapID == mapID then
-                    nearbySet[questID] = true
+                if waypointMapID then
+                    for _, checkID in ipairs(mapIDsToCheck) do
+                        if waypointMapID == checkID then
+                            nearbySet[questID] = true
+                            break
+                        end
+                    end
                 end
             end
         end

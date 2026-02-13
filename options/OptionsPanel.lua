@@ -221,6 +221,29 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             local oid = opt.dbKey or (addon.OptionCategories[tabIndex].key .. "_" .. (opt.name or ""):gsub("%s+", "_"))
             if optionFrames then optionFrames[oid] = { tabIndex = tabIndex, frame = w } end
             table.insert(refreshers, w)
+        elseif opt.type == "button" and currentCard then
+            local btn = CreateFrame("Button", nil, currentCard)
+            btn:SetSize(120, 22)
+            btn:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -OptionGap)
+            local lbl = btn:CreateFontString(nil, "OVERLAY")
+            lbl:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.LabelSize or 13, "OUTLINE")
+            SetTextColor(lbl, Def.TextColorLabel)
+            lbl:SetText(opt.name or "Reset")
+            lbl:SetPoint("CENTER", btn, "CENTER", 0, 0)
+            btn:SetScript("OnClick", function()
+                if opt.onClick then opt.onClick() end
+                if opt.refreshIds and optionFrames then
+                    for _, k in ipairs(opt.refreshIds) do
+                        local f = optionFrames[k]
+                        if f and f.frame and f.frame.Refresh then f.frame:Refresh() end
+                    end
+                end
+                notifyMainAddon()
+            end)
+            btn:SetScript("OnEnter", function() SetTextColor(lbl, Def.TextColorHighlight) end)
+            btn:SetScript("OnLeave", function() SetTextColor(lbl, Def.TextColorLabel) end)
+            currentCard.contentAnchor = btn
+            currentCard.contentHeight = currentCard.contentHeight + OptionGap + 22
         elseif opt.type == "colorMatrix" then
             if currentCard then FinalizeCard(currentCard) end
             currentCard = OptionsWidgets_CreateSectionCard(tab, anchor)

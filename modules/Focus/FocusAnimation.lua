@@ -67,10 +67,14 @@ local function UpdateCombatFade(dt, useAnim)
 
     if combatState == "out" then
         if not useAnim then
-            HS:Hide()
-            if floatingBtn then floatingBtn:Hide() end
-            if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
-            if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
+            if not InCombatLockdown() then
+                HS:Hide()
+                if floatingBtn then floatingBtn:Hide() end
+                if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
+                if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
+            else
+                addon.pendingHideAfterCombat = true
+            end
             addon.combatFadeState = nil
             addon.combatFadeTime = 0
         else
@@ -78,10 +82,14 @@ local function UpdateCombatFade(dt, useAnim)
             HS:SetAlpha(1 - p)
             if floatingBtn and floatingBtn:IsShown() then floatingBtn:SetAlpha(1 - p) end
             if p >= 1 then
-                HS:Hide()
-                if floatingBtn then floatingBtn:Hide() end
-                if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
-                if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
+                if not InCombatLockdown() then
+                    HS:Hide()
+                    if floatingBtn then floatingBtn:Hide() end
+                    if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
+                    if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
+                else
+                    addon.pendingHideAfterCombat = true
+                end
                 addon.combatFadeState = nil
                 addon.combatFadeTime = 0
             end
@@ -253,7 +261,11 @@ local function UpdateCollapseAnimations()
         if addon.GetDB("showSectionHeadersWhenCollapsed", false) then
             if addon.FullLayout then addon.FullLayout() end
         else
-            scrollFrame:Hide()
+            if not InCombatLockdown() then
+                scrollFrame:Hide()
+            else
+                addon.layoutPendingAfterCombat = true
+            end
             addon.targetHeight = addon.GetCollapsedHeight()
         end
     end
@@ -326,7 +338,11 @@ local function FocusOnUpdate(_, dt)
             if pool[i].questID or pool[i].entryKey then hasActive = true; break end
         end
         if not hasActive and not addon.collapsed then
-            HS:Hide()
+            if not InCombatLockdown() then
+                HS:Hide()
+            else
+                addon.pendingHideAfterCombat = true
+            end
         end
     end
 

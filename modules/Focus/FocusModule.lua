@@ -144,7 +144,11 @@ addon:RegisterModule("focus", {
         StopMapCheckTicker()
         if addon.HS then addon.HS:SetScript("OnUpdate", nil) end
         if addon.RestoreTracker then addon.RestoreTracker() end
-        addon.HS:Hide()
+        if not InCombatLockdown() then
+            addon.HS:Hide()
+        else
+            addon.pendingHideAfterCombat = true
+        end
         if addon.pool then
             for i = 1, addon.POOL_SIZE do
                 if addon.ClearEntry then addon.ClearEntry(addon.pool[i]) end

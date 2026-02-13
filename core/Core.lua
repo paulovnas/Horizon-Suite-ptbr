@@ -12,10 +12,26 @@ local addon = _G.HorizonSuite
 -- ============================================================================
 
 function addon.GetTitleSpacing()
-    return addon.GetDB("compactMode", false) and addon.COMPACT_TITLE_SPACING or addon.TITLE_SPACING
+    if addon.GetDB("compactMode", false) then
+        return addon.COMPACT_TITLE_SPACING
+    end
+    local v = tonumber(addon.GetDB("titleSpacing", addon.TITLE_SPACING)) or addon.TITLE_SPACING
+    return math.max(2, math.min(20, v))
 end
 function addon.GetObjSpacing()
-    return addon.GetDB("compactMode", false) and addon.COMPACT_OBJ_SPACING or addon.OBJ_SPACING
+    if addon.GetDB("compactMode", false) then
+        return addon.COMPACT_OBJ_SPACING
+    end
+    local v = tonumber(addon.GetDB("objSpacing", addon.OBJ_SPACING)) or addon.OBJ_SPACING
+    return math.max(0, math.min(8, v))
+end
+function addon.GetSectionSpacing()
+    local v = tonumber(addon.GetDB("sectionSpacing", addon.SECTION_SPACING)) or addon.SECTION_SPACING
+    return math.max(0, math.min(24, v))
+end
+function addon.GetSectionToEntryGap()
+    local v = tonumber(addon.GetDB("sectionToEntryGap", 6)) or 6
+    return math.max(0, math.min(16, v))
 end
 function addon.GetObjIndent()
     return addon.GetDB("compactMode", false) and addon.COMPACT_OBJ_INDENT or addon.OBJ_INDENT
@@ -475,9 +491,29 @@ local function ApplyGrowUpAnchor()
     HorizonDB.y        = y
 end
 
-function addon.UpdateHeaderQuestCount(questCount)
-    local maxQ = (C_QuestLog.GetMaxNumQuestsCanAccept and C_QuestLog.GetMaxNumQuestsCanAccept()) or 35
-    local countStr = (questCount and questCount > 0) and (questCount .. "/" .. maxQ) or ""
+function addon.UpdateHeaderQuestCount(questCount, trackedInLogCount)
+    local mode = addon.GetDB("headerCountMode", "trackedLog")
+    local maxSlots = (C_QuestLog.GetMaxNumQuestsCanAccept and C_QuestLog.GetMaxNumQuestsCanAccept()) or 35
+    -- Count only quests the player has actually accepted: iterate log, require non-header + questID + not WQ + IsOnQuest(questID).
+    local numInLog = 0
+    if C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo then
+        local isWQ = addon.IsQuestWorldQuest or (C_QuestLog.IsWorldQuest and function(q) return C_QuestLog.IsWorldQuest(q) end) or function() return false end
+        local isOnQuest = C_QuestLog.IsOnQuest and function(q) return C_QuestLog.IsOnQuest(q) end or function() return true end
+        local numEntries = select(1, C_QuestLog.GetNumQuestLogEntries()) or 0
+        for i = 1, numEntries do
+            local info = C_QuestLog.GetInfo(i)
+            if info and not info.isHeader and not info.isHidden and info.questID and (not isWQ or not isWQ(info.questID)) and isOnQuest(info.questID) then
+                numInLog = numInLog + 1
+            end
+        end
+    end
+    local countStr
+    if mode == "trackedLog" then
+        local numerator = (trackedInLogCount ~= nil) and trackedInLogCount or questCount
+        countStr = (numerator and numerator > 0) and (numerator .. "/" .. numInLog) or ""
+    else
+        countStr = (numInLog and numInLog > 0) and (numInLog .. "/" .. maxSlots) or ""
+    end
     addon.countText:SetText(countStr)
     addon.countShadow:SetText(countStr)
     if addon.GetDB("showQuestCount", true) and not addon.GetDB("hideObjectivesHeader", false) then
@@ -487,6 +523,77 @@ function addon.UpdateHeaderQuestCount(questCount)
         addon.countText:Hide()
         addon.countShadow:Hide()
     end
+end
+
+-- Debug: run /horizon headercountdebug to print quest-log count breakdown and compare APIs.
+function addon.DebugHeaderCount()
+    if not addon.HSPrint then return end
+    local maxSlots = (C_QuestLog.GetMaxNumQuestsCanAccept and C_QuestLog.GetMaxNumQuestsCanAccept()) or 35
+    if not C_QuestLog or not C_QuestLog.GetNumQuestLogEntries or not C_QuestLog.GetInfo then
+        addon.HSPrint("[HeaderCount debug] C_QuestLog APIs not available.")
+        return
+    end
+    local isWQ = addon.IsQuestWorldQuest or (C_QuestLog.IsWorldQuest and function(q) return C_QuestLog.IsWorldQuest(q) end) or function() return false end
+    local isOnQuest = C_QuestLog.IsOnQuest and function(q) return C_QuestLog.IsOnQuest(q) end or function() return true end
+    local a, b = C_QuestLog.GetNumQuestLogEntries()
+    local numEntries = a or 0
+
+    -- API comparison: try different ways to get "accepted quests in log" count (excluding WQ).
+    do
+        local countByLogIndex = 0  -- GetQuestIDForLogIndex(i) + IsOnQuest + not WQ
+        local getQidForIdx = C_QuestLog.GetQuestIDForLogIndex
+        if getQidForIdx then
+            for i = 1, numEntries do
+                local qid = getQidForIdx(i)
+                if qid and (not isWQ or not isWQ(qid)) and isOnQuest(qid) then countByLogIndex = countByLogIndex + 1 end
+            end
+        end
+        local countWithNotHidden = 0  -- GetInfo + not isHidden + IsOnQuest + not WQ
+        for i = 1, numEntries do
+            local info = C_QuestLog.GetInfo(i)
+            if info and not info.isHeader and info.questID and not info.isHidden and (not isWQ or not isWQ(info.questID)) and isOnQuest(info.questID) then
+                countWithNotHidden = countWithNotHidden + 1
+            end
+        end
+        addon.HSPrint("[HeaderCount] API comparison (all exclude world quests):")
+        addon.HSPrint(string.format("  numQuests (2nd return) = %s | GetQuestIDForLogIndex+IsOnQuest = %s | GetInfo+IsOnQuest = (below) | GetInfo+not isHidden+IsOnQuest = %s",
+            tostring(b), tostring(countByLogIndex), tostring(countWithNotHidden)))
+    end
+    local numInLog, skippedHeader, skippedNoQid, skippedHidden, skippedWQ, skippedNotOnQuest = 0, 0, 0, 0, 0, 0
+    for i = 1, numEntries do
+        local info = C_QuestLog.GetInfo(i)
+        if not info then
+        elseif info.isHeader then
+            skippedHeader = skippedHeader + 1
+        elseif not info.questID then
+            skippedNoQid = skippedNoQid + 1
+        elseif info.isHidden then
+            skippedHidden = skippedHidden + 1
+        elseif isWQ and isWQ(info.questID) then
+            skippedWQ = skippedWQ + 1
+        elseif not isOnQuest(info.questID) then
+            skippedNotOnQuest = skippedNotOnQuest + 1
+        else
+            numInLog = numInLog + 1
+        end
+    end
+    local afterCap = math.min(numInLog, maxSlots)
+    addon.HSPrint(string.format("[HeaderCount] GetNumQuestLogEntries first=%s second=%s maxSlots=%s | loop=%s counted=%s afterCap=%s | skip: header=%s noQid=%s hidden=%s wq=%s notOnQuest=%s",
+        tostring(a), tostring(b), tostring(maxSlots), tostring(numEntries), tostring(numInLog), tostring(afterCap),
+        tostring(skippedHeader), tostring(skippedNoQid), tostring(skippedHidden), tostring(skippedWQ), tostring(skippedNotOnQuest)))
+    -- Breakdown: list each entry we counted (index, questID, title) — matches production (GetInfo + not isHidden + IsOnQuest + not WQ).
+    addon.HSPrint("[HeaderCount] Breakdown of counted entries (production logic; index | questID | title):")
+    local getTitle = C_QuestLog.GetTitleForQuestID
+    local n = 0
+    for i = 1, numEntries do
+        local info = C_QuestLog.GetInfo(i)
+        if info and not info.isHeader and not info.isHidden and info.questID and (not isWQ or not isWQ(info.questID)) and isOnQuest(info.questID) then
+            n = n + 1
+            local title = (getTitle and getTitle(info.questID)) or "(no title)"
+            addon.HSPrint(string.format("  #%s idx=%s questID=%s | %s", tostring(n), tostring(i), tostring(info.questID), tostring(title)))
+        end
+    end
+    addon.HSPrint(string.format("[HeaderCount] End breakdown: %s entries listed (production logic).", tostring(n)))
 end
 
 function addon.ApplyItemCooldown(cooldownFrame, itemLink)

@@ -18,6 +18,15 @@ local sectionPool = addon.sectionPool
 local scrollChild = addon.scrollChild
 local scrollFrame = addon.scrollFrame
 
+--- Player's current zone name from map API. Used to suppress redundant zone labels for in-zone quests.
+local function GetPlayerCurrentZoneName()
+    if not C_Map or not C_Map.GetBestMapForUnit then return nil end
+    local mapID = C_Map.GetBestMapForUnit("player")
+    if not mapID or not C_Map.GetMapInfo then return nil end
+    local info = C_Map.GetMapInfo(mapID)
+    return info and info.name or nil
+end
+
 local function hideAllHighlight(entry)
     entry.trackBar:Hide()
     entry.highlightBg:Hide()
@@ -469,8 +478,9 @@ local function PopulateEntry(entry, questData, groupKey)
     local prevAnchor = entry.titleText
     local titleToContentSpacing = ((questData.category == "DELVES" or questData.category == "DUNGEON") and addon.DELVE_OBJ_SPACING) or addon.GetObjSpacing()
     local showZoneLabels = addon.GetDB("showZoneLabels", true)
-    local useNearbyGroup = addon.GetDB("showNearbyGroup", true)
-    local shouldShowZone = showZoneLabels and questData.zoneName and (not useNearbyGroup or not questData.isNearby)
+    local playerZone = GetPlayerCurrentZoneName()
+    local inCurrentZone = questData.isNearby or (questData.zoneName and playerZone and questData.zoneName:lower() == playerZone:lower())
+    local shouldShowZone = showZoneLabels and questData.zoneName and not inCurrentZone
     if shouldShowZone then
         local zoneLabel = questData.zoneName
         -- For off-map WORLD quests, prefix the zone with a clear marker so they are easy to spot.
@@ -905,6 +915,24 @@ local function ShouldShowInInstance()
     return true
 end
 
+-- Count displayed tracker entries that are in the quest log and not world quests (for header "tracked/in log" mode).
+-- Excludes rares and achievements.
+local function CountTrackedInLog(quests)
+    if not quests then return 0 end
+    local n = 0
+    local getLogIdx = C_QuestLog and C_QuestLog.GetLogIndexForQuestID
+    local isWQ = addon.IsQuestWorldQuest
+    for _, entry in ipairs(quests) do
+        if not (entry.isRare or entry.category == "RARE" or entry.isAchievement or entry.category == "ACHIEVEMENT") then
+            local qid = entry.questID
+            if qid and getLogIdx and getLogIdx(qid) and (not isWQ or not isWQ(qid)) then
+                n = n + 1
+            end
+        end
+    end
+    return n
+end
+
 --- Full layout of the objectives panel.
 -- @brief Computes and applies the complete tracker layout: visibility, quest list, section headers, entry positions, scroll height.
 -- Algorithm: (1) Bail if disabled or in combat. (2) Hide panel if instance visibility
@@ -1017,7 +1045,7 @@ local function FullLayout()
             for _, a in ipairs(addon.ReadTrackedAchievements()) do quests[#quests + 1] = a end
         end
         addon.UpdateFloatingQuestItem(quests)
-        addon.UpdateHeaderQuestCount(#quests)
+        addon.UpdateHeaderQuestCount(#quests, CountTrackedInLog(quests))
 
         -- During panel collapse animation, skip full collapsed layout so section headers
         -- stay visible; UpdateCollapseAnimations will call FullLayout when done.
@@ -1041,13 +1069,13 @@ local function FullLayout()
                 local yOff = 0
                 for gi, grp in ipairs(grouped) do
                     if gi > 1 then
-                        yOff = yOff - addon.SECTION_SPACING
+                        yOff = yOff - addon.GetSectionSpacing()
                     end
                     local sec = AcquireSectionHeader(grp.key)
                     if sec then
                         sec:ClearAllPoints()
                         sec:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", addon.GetContentLeftOffset(), yOff)
-                        yOff = yOff - (addon.SECTION_SIZE + 4) - 2
+                        yOff = yOff - (addon.SECTION_SIZE + 4) - addon.GetSectionToEntryGap()
                     end
                 end
                 local totalContentH = math.max(-yOff, 1)
@@ -1085,7 +1113,7 @@ local function FullLayout()
 
     -- When a category is collapsing, skip full layout to avoid section header flicker.
     if addon.groupCollapses and next(addon.groupCollapses) then
-        addon.UpdateHeaderQuestCount(#quests)
+        addon.UpdateHeaderQuestCount(#quests, CountTrackedInLog(quests))
         if addon.EnsureFocusUpdateRunning then addon.EnsureFocusUpdateRunning() end
         return
     end
@@ -1141,13 +1169,13 @@ local function FullLayout()
 
         if showSections then
             if gi > 1 then
-                yOff = yOff - addon.SECTION_SPACING
+                yOff = yOff - addon.GetSectionSpacing()
             end
             local sec = AcquireSectionHeader(grp.key)
             if sec then
                 sec:ClearAllPoints()
                 sec:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", addon.GetContentLeftOffset(), yOff)
-                yOff = yOff - (addon.SECTION_SIZE + 4) - 2
+                yOff = yOff - (addon.SECTION_SIZE + 4) - addon.GetSectionToEntryGap()
             end
         end
 
@@ -1182,7 +1210,7 @@ local function FullLayout()
         end
     end
 
-    addon.UpdateHeaderQuestCount(#quests)
+    addon.UpdateHeaderQuestCount(#quests, CountTrackedInLog(quests))
 
     local totalContentH = math.max(-yOff, 1)
     local prevScroll = addon.scrollOffset

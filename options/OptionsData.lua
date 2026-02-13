@@ -170,6 +170,7 @@ local OptionCategories = {
         options = {
             { type = "section", name = "Header" },
             { type = "toggle", name = "Show quest count", desc = "Show quest count in header.", dbKey = "showQuestCount", get = function() return getDB("showQuestCount", true) end, set = function(v) setDB("showQuestCount", v) end },
+            { type = "dropdown", name = "Header count format", desc = "Tracked/in-log or in-log/max-slots. Tracked excludes world/live-in-zone quests.", dbKey = "headerCountMode", options = { { "Tracked / in log", "trackedLog" }, { "In log / max slots", "logMax" } }, get = function() return getDB("headerCountMode", "trackedLog") end, set = function(v) setDB("headerCountMode", v) end },
             { type = "toggle", name = "Show header divider", desc = "Show the line below the header.", dbKey = "showHeaderDivider", get = function() return getDB("showHeaderDivider", true) end, set = function(v) setDB("showHeaderDivider", v) end },
             { type = "toggle", name = "Super-minimal mode", desc = "Hide header for a pure text list.", dbKey = "hideObjectivesHeader", get = function() return getDB("hideObjectivesHeader", false) end, set = function(v) setDB("hideObjectivesHeader", v) end },
             { type = "section", name = "List" },
@@ -182,7 +183,19 @@ local OptionCategories = {
             { type = "toggle", name = "Show quest item buttons", desc = "Show usable quest item button next to each quest.", dbKey = "showQuestItemButtons", get = function() return getDB("showQuestItemButtons", false) end, set = function(v) setDB("showQuestItemButtons", v) end },
             { type = "toggle", name = "Show objective numbers", desc = "Prefix objectives with 1., 2., 3.", dbKey = "showObjectiveNumbers", get = function() return getDB("showObjectiveNumbers", false) end, set = function(v) setDB("showObjectiveNumbers", v) end },
             { type = "toggle", name = "Show completed count", desc = "Show X/Y progress in quest title.", dbKey = "showCompletedCount", get = function() return getDB("showCompletedCount", false) end, set = function(v) setDB("showCompletedCount", v) end },
-            { type = "toggle", name = "Compact mode", desc = "Reduce spacing between quest entries.", dbKey = "compactMode", get = function() return getDB("compactMode", false) end, set = function(v) setDB("compactMode", v) end },
+            { type = "section", name = "Spacing" },
+            { type = "toggle", name = "Compact mode", desc = "Preset: sets entry and objective spacing to 4 and 1 px.", dbKey = "compactMode", get = function() return getDB("compactMode", false) end, set = function(v) setDB("compactMode", v); if v then setDB("titleSpacing", 4); setDB("objSpacing", 1) end end },
+            { type = "slider", name = "Spacing between quest entries (px)", desc = "Vertical gap between quest entries.", dbKey = "titleSpacing", min = 2, max = 20, get = function() return math.max(2, math.min(20, tonumber(getDB("titleSpacing", 8)) or 8)) end, set = function(v) setDB("titleSpacing", math.max(2, math.min(20, v))) end },
+            { type = "slider", name = "Spacing before category header (px)", desc = "Gap between last entry of a group and the next category label.", dbKey = "sectionSpacing", min = 0, max = 24, get = function() return math.max(0, math.min(24, tonumber(getDB("sectionSpacing", 10)) or 10)) end, set = function(v) setDB("sectionSpacing", math.max(0, math.min(24, v))) end },
+            { type = "slider", name = "Spacing after category header (px)", desc = "Gap between category label and first quest entry below it.", dbKey = "sectionToEntryGap", min = 0, max = 16, get = function() return math.max(0, math.min(16, tonumber(getDB("sectionToEntryGap", 6)) or 6)) end, set = function(v) setDB("sectionToEntryGap", math.max(0, math.min(16, v))) end },
+            { type = "slider", name = "Spacing between objectives (px)", desc = "Vertical gap between objective lines within a quest.", dbKey = "objSpacing", min = 0, max = 8, get = function() return math.max(0, math.min(8, tonumber(getDB("objSpacing", 2)) or 2)) end, set = function(v) setDB("objSpacing", math.max(0, math.min(8, v))) end },
+            { type = "button", name = "Reset spacing", onClick = function()
+                setDB("compactMode", false)
+                setDB("titleSpacing", 8)
+                setDB("sectionSpacing", 10)
+                setDB("sectionToEntryGap", 6)
+                setDB("objSpacing", 2)
+            end, refreshIds = { "compactMode", "titleSpacing", "sectionSpacing", "sectionToEntryGap", "objSpacing" } },
             { type = "toggle", name = "Show quest level", desc = "Show quest level next to title.", dbKey = "showQuestLevel", get = function() return getDB("showQuestLevel", false) end, set = function(v) setDB("showQuestLevel", v) end },
             { type = "toggle", name = "Dim non-focused quests", desc = "Slightly dim quests that are not focused.", dbKey = "dimNonSuperTracked", get = function() return getDB("dimNonSuperTracked", false) end, set = function(v) setDB("dimNonSuperTracked", v) end },
         },
