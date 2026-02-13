@@ -128,7 +128,7 @@ local OptionCategories = {
         name = "Modules",
         moduleKey = nil,
         options = {
-            { type = "section", name = "Module enablement" },
+            { type = "section", name = "" },
             { type = "toggle", name = "Enable Focus module", desc = "Show the objective tracker for quests, world quests, rares, achievements, and scenarios.", dbKey = "_module_focus", get = function() return addon:IsModuleEnabled("focus") end, set = function(v) addon:SetModuleEnabled("focus", v) end },
             { type = "toggle", name = "Enable Vista module", desc = "Cinematic zone text and notifications (zone changes, level up, boss emotes, achievements, quest updates).", dbKey = "_module_vista", get = function() return addon:IsModuleEnabled("vista") end, set = function(v) addon:SetModuleEnabled("vista", v) end },
         },

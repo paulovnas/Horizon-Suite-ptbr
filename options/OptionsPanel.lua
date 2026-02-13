@@ -178,10 +178,20 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             currentSection = opt.name or ""
             if currentCard then FinalizeCard(currentCard) end
             currentCard = OptionsWidgets_CreateSectionCard(tab, anchor)
-            local lbl = OptionsWidgets_CreateSectionHeader(currentCard, opt.name)
-            lbl:SetPoint("TOPLEFT", currentCard, "TOPLEFT", CardPadding, -CardPadding)
-            currentCard.contentAnchor = lbl
-            currentCard.contentHeight = CardPadding + RowHeights.sectionLabel
+            local hasHeader = opt.name and opt.name ~= ""
+            if hasHeader then
+                local lbl = OptionsWidgets_CreateSectionHeader(currentCard, opt.name)
+                lbl:SetPoint("TOPLEFT", currentCard, "TOPLEFT", CardPadding, -CardPadding)
+                currentCard.contentAnchor = lbl
+                currentCard.contentHeight = CardPadding + RowHeights.sectionLabel
+            else
+                local spacer = currentCard:CreateFontString(nil, "OVERLAY")
+                spacer:SetPoint("TOPLEFT", currentCard, "TOPLEFT", CardPadding, -CardPadding)
+                spacer:SetHeight(0)
+                spacer:SetWidth(1)
+                currentCard.contentAnchor = spacer
+                currentCard.contentHeight = CardPadding
+            end
             anchor = currentCard
         elseif opt.type == "toggle" and currentCard then
             local w = OptionsWidgets_CreateToggleSwitch(currentCard, opt.name, opt.desc or opt.tooltip, opt.get, opt.set)
@@ -691,31 +701,142 @@ local optionFrames = {}
 local TAB_ROW_HEIGHT = 32
 local HEADER_ROW_HEIGHT = 24
 local SIDEBAR_TOP_PAD = 4
+local COLLAPSE_ANIM_DUR = 0.18
+local easeOut = addon.easeOut or function(t) return 1 - (1-t)*(1-t) end
 
 local lastSidebarRow = nil
+local groupCollapsed = (HorizonDB and HorizonDB.optionsGroupCollapsed) or {}
+local function GetGroupCollapsed(mk) return groupCollapsed[mk] == true end
+local function SetGroupCollapsed(mk, v)
+    groupCollapsed[mk] = v
+    if HorizonDB then HorizonDB.optionsGroupCollapsed = groupCollapsed end
+end
+
 for _, mk in ipairs(groupOrder) do
     local g = groups[mk]
     if not g or #g.categories == 0 then
         -- skip empty groups
     else
-    -- Header row (non-clickable)
-    local header = CreateFrame("Frame", nil, sidebar)
+    g.tabButtons = {}
+    local isStandalone = (mk == "modules" and #g.categories == 1)
+
+    if isStandalone then
+        -- Modules: single tab as standalone, no group header
+        local catIdx = g.categories[1]
+        local cat = addon.OptionCategories[catIdx]
+        local btn = CreateFrame("Button", nil, sidebar)
+        btn:SetSize(SIDEBAR_WIDTH, TAB_ROW_HEIGHT)
+        if not lastSidebarRow then btn:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 0, -SIDEBAR_TOP_PAD)
+        else btn:SetPoint("TOPLEFT", lastSidebarRow, "BOTTOMLEFT", 0, 0) end
+        lastSidebarRow = btn
+        btn.categoryIndex = catIdx
+        btn.label = btn:CreateFontString(nil, "OVERLAY")
+        btn.label:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.LabelSize or 13, "OUTLINE")
+        btn.label:SetPoint("LEFT", btn, "LEFT", 12, 0)
+        btn.label:SetText(cat.name)
+        btn.highlight = btn:CreateTexture(nil, "BACKGROUND")
+        btn.highlight:SetAllPoints(btn)
+        btn.highlight:SetColorTexture(1, 1, 1, 0.05)
+        btn.hoverBg = btn:CreateTexture(nil, "BACKGROUND")
+        btn.hoverBg:SetAllPoints(btn)
+        btn.hoverBg:SetColorTexture(1, 1, 1, 0.03)
+        btn.hoverBg:Hide()
+        btn.leftAccent = btn:CreateTexture(nil, "OVERLAY")
+        btn.leftAccent:SetWidth(3)
+        btn.leftAccent:SetColorTexture(Def.AccentColor[1], Def.AccentColor[2], Def.AccentColor[3], Def.AccentColor[4] or 0.9)
+        btn.leftAccent:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
+        btn.leftAccent:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
+        btn:SetScript("OnClick", function()
+            selectedTab = catIdx
+            UpdateTabVisuals()
+            for j = 1, #tabFrames do tabFrames[j]:SetShown(j == catIdx) end
+            scrollFrame:SetScrollChild(tabFrames[catIdx])
+            scrollFrame:SetVerticalScroll(0)
+        end)
+        btn:SetScript("OnEnter", function()
+            if not btn.selected then
+                SetTextColor(btn.label, Def.TextColorHighlight)
+                if btn.hoverBg then btn.hoverBg:Show() end
+            end
+        end)
+        btn:SetScript("OnLeave", function()
+            if btn.hoverBg then btn.hoverBg:Hide() end
+            UpdateTabVisuals()
+        end)
+        tabButtons[#tabButtons + 1] = btn
+        local refreshers = {}
+        BuildCategory(tabFrames[catIdx], catIdx, cat.options, refreshers, optionFrames)
+        for _, r in ipairs(refreshers) do allRefreshers[#allRefreshers+1] = r end
+    else
+    -- Header row (clickable, collapsible)
+    local header = CreateFrame("Button", nil, sidebar)
     header:SetSize(SIDEBAR_WIDTH, HEADER_ROW_HEIGHT)
     if not lastSidebarRow then header:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 0, -SIDEBAR_TOP_PAD)
     else header:SetPoint("TOPLEFT", lastSidebarRow, "BOTTOMLEFT", 0, 0) end
     lastSidebarRow = header
+    header.groupKey = mk
+    header.hoverBg = header:CreateTexture(nil, "BACKGROUND")
+    header.hoverBg:SetAllPoints(header)
+    header.hoverBg:SetColorTexture(1, 1, 1, 0.03)
+    header.hoverBg:Hide()
+    local chevron = header:CreateFontString(nil, "OVERLAY")
+    chevron:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", (Def.LabelSize or 13) - 1, "OUTLINE")
+    chevron:SetPoint("LEFT", header, "LEFT", 8, 0)
+    SetTextColor(chevron, Def.TextColorSection)
+    header.chevron = chevron
     local headerLabel = header:CreateFontString(nil, "OVERLAY")
     headerLabel:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", (Def.LabelSize or 13) - 1, "OUTLINE")
-    headerLabel:SetPoint("LEFT", header, "LEFT", 12, 0)
+    headerLabel:SetPoint("LEFT", chevron, "RIGHT", 4, 0)
     SetTextColor(headerLabel, Def.TextColorSection)
     headerLabel:SetText(g.label)
-    -- Tab rows for each category in this group
+    -- Container for tab buttons (animates height on collapse)
+    local tabsContainer = CreateFrame("Frame", nil, sidebar)
+    tabsContainer:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, 0)
+    tabsContainer:SetWidth(SIDEBAR_WIDTH)
+    tabsContainer:SetClipsChildren(true)
+    local fullHeight = TAB_ROW_HEIGHT * #g.categories
+    tabsContainer:SetHeight(GetGroupCollapsed(mk) and 0 or fullHeight)
+    g.tabsContainer = tabsContainer
+    lastSidebarRow = tabsContainer
+    header:SetScript("OnClick", function()
+        local collapsed = not GetGroupCollapsed(mk)
+        SetGroupCollapsed(mk, collapsed)
+        header.chevron:SetText(collapsed and "+" or "-")
+        local fromH = tabsContainer:GetHeight()
+        local toH = collapsed and 0 or fullHeight
+        if fromH == toH then return end
+        tabsContainer.animStart = GetTime()
+        tabsContainer.animFrom = fromH
+        tabsContainer.animTo = toH
+        tabsContainer:SetScript("OnUpdate", function(self)
+            local elapsed = GetTime() - self.animStart
+            local t = math.min(elapsed / COLLAPSE_ANIM_DUR, 1)
+            local h = self.animFrom + (self.animTo - self.animFrom) * easeOut(t)
+            self:SetHeight(math.max(0, h))
+            if t >= 1 then self:SetScript("OnUpdate", nil) end
+        end)
+    end)
+    header:SetScript("OnEnter", function()
+        header.hoverBg:Show()
+        SetTextColor(headerLabel, Def.TextColorHighlight)
+        SetTextColor(chevron, Def.TextColorHighlight)
+    end)
+    header:SetScript("OnLeave", function()
+        header.hoverBg:Hide()
+        SetTextColor(headerLabel, Def.TextColorSection)
+        SetTextColor(chevron, Def.TextColorSection)
+    end)
+    local collapsed = GetGroupCollapsed(mk)
+    chevron:SetText(collapsed and "+" or "-")
+    -- Tab rows for each category in this group (parented to container)
+    local containerAnchor = tabsContainer
     for _, catIdx in ipairs(g.categories) do
         local cat = addon.OptionCategories[catIdx]
-        local btn = CreateFrame("Button", nil, sidebar)
+        local btn = CreateFrame("Button", nil, tabsContainer)
         btn:SetSize(SIDEBAR_WIDTH, TAB_ROW_HEIGHT)
-        btn:SetPoint("TOPLEFT", lastSidebarRow, "BOTTOMLEFT", 0, 0)
-        lastSidebarRow = btn
+        local anchorPt = (containerAnchor == tabsContainer) and "TOPLEFT" or "BOTTOMLEFT"
+        btn:SetPoint("TOPLEFT", containerAnchor, anchorPt, 0, 0)
+        containerAnchor = btn
         btn.categoryIndex = catIdx
         btn.label = btn:CreateFontString(nil, "OVERLAY")
         btn.label:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.LabelSize or 13, "OUTLINE")
@@ -757,6 +878,7 @@ for _, mk in ipairs(groupOrder) do
         for _, r in ipairs(refreshers) do allRefreshers[#allRefreshers+1] = r end
     end
     end
+end
 end
 UpdateTabVisuals()
 
