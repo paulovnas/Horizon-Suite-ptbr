@@ -155,7 +155,9 @@ end
 
 -- Matrix rows use group keys (e.g. RARES); quest category can be RARE. Use same row for RARE.
 local function MatrixKey(category)
-    return (category == "RARE") and "RARES" or category
+    if category == "RARE" then return "RARES" end
+    if category == "ACHIEVEMENT" then return "ACHIEVEMENTS" end
+    return category
 end
 
 local function GetTitleColor(category)
@@ -475,7 +477,7 @@ end
 -- Category order for questType sort (lower = earlier)
 local CATEGORY_SORT_ORDER = {
     COMPLETE = 1, CAMPAIGN = 2, IMPORTANT = 3, LEGENDARY = 4,
-    DELVES = 5, SCENARIO = 5, DUNGEON = 5, WORLD = 6, WEEKLY = 7, DAILY = 8, CALLING = 9, RARE = 10, DEFAULT = 11,
+    DELVES = 5, SCENARIO = 5, ACHIEVEMENT = 5, DUNGEON = 5, WORLD = 6, WEEKLY = 7, DAILY = 8, CALLING = 9, RARE = 10, DEFAULT = 11,
 }
 
 local function CompareEntriesBySortMode(a, b)
@@ -521,6 +523,8 @@ local function SortAndGroupQuests(quests)
             groups["DELVES"][#groups["DELVES"] + 1] = q
         elseif q.category == "SCENARIO" then
             groups["SCENARIO"][#groups["SCENARIO"] + 1] = q
+        elseif q.category == "ACHIEVEMENT" or q.isAchievement then
+            groups["ACHIEVEMENTS"][#groups["ACHIEVEMENTS"] + 1] = q
         elseif q.category == "WORLD" or q.category == "CALLING" then
             groups["WORLD"][#groups["WORLD"] + 1] = q
         elseif q.isNearby and not q.isAccepted then

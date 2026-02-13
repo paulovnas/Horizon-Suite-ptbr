@@ -34,6 +34,10 @@ eventFrame:RegisterEvent("SCENARIO_CRITERIA_SHOW_STATE_UPDATE")
 eventFrame:RegisterEvent("SCENARIO_COMPLETED")
 eventFrame:RegisterEvent("SCENARIO_SPELL_UPDATE")
 eventFrame:RegisterEvent("CRITERIA_COMPLETE")
+eventFrame:RegisterEvent("TRACKED_ACHIEVEMENT_UPDATE")
+eventFrame:RegisterEvent("CRITERIA_UPDATE")
+eventFrame:RegisterEvent("ACHIEVEMENT_EARNED")
+eventFrame:RegisterEvent("CONTENT_TRACKING_UPDATE")
 pcall(function() eventFrame:RegisterEvent("ACTIVE_DELVE_DATA_UPDATE") end)
 
 local function ScheduleRefresh()
@@ -259,6 +263,13 @@ local eventHandlers = {
     SCENARIO_COMPLETED       = function() ScheduleRefresh() end,
     SCENARIO_SPELL_UPDATE    = function() ScheduleRefresh() end,
     CRITERIA_COMPLETE        = function() ScheduleRefresh() end,
+    TRACKED_ACHIEVEMENT_UPDATE = function() ScheduleRefresh() end,
+    CRITERIA_UPDATE          = function() ScheduleRefresh() end,
+    ACHIEVEMENT_EARNED       = function() ScheduleRefresh() end,
+    CONTENT_TRACKING_UPDATE  = function(_, trackableType)
+        local achType = (Enum and Enum.ContentTrackingType and Enum.ContentTrackingType.Achievement) or 2
+        if trackableType == achType then ScheduleRefresh() end
+    end,
     ACTIVE_DELVE_DATA_UPDATE = function() ScheduleRefresh() end,
 }
 

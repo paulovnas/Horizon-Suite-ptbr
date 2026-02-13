@@ -32,6 +32,16 @@ for i = 1, addon.POOL_SIZE do
     e:SetScript("OnMouseDown", function(self, button)
         if button == "LeftButton" then
             if self.entryKey then
+                local achID = self.entryKey:match("^ach:(%d+)$")
+                if achID and self.achievementID then
+                    local requireCtrl = addon.GetDB("requireCtrlForQuestClicks", false)
+                    if requireCtrl and not IsControlKeyDown() then return end
+                    if addon.SetSuperTrackedAchievementID then
+                        addon.SetSuperTrackedAchievementID(self.achievementID)
+                    end
+                    if addon.FullLayout and not InCombatLockdown() then addon.FullLayout() end
+                    return
+                end
                 local vignetteGUID = self.entryKey:match("^vignette:(.+)$")
                 if vignetteGUID and C_SuperTrack and C_SuperTrack.SetSuperTrackedVignette then
                     C_SuperTrack.SetSuperTrackedVignette(vignetteGUID)
@@ -87,6 +97,23 @@ for i = 1, addon.POOL_SIZE do
             end
         elseif button == "RightButton" then
             if self.entryKey then
+                local achID = self.entryKey:match("^ach:(%d+)$")
+                if achID and self.achievementID then
+                    local requireCtrl = addon.GetDB("requireCtrlForQuestClicks", false)
+                    if requireCtrl and not IsControlKeyDown() then return end
+                    if addon.GetSuperTrackedAchievementID and addon.GetSuperTrackedAchievementID() == self.achievementID then
+                        if addon.SetSuperTrackedAchievementID then addon.SetSuperTrackedAchievementID(nil) end
+                    end
+                    local trackType = (Enum and Enum.ContentTrackingType and Enum.ContentTrackingType.Achievement) or 2
+                    local stopType = (Enum and Enum.ContentTrackingStopType and Enum.ContentTrackingStopType.Manual) or 0
+                    if C_ContentTracking and C_ContentTracking.StopTracking then
+                        C_ContentTracking.StopTracking(trackType, self.achievementID, stopType)
+                    elseif RemoveTrackedAchievement then
+                        RemoveTrackedAchievement(self.achievementID)
+                    end
+                    addon.ScheduleRefresh()
+                    return
+                end
                 local vignetteGUID = self.entryKey:match("^vignette:(.+)$")
                 if vignetteGUID and C_SuperTrack and C_SuperTrack.GetSuperTrackedVignette then
                     if C_SuperTrack.GetSuperTrackedVignette() == vignetteGUID then
@@ -152,6 +179,16 @@ for i = 1, addon.POOL_SIZE do
                     local ok, err = pcall(attach, GameTooltip, searchFn, "npcID", self.creatureID)
                     if not ok and addon.HSPrint then addon.HSPrint("ATT tooltip attach failed: " .. tostring(err)) end
                 end
+            end
+            GameTooltip:Show()
+        elseif self.achievementID and GetAchievementLink then
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            local link = GetAchievementLink(self.achievementID)
+            if link then
+                local ok, err = pcall(GameTooltip.SetHyperlink, GameTooltip, link)
+                if not ok and addon.HSPrint then addon.HSPrint("Tooltip SetHyperlink (achievement) failed: " .. tostring(err)) end
+            else
+                GameTooltip:SetText(self.titleText:GetText() or "")
             end
             GameTooltip:Show()
         elseif self.questID then

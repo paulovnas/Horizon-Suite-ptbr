@@ -501,17 +501,26 @@ local function PopulateEntry(entry, questData, groupKey)
         entry.questID    = nil
         entry.entryKey   = questData.entryKey
         entry.creatureID = questData.creatureID
+        entry.achievementID = nil
         entry.itemLink   = nil
         entry.isTracked  = nil
+    elseif questData.isAchievement or questData.category == "ACHIEVEMENT" then
+        entry.questID    = nil
+        entry.entryKey   = questData.entryKey
+        entry.creatureID = nil
+        entry.achievementID = questData.achievementID
+        entry.isTracked  = true
     elseif questData.isScenarioMain or questData.isScenarioBonus then
         entry.questID    = questData.questID
         entry.entryKey   = questData.entryKey
         entry.creatureID = nil
+        entry.achievementID = nil
         entry.isTracked  = questData.isTracked
     else
         entry.questID    = questData.questID
         entry.entryKey   = nil
         entry.creatureID = nil
+        entry.achievementID = nil
         entry.isTracked  = questData.isTracked
     end
     return totalH
@@ -978,6 +987,9 @@ local function FullLayout()
     if addon.collapsed then
         local quests = addon.ReadTrackedQuests()
         for _, r in ipairs(rares) do quests[#quests + 1] = r end
+        if addon.GetDB("showAchievements", true) and addon.ReadTrackedAchievements then
+            for _, a in ipairs(addon.ReadTrackedAchievements()) do quests[#quests + 1] = a end
+        end
         addon.UpdateFloatingQuestItem(quests)
         addon.UpdateHeaderQuestCount(#quests)
 
@@ -1029,6 +1041,9 @@ local function FullLayout()
 
     local quests  = addon.ReadTrackedQuests()
     for _, r in ipairs(rares) do quests[#quests + 1] = r end
+    if addon.GetDB("showAchievements", true) and addon.ReadTrackedAchievements then
+        for _, a in ipairs(addon.ReadTrackedAchievements()) do quests[#quests + 1] = a end
+    end
     addon.UpdateFloatingQuestItem(quests)
     local grouped = addon.SortAndGroupQuests(quests)
 

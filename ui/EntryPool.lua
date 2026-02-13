@@ -394,6 +394,7 @@ local function ClearEntry(entry, full)
     entry.questID    = nil
     entry.entryKey   = nil
     entry.creatureID = nil
+    entry.achievementID = nil
     entry.itemLink   = nil
     entry.animState  = "idle"
     entry.groupKey   = nil

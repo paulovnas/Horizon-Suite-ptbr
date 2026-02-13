@@ -558,59 +558,122 @@ function OptionsWidgets_CreateColorSwatchRow(parent, anchor, labelText, defaultT
     return row
 end
 
--- Search input: full width, pill-shaped, placeholder, clear button. onTextChanged(text) called on input.
+-- Search input: custom-styled, pill-shaped, search icon, integrated clear, focus state. onTextChanged(text) called on input.
+local SEARCH_ICON_LEFT = 28
+local SEARCH_CLEAR_SIZE = 20
+local SEARCH_INSET = 6
 function OptionsWidgets_CreateSearchInput(parent, onTextChanged, placeholder)
     local row = CreateFrame("Frame", nil, parent)
-    row:SetHeight(36)
-    local edit = CreateFrame("EditBox", nil, row, "InputBoxTemplate")
+    row:SetAllPoints(parent)
+    local edit = CreateFrame("EditBox", nil, row)
     edit:SetHeight(28)
     edit:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
-    edit:SetPoint("TOPRIGHT", row, "TOPRIGHT", -32, 0)
+    edit:SetPoint("TOPRIGHT", row, "TOPRIGHT", -SEARCH_CLEAR_SIZE - 4, 0)
     edit:SetAutoFocus(false)
     edit:SetFont(Def.FontPath, Def.LabelSize, "OUTLINE")
+    edit:SetTextInsets(SEARCH_ICON_LEFT, SEARCH_CLEAR_SIZE + 4, 0, 0)
+    local tc = Def.TextColorLabel
+    edit:SetTextColor(tc[1], tc[2], tc[3], tc[4] or 1)
+
     local editBg = edit:CreateTexture(nil, "BACKGROUND")
-    editBg:SetPoint("TOPLEFT", edit, "TOPLEFT", 4, 2)
-    editBg:SetPoint("BOTTOMRIGHT", edit, "BOTTOMRIGHT", -4, -2)
+    editBg:SetPoint("TOPLEFT", edit, "TOPLEFT", SEARCH_INSET, -SEARCH_INSET)
+    editBg:SetPoint("BOTTOMRIGHT", edit, "BOTTOMRIGHT", -SEARCH_INSET, SEARCH_INSET)
     editBg:SetColorTexture(Def.InputBg[1], Def.InputBg[2], Def.InputBg[3], Def.InputBg[4])
+
+    local borderTop = edit:CreateTexture(nil, "BORDER")
+    borderTop:SetHeight(1)
+    borderTop:SetPoint("TOPLEFT", edit, "TOPLEFT", 0, 0)
+    borderTop:SetPoint("TOPRIGHT", edit, "TOPRIGHT", 0, 0)
+    local borderBottom = edit:CreateTexture(nil, "BORDER")
+    borderBottom:SetHeight(1)
+    borderBottom:SetPoint("BOTTOMLEFT", edit, "BOTTOMLEFT", 0, 0)
+    borderBottom:SetPoint("BOTTOMRIGHT", edit, "BOTTOMRIGHT", 0, 0)
+    local borderLeft = edit:CreateTexture(nil, "BORDER")
+    borderLeft:SetWidth(1)
+    borderLeft:SetPoint("TOPLEFT", edit, "TOPLEFT", 0, 0)
+    borderLeft:SetPoint("BOTTOMLEFT", edit, "BOTTOMLEFT", 0, 0)
+    local borderRight = edit:CreateTexture(nil, "BORDER")
+    borderRight:SetWidth(1)
+    borderRight:SetPoint("TOPRIGHT", edit, "TOPRIGHT", 0, 0)
+    borderRight:SetPoint("BOTTOMRIGHT", edit, "BOTTOMRIGHT", 0, 0)
+    local function setBorderColor(r, g, b, a)
+        local c = { r or Def.InputBorder[1], g or Def.InputBorder[2], b or Def.InputBorder[3], a or Def.InputBorder[4] }
+        borderTop:SetColorTexture(c[1], c[2], c[3], c[4])
+        borderBottom:SetColorTexture(c[1], c[2], c[3], c[4])
+        borderLeft:SetColorTexture(c[1], c[2], c[3], c[4])
+        borderRight:SetColorTexture(c[1], c[2], c[3], c[4])
+    end
+    setBorderColor(Def.InputBorder[1], Def.InputBorder[2], Def.InputBorder[3], Def.InputBorder[4])
+
+    local searchIcon = edit:CreateTexture(nil, "OVERLAY")
+    searchIcon:SetSize(14, 14)
+    searchIcon:SetPoint("LEFT", edit, "LEFT", 10, 0)
+    searchIcon:SetTexture("Interface\\Icons\\INV_Misc_Spyglass_03")
+    searchIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+
     if placeholder then
         local ph = edit:CreateFontString(nil, "OVERLAY")
         ph:SetFont(Def.FontPath, Def.LabelSize, "OUTLINE")
         SetTextColor(ph, Def.TextColorSection)
         ph:SetText(placeholder)
-        ph:SetPoint("LEFT", edit, "LEFT", 8, 0)
+        ph:SetPoint("LEFT", edit, "LEFT", SEARCH_ICON_LEFT, 0)
         ph:SetJustifyH("LEFT")
         edit.placeholder = ph
-        edit:SetScript("OnEditFocusGained", function() if ph then ph:Hide() end end)
-        edit:SetScript("OnEditFocusLost", function() if ph and edit:GetText() == "" then ph:Show() end end)
+        edit:SetScript("OnEditFocusGained", function()
+            if ph then ph:Hide() end
+            setBorderColor(Def.AccentColor[1], Def.AccentColor[2], Def.AccentColor[3], 0.35)
+            if row.clearBtn then row.clearBtn:SetShown(edit:GetText() ~= "") end
+        end)
+        edit:SetScript("OnEditFocusLost", function()
+            if ph and edit:GetText() == "" then ph:Show() end
+            setBorderColor(Def.InputBorder[1], Def.InputBorder[2], Def.InputBorder[3], Def.InputBorder[4])
+            if row.clearBtn then row.clearBtn:SetShown(edit:GetText() ~= "") end
+        end)
+    else
+        edit:SetScript("OnEditFocusGained", function()
+            setBorderColor(Def.AccentColor[1], Def.AccentColor[2], Def.AccentColor[3], 0.35)
+            if row.clearBtn then row.clearBtn:SetShown(edit:GetText() ~= "") end
+        end)
+        edit:SetScript("OnEditFocusLost", function()
+            setBorderColor(Def.InputBorder[1], Def.InputBorder[2], Def.InputBorder[3], Def.InputBorder[4])
+            if row.clearBtn then row.clearBtn:SetShown(edit:GetText() ~= "") end
+        end)
     end
     edit:SetScript("OnEscapePressed", function()
         edit:SetText("")
         if edit.placeholder then edit.placeholder:Show() end
         edit:ClearFocus()
         if onTextChanged then onTextChanged("") end
+        if row.clearBtn then row.clearBtn:Hide() end
     end)
     if not placeholder then
         edit:SetScript("OnTextChanged", function(self, userInput)
             if userInput and onTextChanged then onTextChanged(self:GetText()) end
+            if row.clearBtn then row.clearBtn:SetShown(self:GetText() ~= "") end
         end)
     else
         edit:SetScript("OnTextChanged", function(self, userInput)
             if edit.placeholder then edit.placeholder:SetShown(self:GetText() == "") end
             if userInput and onTextChanged then onTextChanged(self:GetText()) end
+            if row.clearBtn then row.clearBtn:SetShown(self:GetText() ~= "") end
         end)
     end
 
     local clearBtn = CreateFrame("Button", nil, row)
-    clearBtn:SetSize(28, 28)
-    clearBtn:SetPoint("TOPRIGHT", row, "TOPRIGHT", 0, 0)
+    clearBtn:SetSize(SEARCH_CLEAR_SIZE, SEARCH_CLEAR_SIZE)
+    clearBtn:SetPoint("RIGHT", edit, "RIGHT", -6, 0)
+    clearBtn:EnableMouse(true)
+    clearBtn:Hide()
     local clearText = clearBtn:CreateFontString(nil, "OVERLAY")
-    clearText:SetFont(Def.FontPath, Def.LabelSize, "OUTLINE")
+    clearText:SetFont(Def.FontPath, Def.LabelSize - 1, "OUTLINE")
     SetTextColor(clearText, Def.TextColorSection)
     clearText:SetText("X")
     clearText:SetPoint("CENTER", clearBtn, "CENTER", 0, 0)
     clearBtn:SetScript("OnClick", function()
         edit:SetText("")
+        if edit.placeholder then edit.placeholder:Show() end
         if onTextChanged then onTextChanged("") end
+        clearBtn:Hide()
     end)
     clearBtn:SetScript("OnEnter", function() SetTextColor(clearText, Def.TextColorHighlight) end)
     clearBtn:SetScript("OnLeave", function() SetTextColor(clearText, Def.TextColorSection) end)

@@ -102,7 +102,7 @@ local TEXT_CASE_OPTIONS = {
     { "Proper", "proper" },
 }
 -- Use addon.QUEST_COLORS from Config as single source for quest type colors.
-local COLOR_KEYS_ORDER = { "DEFAULT", "CAMPAIGN", "IMPORTANT", "LEGENDARY", "WORLD", "DELVES", "SCENARIO", "WEEKLY", "DAILY", "COMPLETE", "RARE" }
+local COLOR_KEYS_ORDER = { "DEFAULT", "CAMPAIGN", "IMPORTANT", "LEGENDARY", "WORLD", "DELVES", "SCENARIO", "ACHIEVEMENT", "WEEKLY", "DAILY", "COMPLETE", "RARE" }
 local ZONE_COLOR_DEFAULT = { 0.55, 0.65, 0.75 }
 local OBJ_COLOR_DEFAULT = { 0.78, 0.78, 0.78 }
 local OBJ_DONE_COLOR_DEFAULT = { 0.30, 0.80, 0.30 }
@@ -187,6 +187,8 @@ local OptionCategories = {
             { type = "section", name = "Mythic+" },
             { type = "toggle", name = "Show Mythic+ block", desc = "Show timer, completion %, and affixes in Mythic+ dungeons.", dbKey = "showMythicPlusBlock", get = function() return getDB("showMythicPlusBlock", false) end, set = function(v) setDB("showMythicPlusBlock", v) end },
             { type = "dropdown", name = "M+ block position", desc = "Position of the Mythic+ block relative to the quest list.", dbKey = "mplusBlockPosition", options = MPLUS_POSITION_OPTIONS, get = function() return getDB("mplusBlockPosition", "top") end, set = function(v) setDB("mplusBlockPosition", v) end },
+            { type = "section", name = "Achievements" },
+            { type = "toggle", name = "Show achievements", desc = "Show tracked achievements in the list.", dbKey = "showAchievements", get = function() return getDB("showAchievements", true) end, set = function(v) setDB("showAchievements", v) end },
             { type = "section", name = "Scenario & Delve" },
             { type = "toggle", name = "Show scenario events", desc = "Show active scenario and Delve activities. Delves appear in DELVES; other scenarios in SCENARIO EVENTS.", dbKey = "showScenarioEvents", get = function() return getDB("showScenarioEvents", true) end, set = function(v) setDB("showScenarioEvents", v) end },
             { type = "toggle", name = "Hide other categories in Delve or Dungeon", desc = "In Delves or party dungeons, show only the Delve/Dungeon section.", dbKey = "hideOtherCategoriesInDelve", get = function() return getDB("hideOtherCategoriesInDelve", false) end, set = function(v) setDB("hideOtherCategoriesInDelve", v) end },

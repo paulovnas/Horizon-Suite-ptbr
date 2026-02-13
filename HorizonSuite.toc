@@ -13,6 +13,7 @@ core/Core.lua
 core/WorldQuests.lua
 core/Rares.lua
 core/Scenario.lua
+core/Achievements.lua
 core/QuestData.lua
 ui/EntryPool.lua
 ui/FloatingQuestItem.lua

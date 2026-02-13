@@ -765,7 +765,7 @@ end
 local searchDropdown = CreateFrame("Frame", nil, panel)
 searchDropdown:SetFrameStrata("DIALOG")
 searchDropdown:SetFrameLevel(panel:GetFrameLevel() + 10)
-searchDropdown:SetPoint("TOPLEFT", searchRow, "BOTTOMLEFT", 0, -4)
+searchDropdown:SetPoint("TOPLEFT", searchRow, "BOTTOMLEFT", 0, -2)
 searchDropdown:SetPoint("TOPRIGHT", searchRow, "BOTTOMRIGHT", 0, 0)
 searchDropdown:SetHeight(SEARCH_DROPDOWN_MAX_HEIGHT)
 searchDropdown:EnableMouse(true)
@@ -774,6 +774,12 @@ local searchDropdownBg = searchDropdown:CreateTexture(nil, "BACKGROUND")
 searchDropdownBg:SetAllPoints(searchDropdown)
 local sdb = Def.SectionCardBg or { 0.09, 0.09, 0.11, 0.96 }
 searchDropdownBg:SetColorTexture(sdb[1], sdb[2], sdb[3], 0.98)
+local dropdownTopLine = searchDropdown:CreateTexture(nil, "ARTWORK")
+dropdownTopLine:SetHeight(1)
+dropdownTopLine:SetPoint("TOPLEFT", searchDropdown, "TOPLEFT", 0, 0)
+dropdownTopLine:SetPoint("TOPRIGHT", searchDropdown, "TOPRIGHT", 0, 0)
+local ddc = Def.DividerColor or { 0.35, 0.4, 0.5, 0.3 }
+dropdownTopLine:SetColorTexture(ddc[1], ddc[2], ddc[3], ddc[4] or 0.3)
 addon.CreateBorder(searchDropdown, Def.SectionCardBorder or Def.BorderColor)
 local searchDropdownScroll = CreateFrame("ScrollFrame", nil, searchDropdown)
 searchDropdownScroll:SetPoint("TOPLEFT", searchDropdown, "TOPLEFT", 6, -6)
@@ -910,12 +916,11 @@ local function OnSearchTextChanged(text)
 end
 
 local searchInput = OptionsWidgets_CreateSearchInput(searchRow, OnSearchTextChanged, "Search settings...")
-searchInput.edit:SetPoint("TOPLEFT", searchRow, "TOPLEFT", 0, 0)
-searchInput.edit:SetPoint("TOPRIGHT", searchRow, "TOPRIGHT", -32, 0)
-searchInput.clearBtn:SetPoint("TOPRIGHT", searchRow, "TOPRIGHT", 0, 0)
+searchInput.clearBtn:SetFrameLevel(searchInput.edit:GetFrameLevel() + 1)
 searchInput.edit:SetScript("OnEscapePressed", function()
     searchInput.edit:SetText("")
     if searchInput.edit.placeholder then searchInput.edit.placeholder:Show() end
+    if searchInput.clearBtn then searchInput.clearBtn:Hide() end
     FilterBySearch("")
     HideSearchDropdown()
     searchInput.edit:ClearFocus()

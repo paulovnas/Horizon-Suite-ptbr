@@ -10,6 +10,8 @@ All notable changes to Horizon Suite - Focus are documented here.
 
 - **Options panel UX overhaul** — Cinematic, modern, minimalistic redesign: softer colour palette with low-contrast borders and dividers; pill-shaped search input; taller sidebar tabs with hover states; minimal X close button; section cards with inset backgrounds; refined toggles, sliders, dropdowns, and colour swatches; subtle dividers between colour-matrix sections; consistent hover feedback on buttons and tabs.
 
+- **Search bar redesign** — Custom-styled search input without Blizzard template: search icon (spyglass) on the left, integrated clear button (visible only when typing), subtle focus state with accent-colour border, and tighter visual connection to the results dropdown.
+
 ---
 
 ## [0.7.1] – 2026-02-13

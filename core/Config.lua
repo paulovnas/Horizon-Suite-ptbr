@@ -89,6 +89,7 @@ addon.QUEST_COLORS = {
     CALLING   = { 0.20, 0.60, 1.00 },
     COMPLETE  = { 0.20, 1.00, 0.40 },
     RARE      = { 1.00, 0.55, 0.25 },
+    ACHIEVEMENT = { 1.00, 0.84, 0.00 },
 }
 
 addon.SECTION_SIZE      = 10
@@ -127,6 +128,7 @@ addon.SECTION_LABELS = {
     WEEKLY    = "WEEKLY QUESTS",
     DAILY     = "DAILY QUESTS",
     RARES     = "RARE BOSSES",
+    ACHIEVEMENTS = "ACHIEVEMENTS",
     DEFAULT   = "QUESTS",
     COMPLETE  = "READY TO TURN IN",
 }
@@ -144,18 +146,19 @@ addon.SECTION_COLORS = {
     WEEKLY    = { 0.25, 0.88, 0.92 },  -- match quest-recurring-available icon (cyan)
     DAILY     = { 0.25, 0.88, 0.92 },  -- match quest-recurring-available icon (cyan)
     RARES     = { 1.00, 0.55, 0.25 },
+    ACHIEVEMENTS = { 1.00, 0.84, 0.00 },
     DEFAULT   = { 0.70, 0.70, 0.70 },
     COMPLETE  = { 0.20, 1.00, 0.40 },
 }
 
-addon.GROUP_ORDER = { "DELVES", "SCENARIO", "DUNGEON", "NEARBY", "COMPLETE", "WORLD", "WEEKLY", "DAILY", "RARES", "AVAILABLE", "CAMPAIGN", "IMPORTANT", "LEGENDARY", "DEFAULT" }
+addon.GROUP_ORDER = { "DELVES", "SCENARIO", "ACHIEVEMENTS", "DUNGEON", "NEARBY", "COMPLETE", "WORLD", "WEEKLY", "DAILY", "RARES", "AVAILABLE", "CAMPAIGN", "IMPORTANT", "LEGENDARY", "DEFAULT" }
 
 -- Category keys (enum-style) for consistent string usage across modules.
 addon.CATEGORY_KEYS = {
     DUNGEON = "DUNGEON", DELVES = "DELVES", SCENARIO = "SCENARIO", AVAILABLE = "AVAILABLE", NEARBY = "NEARBY", CAMPAIGN = "CAMPAIGN",
     IMPORTANT = "IMPORTANT", LEGENDARY = "LEGENDARY", WORLD = "WORLD", WEEKLY = "WEEKLY",
-    DAILY = "DAILY", RARES = "RARES", RARE = "RARE", DEFAULT = "DEFAULT", COMPLETE = "COMPLETE",
-    CALLING = "CALLING",
+    DAILY = "DAILY", RARES = "RARES", RARE = "RARE", ACHIEVEMENT = "ACHIEVEMENT", ACHIEVEMENTS = "ACHIEVEMENTS",
+    DEFAULT = "DEFAULT", COMPLETE = "COMPLETE", CALLING = "CALLING",
 }
 
 -- Quest type atlas names (Blizzard texture atlases for quest icons).
@@ -178,6 +181,7 @@ addon.CATEGORY_TO_GROUP = {
     WEEKLY    = "WEEKLY",
     DAILY     = "DAILY",
     CALLING   = "WORLD",
+    ACHIEVEMENT = "ACHIEVEMENTS",
     DEFAULT   = "DEFAULT",
 }
 
