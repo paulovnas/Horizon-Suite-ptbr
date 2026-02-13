@@ -8,6 +8,20 @@ All notable changes to Horizon Suite - Focus are documented here.
 
 ### Improvements
 
+- **Options panel UX overhaul** — Cinematic, modern, minimalistic redesign: softer colour palette with low-contrast borders and dividers; pill-shaped search input; taller sidebar tabs with hover states; minimal X close button; section cards with inset backgrounds; refined toggles, sliders, dropdowns, and colour swatches; subtle dividers between colour-matrix sections; consistent hover feedback on buttons and tabs.
+
+---
+
+## [0.7.1] – 2026-02-13
+
+### Improvements
+
+- **Zone labels** — Refined how quest zone names are chosen so objectives show clearer, more accurate zone labels, especially when quests span parent/child maps.
+
+- **Mythic+ integration** — Improved how Mythic+ objectives and blocks behave in the tracker and options, with clearer descriptions and more consistent behaviour.
+
+- **Options usability** — Polished several option labels and descriptions (including Mythic+ and zone-related settings) to better explain what they do and how they interact.
+
 - **Options panel overhaul** — Fixed search so clicking a result now switches to the correct category and scrolls to that setting. Settings are reorganized into eight categories (Layout, Visibility, Display, Features, Typography, Appearance, Colors, Organization) for easier discovery. Toggles use a rounded pill style; search results show category and section with the option name emphasised.
 
 - **World quest map fallback removed** — World quests are now sourced only from live APIs (`GetTasksTable`, `C_QuestLog.GetQuestsOnMap`, `C_TaskQuest` map APIs, and waypoint fallback) without requiring the world map to be open. The previous map-open cache and heartbeat fallback have been removed.

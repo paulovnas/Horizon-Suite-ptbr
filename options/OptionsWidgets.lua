@@ -7,29 +7,32 @@
 local addon = _G.HorizonSuite
 if not addon then return end
 
--- Design tokens (Hyper Modern Clean). Panel can override FontPath/HeaderSize via SetDef.
+-- Design tokens (Cinematic, Modern, Minimalistic). Panel can override FontPath/HeaderSize via SetDef.
 local Def = {
-    Padding = 16,
-    OptionGap = 12,
-    SectionGap = 20,
-    CardPadding = 14,
+    Padding = 18,
+    OptionGap = 14,
+    SectionGap = 24,
+    CardPadding = 18,
     BorderEdge = 1,
+    CornerRadius = 8,
     LabelSize = 13,
     SectionSize = 11,
     FontPath = (addon.GetDefaultFontPath and addon.GetDefaultFontPath()) or "Fonts\\FRIZQT__.TTF",
     HeaderSize = addon.HEADER_SIZE or 16,
     TextColorNormal = { 1, 1, 1 },
-    TextColorHighlight = { 0.7, 0.78, 0.95, 1 },
-    TextColorLabel = { 0.82, 0.82, 0.86 },
-    TextColorSection = { 0.6, 0.68, 0.78 },
-    SectionCardBg = { 0.08, 0.08, 0.12, 0.96 },
-    SectionCardBorder = { 0.28, 0.32, 0.4, 0.5 },
-    AccentColor = { 0.5, 0.62, 0.88, 0.95 },
-    InputBg = { 0.06, 0.06, 0.1, 0.96 },
-    InputBorder = { 0.28, 0.32, 0.4, 0.6 },
-    TrackOff = { 0.12, 0.12, 0.16, 0.95 },
-    TrackOn = { 0.5, 0.62, 0.88, 0.9 },
-    ThumbColor = { 1, 1, 1, 1 },
+    TextColorHighlight = { 0.72, 0.8, 0.95, 1 },
+    TextColorLabel = { 0.84, 0.84, 0.88 },
+    TextColorSection = { 0.58, 0.64, 0.74 },
+    TextColorTitleBar = { 0.9, 0.92, 0.96, 1 },
+    SectionCardBg = { 0.09, 0.09, 0.11, 0.96 },
+    SectionCardBorder = { 0.18, 0.2, 0.24, 0.35 },
+    AccentColor = { 0.48, 0.58, 0.82, 0.9 },
+    DividerColor = { 0.35, 0.4, 0.5, 0.25 },
+    InputBg = { 0.07, 0.07, 0.1, 0.96 },
+    InputBorder = { 0.2, 0.22, 0.28, 0.4 },
+    TrackOff = { 0.14, 0.14, 0.18, 0.95 },
+    TrackOn = { 0.48, 0.58, 0.82, 0.85 },
+    ThumbColor = { 1, 1, 1, 0.98 },
 }
 Def.BorderColor = Def.SectionCardBorder
 
@@ -145,9 +148,10 @@ function OptionsWidgets_CreateToggleSwitch(parent, labelText, description, get, 
     return row
 end
 
--- Slider: horizontal track + draggable thumb + numeric readout
+-- Slider: slim rounded track + draggable thumb + numeric readout
 local SLIDER_TRACK_HEIGHT = 6
-local SLIDER_THUMB_SIZE = 16
+local SLIDER_THUMB_SIZE = 14
+local SLIDER_TRACK_INSET = 2
 function OptionsWidgets_CreateSlider(parent, labelText, description, get, set, minVal, maxVal)
     local row = CreateFrame("Frame", nil, parent)
     row:SetHeight(40)
@@ -174,11 +178,12 @@ function OptionsWidgets_CreateSlider(parent, labelText, description, get, set, m
     track:SetSize(trackWidth, SLIDER_TRACK_HEIGHT)
     track:SetPoint("TOPRIGHT", row, "TOPRIGHT", -52, -8)
     local trackBg = track:CreateTexture(nil, "BACKGROUND")
-    trackBg:SetAllPoints(track)
+    trackBg:SetPoint("TOPLEFT", track, "TOPLEFT", SLIDER_TRACK_INSET, -SLIDER_TRACK_INSET)
+    trackBg:SetPoint("BOTTOMRIGHT", track, "BOTTOMRIGHT", -SLIDER_TRACK_INSET, SLIDER_TRACK_INSET)
     trackBg:SetColorTexture(Def.TrackOff[1], Def.TrackOff[2], Def.TrackOff[3], Def.TrackOff[4])
     local trackFill = track:CreateTexture(nil, "ARTWORK")
-    trackFill:SetPoint("TOPLEFT", track, "TOPLEFT", 0, 0)
-    trackFill:SetPoint("BOTTOMLEFT", track, "BOTTOMLEFT", 0, 0)
+    trackFill:SetPoint("TOPLEFT", track, "TOPLEFT", SLIDER_TRACK_INSET, -SLIDER_TRACK_INSET)
+    trackFill:SetPoint("BOTTOMLEFT", track, "BOTTOMLEFT", SLIDER_TRACK_INSET, SLIDER_TRACK_INSET)
     trackFill:SetColorTexture(Def.TrackOn[1], Def.TrackOn[2], Def.TrackOn[3], Def.TrackOn[4])
 
     local thumb = CreateFrame("Button", nil, track)
@@ -222,12 +227,14 @@ function OptionsWidgets_CreateSlider(parent, labelText, description, get, set, m
         return minVal + n * (maxVal - minVal)
     end
 
+    local fillWidth = trackWidth - 2 * SLIDER_TRACK_INSET
+    local thumbTravel = fillWidth - SLIDER_THUMB_SIZE
     local function updateFromValue(v)
         v = math.max(minVal, math.min(maxVal, v))
         local n = valueToNorm(v)
         thumb:ClearAllPoints()
-        thumb:SetPoint("CENTER", track, "LEFT", n * trackWidth, 0)
-        trackFill:SetWidth(n * trackWidth)
+        thumb:SetPoint("CENTER", track, "LEFT", SLIDER_TRACK_INSET + SLIDER_THUMB_SIZE/2 + n * thumbTravel, 0)
+        trackFill:SetWidth(n * fillWidth)
         edit:SetText(tostring(math.floor(v + 0.5)))
     end
 
@@ -246,7 +253,7 @@ function OptionsWidgets_CreateSlider(parent, labelText, description, get, set, m
                 return
             end
             local x = GetCursorPosition() / scale
-            local delta = (x - startX) / trackWidth
+            local delta = (x - startX) / fillWidth
             local n = math.max(0, math.min(1, startNorm + delta))
             local v = normToValue(n)
             set(v)
@@ -287,11 +294,12 @@ function OptionsWidgets_CreateCustomDropdown(parent, labelText, description, opt
     desc:SetWordWrap(true)
 
     local btn = CreateFrame("Button", nil, row)
-    btn:SetHeight(24)
+    btn:SetHeight(26)
     btn:SetPoint("TOPLEFT", row, "TOPLEFT", 0, -28)
     btn:SetPoint("RIGHT", row, "RIGHT", 0, 0)
     local btnBg = btn:CreateTexture(nil, "BACKGROUND")
-    btnBg:SetAllPoints(btn)
+    btnBg:SetPoint("TOPLEFT", btn, "TOPLEFT", 2, -2)
+    btnBg:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -2, 2)
     btnBg:SetColorTexture(Def.InputBg[1], Def.InputBg[2], Def.InputBg[3], Def.InputBg[4])
     local btnText = btn:CreateFontString(nil, "OVERLAY")
     btnText:SetFont(Def.FontPath, Def.LabelSize, "OUTLINE")
@@ -312,9 +320,7 @@ function OptionsWidgets_CreateCustomDropdown(parent, labelText, description, opt
     local listBg = list:CreateTexture(nil, "BACKGROUND")
     listBg:SetAllPoints(list)
     listBg:SetColorTexture(Def.SectionCardBg[1], Def.SectionCardBg[2], Def.SectionCardBg[3], Def.SectionCardBg[4])
-    local listBorder = list:CreateTexture(nil, "BORDER")
-    listBorder:SetAllPoints(list)
-    listBorder:SetColorTexture(Def.SectionCardBorder[1], Def.SectionCardBorder[2], Def.SectionCardBorder[3], Def.SectionCardBorder[4])
+    addon.CreateBorder(list, Def.SectionCardBorder)
 
     local catch = CreateFrame("Button", nil, UIParent)
     catch:SetFrameStrata("TOOLTIP")
@@ -355,7 +361,7 @@ function OptionsWidgets_CreateCustomDropdown(parent, labelText, description, opt
             b.text = tb
             local hi = b:CreateTexture(nil, "BACKGROUND")
             hi:SetAllPoints(b)
-            hi:SetColorTexture(1, 1, 1, 0.08)
+            hi:SetColorTexture(1, 1, 1, 0.06)
             hi:Hide()
             b:SetScript("OnEnter", function() hi:Show() end)
             b:SetScript("OnLeave", function() hi:Hide() end)
@@ -501,10 +507,12 @@ function OptionsWidgets_CreateColorSwatchRow(parent, anchor, labelText, defaultT
     lab:SetText(labelText or "")
     lab:SetPoint("LEFT", row, "LEFT", 0, 0)
     local swatch = CreateFrame("Button", nil, row)
-    swatch:SetSize(20, 20)
+    swatch:SetSize(22, 18)
     swatch:SetPoint("LEFT", lab, "RIGHT", 10, 0)
     local tex = swatch:CreateTexture(nil, "BACKGROUND")
-    tex:SetAllPoints(swatch)
+    local swInset = 1
+    tex:SetPoint("TOPLEFT", swatch, "TOPLEFT", swInset, -swInset)
+    tex:SetPoint("BOTTOMRIGHT", swatch, "BOTTOMRIGHT", -swInset, swInset)
     addon.CreateBorder(swatch, Def.SectionCardBorder)
     swatch.tex = tex
     local def = defaultTbl and #defaultTbl >= 3 and defaultTbl or { 0.5, 0.5, 0.5 }
@@ -550,16 +558,20 @@ function OptionsWidgets_CreateColorSwatchRow(parent, anchor, labelText, defaultT
     return row
 end
 
--- Search input: full width, placeholder, clear button. onTextChanged(text) called on input.
+-- Search input: full width, pill-shaped, placeholder, clear button. onTextChanged(text) called on input.
 function OptionsWidgets_CreateSearchInput(parent, onTextChanged, placeholder)
     local row = CreateFrame("Frame", nil, parent)
-    row:SetHeight(32)
+    row:SetHeight(36)
     local edit = CreateFrame("EditBox", nil, row, "InputBoxTemplate")
-    edit:SetHeight(24)
+    edit:SetHeight(28)
     edit:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
-    edit:SetPoint("TOPRIGHT", row, "TOPRIGHT", -28, 0)
+    edit:SetPoint("TOPRIGHT", row, "TOPRIGHT", -32, 0)
     edit:SetAutoFocus(false)
     edit:SetFont(Def.FontPath, Def.LabelSize, "OUTLINE")
+    local editBg = edit:CreateTexture(nil, "BACKGROUND")
+    editBg:SetPoint("TOPLEFT", edit, "TOPLEFT", 4, 2)
+    editBg:SetPoint("BOTTOMRIGHT", edit, "BOTTOMRIGHT", -4, -2)
+    editBg:SetColorTexture(Def.InputBg[1], Def.InputBg[2], Def.InputBg[3], Def.InputBg[4])
     if placeholder then
         local ph = edit:CreateFontString(nil, "OVERLAY")
         ph:SetFont(Def.FontPath, Def.LabelSize, "OUTLINE")
@@ -589,7 +601,7 @@ function OptionsWidgets_CreateSearchInput(parent, onTextChanged, placeholder)
     end
 
     local clearBtn = CreateFrame("Button", nil, row)
-    clearBtn:SetSize(24, 24)
+    clearBtn:SetSize(28, 28)
     clearBtn:SetPoint("TOPRIGHT", row, "TOPRIGHT", 0, 0)
     local clearText = clearBtn:CreateFontString(nil, "OVERLAY")
     clearText:SetFont(Def.FontPath, Def.LabelSize, "OUTLINE")
@@ -600,6 +612,8 @@ function OptionsWidgets_CreateSearchInput(parent, onTextChanged, placeholder)
         edit:SetText("")
         if onTextChanged then onTextChanged("") end
     end)
+    clearBtn:SetScript("OnEnter", function() SetTextColor(clearText, Def.TextColorHighlight) end)
+    clearBtn:SetScript("OnLeave", function() SetTextColor(clearText, Def.TextColorSection) end)
 
     row.edit = edit
     row.clearBtn = clearBtn
@@ -607,22 +621,24 @@ function OptionsWidgets_CreateSearchInput(parent, onTextChanged, placeholder)
     return row
 end
 
--- Section card: deep cinematic background, 1px border
+-- Section card: soft cinematic background, subtle border, inset for softer edges
 function OptionsWidgets_CreateSectionCard(parent, anchor)
     local card = CreateFrame("Frame", nil, parent)
     card:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -Def.SectionGap)
     card:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, 0)
+    local inset = 1
     local cardBg = card:CreateTexture(nil, "BACKGROUND")
-    cardBg:SetAllPoints(card)
+    cardBg:SetPoint("TOPLEFT", card, "TOPLEFT", inset, -inset)
+    cardBg:SetPoint("BOTTOMRIGHT", card, "BOTTOMRIGHT", -inset, inset)
     cardBg:SetColorTexture(Def.SectionCardBg[1], Def.SectionCardBg[2], Def.SectionCardBg[3], Def.SectionCardBg[4])
     addon.CreateBorder(card, Def.SectionCardBorder)
     return card
 end
 
--- Section header: uppercase label, left-aligned
+-- Section header: uppercase label, left-aligned, slight accent tint
 function OptionsWidgets_CreateSectionHeader(parent, text)
     local label = parent:CreateFontString(nil, "OVERLAY")
-    label:SetFont(Def.FontPath, Def.SectionSize, "OUTLINE")
+    label:SetFont(Def.FontPath, Def.SectionSize + 1, "OUTLINE")
     label:SetJustifyH("LEFT")
     SetTextColor(label, Def.TextColorSection)
     label:SetText(text and text:upper() or "")
@@ -858,6 +874,8 @@ function OptionsWidgets_CreateReorderList(parent, anchor, opt, scrollFrameRef, p
         if type(newKeys) == "table" then repositionRows(newKeys) end
         if notifyMainAddonFn then notifyMainAddonFn() end
     end)
+    resetBtn:SetScript("OnEnter", function() SetTextColor(resetLabel, Def.TextColorHighlight) end)
+    resetBtn:SetScript("OnLeave", function() SetTextColor(resetLabel, Def.TextColorLabel) end)
 
     local totalH = Def.CardPadding + 14 + (#keys * (REORDER_ROW_HEIGHT + REORDER_ROW_GAP)) + 6 + 22 + Def.CardPadding
     container:SetHeight(totalH)

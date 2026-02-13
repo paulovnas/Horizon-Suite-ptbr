@@ -9,14 +9,14 @@ if not addon or not addon.OptionCategories then return end
 local Def = addon.OptionsWidgetsDef or {}
 local PAGE_WIDTH = 720
 local PAGE_HEIGHT = 600
-local SIDEBAR_WIDTH = 170
-local PADDING = Def.Padding or 16
+local SIDEBAR_WIDTH = 180
+local PADDING = Def.Padding or 18
 local SCROLL_STEP = 44
-local HEADER_HEIGHT = PADDING + (Def.HeaderSize or 16) + 8 + 2
-local DIVIDER_HEIGHT = 2
-local OptionGap = Def.OptionGap or 12
-local SectionGap = Def.SectionGap or 20
-local CardPadding = Def.CardPadding or 14
+local HEADER_HEIGHT = PADDING + (Def.HeaderSize or 16) + 10 + 2
+local DIVIDER_HEIGHT = 1
+local OptionGap = Def.OptionGap or 14
+local SectionGap = Def.SectionGap or 24
+local CardPadding = Def.CardPadding or 18
 local RowHeights = { sectionLabel = 14, toggle = 40, slider = 40, dropdown = 52, colorRow = 28, reorder = 24 }
 
 local SetTextColor = addon.SetTextColor or function(obj, color)
@@ -42,7 +42,8 @@ panel:Hide()
 
 local bg = panel:CreateTexture(nil, "BACKGROUND")
 bg:SetAllPoints(panel)
-bg:SetColorTexture(Def.SectionCardBg and Def.SectionCardBg[1] or 0.07, Def.SectionCardBg and Def.SectionCardBg[2] or 0.07, Def.SectionCardBg and Def.SectionCardBg[3] or 0.10, Def.SectionCardBg and Def.SectionCardBg[4] or 0.97)
+local sb = Def.SectionCardBg or { 0.09, 0.09, 0.11, 0.96 }
+bg:SetColorTexture(sb[1], sb[2], sb[3], sb[4] or 0.97)
 local bc = Def.BorderColor or Def.SectionCardBorder
 addon.CreateBorder(panel, bc)
 
@@ -65,53 +66,64 @@ titleBar:SetScript("OnDragStop", function()
 end)
 local titleBg = titleBar:CreateTexture(nil, "BACKGROUND")
 titleBg:SetAllPoints(titleBar)
-titleBg:SetColorTexture(0.05, 0.05, 0.08, 0.97)
+titleBg:SetColorTexture(0.07, 0.07, 0.09, 0.96)
 local titleText = titleBar:CreateFontString(nil, "OVERLAY")
 titleText:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.HeaderSize or 16, "OUTLINE")
 SetTextColor(titleText, Def.TextColorTitleBar or Def.TextColorNormal)
 titleText:SetPoint("TOPLEFT", titleBar, "TOPLEFT", PADDING, -PADDING)
 titleText:SetText("HORIZON SUITE")
 local closeBtn = CreateFrame("Button", nil, panel)
-closeBtn:SetSize(44, 22)
-closeBtn:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -PADDING, -PADDING)
-closeBtn:SetFrameLevel(titleBar:GetFrameLevel() + 2)  -- above title bar so clicks reach the button
+closeBtn:SetSize(28, 28)
+closeBtn:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -10, -10)
+closeBtn:SetFrameLevel(titleBar:GetFrameLevel() + 2)
+local closeBtnBg = closeBtn:CreateTexture(nil, "BACKGROUND")
+closeBtnBg:SetAllPoints(closeBtn)
+closeBtnBg:SetColorTexture(0.12, 0.12, 0.15, 0.5)
+closeBtnBg:Hide()
 local closeLabel = closeBtn:CreateFontString(nil, "OVERLAY")
-closeLabel:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.LabelSize or 13, "OUTLINE")
-SetTextColor(closeLabel, Def.TextColorLabel)
-closeLabel:SetText("Close")
+closeLabel:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
+SetTextColor(closeLabel, Def.TextColorSection)
+closeLabel:SetText("X")
 closeLabel:SetPoint("CENTER", closeBtn, "CENTER", 0, 0)
 closeBtn:SetScript("OnClick", function()
     if _G.HorizonSuite_OptionsRequestClose then _G.HorizonSuite_OptionsRequestClose() else panel:Hide() end
 end)
-closeBtn:SetScript("OnEnter", function() SetTextColor(closeLabel, Def.TextColorHighlight) end)
-closeBtn:SetScript("OnLeave", function() SetTextColor(closeLabel, Def.TextColorLabel) end)
+closeBtn:SetScript("OnEnter", function()
+    closeBtnBg:Show()
+    SetTextColor(closeLabel, Def.TextColorHighlight)
+end)
+closeBtn:SetScript("OnLeave", function()
+    closeBtnBg:Hide()
+    SetTextColor(closeLabel, Def.TextColorSection)
+end)
 local divider = panel:CreateTexture(nil, "ARTWORK")
 divider:SetPoint("TOPLEFT", titleBar, "BOTTOMLEFT", 0, 0)
 divider:SetPoint("TOPRIGHT", titleBar, "BOTTOMRIGHT", 0, 0)
 divider:SetHeight(DIVIDER_HEIGHT)
-divider:SetColorTexture(Def.AccentColor[1], Def.AccentColor[2], Def.AccentColor[3], 0.6)
+local dc = Def.DividerColor or Def.AccentColor
+divider:SetColorTexture(dc[1], dc[2], dc[3], dc[4] or 0.25)
 
 -- Search bar (FilterBySearch defined below after tabFrames/tabButtons exist)
 local searchRow = CreateFrame("Frame", nil, panel)
-searchRow:SetPoint("TOPLEFT", panel, "TOPLEFT", PADDING + SIDEBAR_WIDTH + 8, -(HEADER_HEIGHT + 4))
+searchRow:SetPoint("TOPLEFT", panel, "TOPLEFT", PADDING + SIDEBAR_WIDTH + 12, -(HEADER_HEIGHT + 6))
 searchRow:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -PADDING, 0)
-searchRow:SetHeight(32)
+searchRow:SetHeight(36)
 
 -- Sidebar
 local sidebar = CreateFrame("Frame", nil, panel)
-sidebar:SetPoint("TOPLEFT", panel, "TOPLEFT", PADDING, -(HEADER_HEIGHT + 4))
+sidebar:SetPoint("TOPLEFT", panel, "TOPLEFT", PADDING, -(HEADER_HEIGHT + 6))
 sidebar:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", PADDING, PADDING)
 sidebar:SetWidth(SIDEBAR_WIDTH)
 local sidebarBg = sidebar:CreateTexture(nil, "BACKGROUND")
 sidebarBg:SetAllPoints(sidebar)
-sidebarBg:SetColorTexture(0.06, 0.06, 0.09, 0.97)
+sidebarBg:SetColorTexture(0.07, 0.07, 0.09, 0.96)
 local tabButtons = {}
 local selectedTab = 1
-local contentWidth = PAGE_WIDTH - PADDING * 2 - SIDEBAR_WIDTH - 8
+local contentWidth = PAGE_WIDTH - PADDING * 2 - SIDEBAR_WIDTH - 12
 
 -- Scroll + content
 local scrollFrame = CreateFrame("ScrollFrame", nil, panel)
-scrollFrame:SetPoint("TOPLEFT", panel, "TOPLEFT", PADDING + SIDEBAR_WIDTH + 8, -(HEADER_HEIGHT + 4 + 36))
+scrollFrame:SetPoint("TOPLEFT", panel, "TOPLEFT", PADDING + SIDEBAR_WIDTH + 12, -(HEADER_HEIGHT + 6 + 40))
 scrollFrame:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -PADDING, PADDING)
 scrollFrame:EnableMouseWheel(true)
 scrollFrame:SetScript("OnMouseWheel", function(_, delta)
@@ -139,7 +151,7 @@ local versionLabel = sidebar:CreateFontString(nil, "OVERLAY")
 versionLabel:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.SectionSize or 10, "OUTLINE")
 SetTextColor(versionLabel, Def.TextColorSection)
 versionLabel:SetText("v" .. (GetAddOnMetadata and GetAddOnMetadata("HorizonSuite", "Version") or "0.7.0"))
-versionLabel:SetPoint("BOTTOMLEFT", sidebar, "BOTTOMLEFT", 8, 8)
+versionLabel:SetPoint("BOTTOMLEFT", sidebar, "BOTTOMLEFT", 10, 10)
 
 -- ---------------------------------------------------------------------------
 -- Build one category's content
@@ -236,6 +248,8 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                 for _, sw in ipairs(swatches) do if sw.Refresh then sw:Refresh() end end
                 notifyMainAddon()
             end)
+            resetBtn:SetScript("OnEnter", function() SetTextColor(rl, Def.TextColorHighlight) end)
+            resetBtn:SetScript("OnLeave", function() SetTextColor(rl, Def.TextColorLabel) end)
             currentCard.contentAnchor = resetBtn
             currentCard.contentHeight = currentCard.contentHeight + 6 + 22
             local overridesSub = OptionsWidgets_CreateSectionHeader(currentCard, "Element overrides")
@@ -264,6 +278,8 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                 for _, r in ipairs(overrideRows) do if r.Refresh then r:Refresh() end end
                 notifyMainAddon()
             end)
+            resetOv:SetScript("OnEnter", function() SetTextColor(rol, Def.TextColorHighlight) end)
+            resetOv:SetScript("OnLeave", function() SetTextColor(rol, Def.TextColorLabel) end)
             currentCard.contentAnchor = resetOv
             currentCard.contentHeight = currentCard.contentHeight + 6 + 22
             local oid = opt.dbKey or (addon.OptionCategories[tabIndex].key .. "_" .. (opt.name or ""):gsub("%s+", "_"))
@@ -356,7 +372,7 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
 
                 local hdrBg = hdr:CreateTexture(nil, "BACKGROUND")
                 hdrBg:SetAllPoints(hdr)
-                hdrBg:SetColorTexture(0.10, 0.10, 0.14, 0.6)
+                hdrBg:SetColorTexture(0.10, 0.10, 0.12, 0.5)
 
                 local chevron = hdr:CreateFontString(nil, "OVERLAY")
                 chevron:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.LabelSize or 13, "OUTLINE")
@@ -394,7 +410,9 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                         container:Refresh()
                     end
                 end)
-                resetBtn:SetScript("OnEnter", function() SetTextColor(resetLabel, Def.TextColorHighlight) end)
+                resetBtn:SetScript("OnEnter", function()
+                    SetTextColor(resetLabel, Def.TextColorHighlight)
+                end)
                 resetBtn:SetScript("OnLeave", function() SetTextColor(resetLabel, Def.TextColorLabel) end)
 
                 local previewSwatch = hdr:CreateTexture(nil, "ARTWORK")
@@ -405,7 +423,7 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                 -- Highlight on hover
                 local hdrHi = hdr:CreateTexture(nil, "HIGHLIGHT")
                 hdrHi:SetAllPoints(hdr)
-                hdrHi:SetColorTexture(1, 1, 1, 0.04)
+                hdrHi:SetColorTexture(1, 1, 1, 0.03)
 
                 -- State
                 container.expanded = false
@@ -527,6 +545,13 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                 currentCard.contentHeight = currentCard.contentHeight + OptionGap + GROUP_HEADER_H
             end
 
+            local div1 = currentCard:CreateTexture(nil, "ARTWORK")
+            div1:SetHeight(1)
+            div1:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -SectionGap/2)
+            div1:SetPoint("TOPRIGHT", currentCard, "TOPRIGHT", -CardPadding, 0)
+            local dc = Def.DividerColor or { 0.35, 0.4, 0.5, 0.2 }
+            div1:SetColorTexture(dc[1], dc[2], dc[3], dc[4] or 0.2)
+
             -- Grouping Overrides: toggles + NEARBY and COMPLETE collapsible groups
             local goHdr = OptionsWidgets_CreateSectionHeader(currentCard, "Grouping Overrides")
             goHdr:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -SectionGap)
@@ -550,6 +575,12 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                 currentCard.contentAnchor = gf
                 currentCard.contentHeight = currentCard.contentHeight + OptionGap + GROUP_HEADER_H
             end
+
+            local div2 = currentCard:CreateTexture(nil, "ARTWORK")
+            div2:SetHeight(1)
+            div2:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -SectionGap/2)
+            div2:SetPoint("TOPRIGHT", currentCard, "TOPRIGHT", -CardPadding, 0)
+            div2:SetColorTexture(dc[1], dc[2], dc[3], dc[4] or 0.2)
 
             -- Other global colours (always visible)
             local otherHdr = OptionsWidgets_CreateSectionHeader(currentCard, "Other colors")
@@ -614,6 +645,8 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                 for _, sw in ipairs(swatches) do if sw.Refresh then sw:Refresh() end end
                 notifyMainAddon()
             end)
+            resetBtn:SetScript("OnEnter", function() SetTextColor(rl, Def.TextColorHighlight) end)
+            resetBtn:SetScript("OnLeave", function() SetTextColor(rl, Def.TextColorLabel) end)
             currentCard.contentAnchor = resetBtn
             currentCard.contentHeight = currentCard.contentHeight + 6 + 22
             local oid = opt.dbKey or (addon.OptionCategories[tabIndex].key .. "_" .. (opt.name or ""):gsub("%s+", "_"))
@@ -645,21 +678,26 @@ local function UpdateTabVisuals()
 end
 
 local optionFrames = {}
+local TAB_ROW_HEIGHT = 32
 for i, cat in ipairs(addon.OptionCategories) do
     local btn = CreateFrame("Button", nil, sidebar)
-    btn:SetSize(SIDEBAR_WIDTH, 24)
-    if i == 1 then btn:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 0, 0)
+    btn:SetSize(SIDEBAR_WIDTH, TAB_ROW_HEIGHT)
+    if i == 1 then btn:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 0, -4)
     else btn:SetPoint("TOPLEFT", tabButtons[i-1], "BOTTOMLEFT", 0, 0) end
     btn.label = btn:CreateFontString(nil, "OVERLAY")
     btn.label:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.LabelSize or 13, "OUTLINE")
-    btn.label:SetPoint("LEFT", btn, "LEFT", 8, 0)
+    btn.label:SetPoint("LEFT", btn, "LEFT", 12, 0)
     btn.label:SetText(cat.name)
     btn.highlight = btn:CreateTexture(nil, "BACKGROUND")
     btn.highlight:SetAllPoints(btn)
-    btn.highlight:SetColorTexture(1, 1, 1, 0.06)
+    btn.highlight:SetColorTexture(1, 1, 1, 0.05)
+    btn.hoverBg = btn:CreateTexture(nil, "BACKGROUND")
+    btn.hoverBg:SetAllPoints(btn)
+    btn.hoverBg:SetColorTexture(1, 1, 1, 0.03)
+    btn.hoverBg:Hide()
     btn.leftAccent = btn:CreateTexture(nil, "OVERLAY")
-    btn.leftAccent:SetWidth(2)
-    btn.leftAccent:SetColorTexture(Def.AccentColor[1], Def.AccentColor[2], Def.AccentColor[3], Def.AccentColor[4])
+    btn.leftAccent:SetWidth(3)
+    btn.leftAccent:SetColorTexture(Def.AccentColor[1], Def.AccentColor[2], Def.AccentColor[3], Def.AccentColor[4] or 0.9)
     btn.leftAccent:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
     btn.leftAccent:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
     btn:SetScript("OnClick", function()
@@ -669,8 +707,16 @@ for i, cat in ipairs(addon.OptionCategories) do
         scrollFrame:SetScrollChild(tabFrames[i])
         scrollFrame:SetVerticalScroll(0)
     end)
-    btn:SetScript("OnEnter", function() if not btn.selected then SetTextColor(btn.label, Def.TextColorHighlight) end end)
-    btn:SetScript("OnLeave", function() UpdateTabVisuals() end)
+    btn:SetScript("OnEnter", function()
+        if not btn.selected then
+            SetTextColor(btn.label, Def.TextColorHighlight)
+            if btn.hoverBg then btn.hoverBg:Show() end
+        end
+    end)
+    btn:SetScript("OnLeave", function()
+        if btn.hoverBg then btn.hoverBg:Hide() end
+        UpdateTabVisuals()
+    end)
     tabButtons[i] = btn
 
     local refreshers = {}
@@ -684,7 +730,7 @@ local searchQuery = ""
 local searchDebounceTimer = nil
 local SEARCH_DEBOUNCE_MS = 180
 local SEARCH_DROPDOWN_MAX_HEIGHT = 240
-local SEARCH_DROPDOWN_ROW_HEIGHT = 32
+local SEARCH_DROPDOWN_ROW_HEIGHT = 34
 
 local function NavigateToOption(entry)
     if not entry or not entry.optionId then return end
@@ -719,14 +765,15 @@ end
 local searchDropdown = CreateFrame("Frame", nil, panel)
 searchDropdown:SetFrameStrata("DIALOG")
 searchDropdown:SetFrameLevel(panel:GetFrameLevel() + 10)
-searchDropdown:SetPoint("TOPLEFT", searchRow, "BOTTOMLEFT", 0, -2)
+searchDropdown:SetPoint("TOPLEFT", searchRow, "BOTTOMLEFT", 0, -4)
 searchDropdown:SetPoint("TOPRIGHT", searchRow, "BOTTOMRIGHT", 0, 0)
 searchDropdown:SetHeight(SEARCH_DROPDOWN_MAX_HEIGHT)
 searchDropdown:EnableMouse(true)
 searchDropdown:Hide()
 local searchDropdownBg = searchDropdown:CreateTexture(nil, "BACKGROUND")
 searchDropdownBg:SetAllPoints(searchDropdown)
-searchDropdownBg:SetColorTexture(Def.SectionCardBg and Def.SectionCardBg[1] or 0.08, Def.SectionCardBg and Def.SectionCardBg[2] or 0.08, Def.SectionCardBg and Def.SectionCardBg[3] or 0.12, 0.98)
+local sdb = Def.SectionCardBg or { 0.09, 0.09, 0.11, 0.96 }
+searchDropdownBg:SetColorTexture(sdb[1], sdb[2], sdb[3], 0.98)
 addon.CreateBorder(searchDropdown, Def.SectionCardBorder or Def.BorderColor)
 local searchDropdownScroll = CreateFrame("ScrollFrame", nil, searchDropdown)
 searchDropdownScroll:SetPoint("TOPLEFT", searchDropdown, "TOPLEFT", 6, -6)
@@ -864,7 +911,7 @@ end
 
 local searchInput = OptionsWidgets_CreateSearchInput(searchRow, OnSearchTextChanged, "Search settings...")
 searchInput.edit:SetPoint("TOPLEFT", searchRow, "TOPLEFT", 0, 0)
-searchInput.edit:SetPoint("TOPRIGHT", searchRow, "TOPRIGHT", -28, 0)
+searchInput.edit:SetPoint("TOPRIGHT", searchRow, "TOPRIGHT", -32, 0)
 searchInput.clearBtn:SetPoint("TOPRIGHT", searchRow, "TOPRIGHT", 0, 0)
 searchInput.edit:SetScript("OnEscapePressed", function()
     searchInput.edit:SetText("")
