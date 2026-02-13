@@ -150,7 +150,7 @@ for i = 2, #tabFrames do tabFrames[i]:Hide() end
 local versionLabel = sidebar:CreateFontString(nil, "OVERLAY")
 versionLabel:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.SectionSize or 10, "OUTLINE")
 SetTextColor(versionLabel, Def.TextColorSection)
-versionLabel:SetText("v" .. (GetAddOnMetadata and GetAddOnMetadata("HorizonSuite", "Version") or "0.7.0"))
+versionLabel:SetText("v" .. (GetAddOnMetadata and GetAddOnMetadata("HorizonSuite", "Version") or "1.0.0"))
 versionLabel:SetPoint("BOTTOMLEFT", sidebar, "BOTTOMLEFT", 10, 10)
 
 -- ---------------------------------------------------------------------------
@@ -676,16 +676,16 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
     if currentCard then FinalizeCard(currentCard) end
 end
 
--- Build sidebar grouped by moduleKey (Modules, Focus, Vista)
+-- Build sidebar grouped by moduleKey (Modules, Focus, Presence)
 -- Use "modules" as sentinel for nil (WoW Lua disallows nil as table index)
-local MODULE_LABELS = { ["modules"] = "Modules", ["focus"] = "Focus", ["vista"] = "Vista" }
+local MODULE_LABELS = { ["modules"] = "Modules", ["focus"] = "Focus", ["presence"] = "Presence" }
 local groups = {}
 for i, cat in ipairs(addon.OptionCategories) do
     local mk = cat.moduleKey or "modules"
     if not groups[mk] then groups[mk] = { label = MODULE_LABELS[mk] or "Other", categories = {} } end
     table.insert(groups[mk].categories, i)
 end
-local groupOrder = { "modules", "focus", "vista" }
+local groupOrder = { "modules", "focus", "presence" }
 
 local function UpdateTabVisuals()
     for _, btn in ipairs(tabButtons) do

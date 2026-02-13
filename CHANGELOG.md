@@ -4,13 +4,13 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
-## [Unreleased]
+## [1.0.0] – 2026-02-13
 
 ### New Features
 
 - **Modular architecture** — Horizon Suite is now a core addon with pluggable modules. The Focus (objective tracker) is the first module. A new **Modules** category in options lets you enable or disable each suite. Use `/horizon toggle` or Options → Modules → Enable Focus module to turn the tracker on or off. Additional suites will appear as modules in the same options panel. SavedVariables remain compatible; existing installs default to Focus enabled.
 
-- **Vista module** — Cinematic zone text and notifications. Replaces default zone/subzone text, level-up, boss emotes, achievements, quest accept/complete/update, and world quest banners with styled notifications. Priority queueing, smooth entrance/exit animations, and "Discovered" lines for zone discoveries. Enable in Options → Modules → Enable Vista module. Test with `/horizon vista` (e.g. `/horizon vista zone`, `/horizon vista all`). Blizzard frames are fully restored when Vista is disabled.
+- **Presence module** — Cinematic zone text and notifications. Replaces default zone/subzone text, level-up, boss emotes, achievements, quest accept/complete/update, and world quest banners with styled notifications. Priority queueing, smooth entrance/exit animations, and "Discovered" lines for zone discoveries. Enable in Options → Modules → Enable Presence module. Test with `/horizon presence` (e.g. `/horizon presence zone`, `/horizon presence all`). Blizzard frames are fully restored when Presence is disabled. (Renamed from Vista; `/horizon vista` is now `/horizon presence`.)
 
 ### Improvements
 

@@ -1,6 +1,6 @@
 --[[
     Horizon Suite - Focus - Options Data
-    OptionCategories (Layout, Visibility, Display, Features, Typography, Appearance, Colors, Organization), getDB/setDB/notifyMainAddon, search index.
+    OptionCategories (Modules, Layout, Visibility, Display, Features, Typography, Appearance, Colors, Organization), getDB/setDB/notifyMainAddon, search index.
 ]]
 
 if not HorizonDB then HorizonDB = {} end
@@ -119,7 +119,7 @@ local function getActiveQuestHighlight()
 end
 
 -- ---------------------------------------------------------------------------
--- OptionCategories: Layout, Visibility, Display, Features, Typography, Appearance, Colors, Organization
+-- OptionCategories: Modules, Layout, Visibility, Display, Features, Typography, Appearance, Colors, Organization
 -- ---------------------------------------------------------------------------
 
 local OptionCategories = {
@@ -130,7 +130,7 @@ local OptionCategories = {
         options = {
             { type = "section", name = "" },
             { type = "toggle", name = "Enable Focus module", desc = "Show the objective tracker for quests, world quests, rares, achievements, and scenarios.", dbKey = "_module_focus", get = function() return addon:IsModuleEnabled("focus") end, set = function(v) addon:SetModuleEnabled("focus", v) end },
-            { type = "toggle", name = "Enable Vista module", desc = "Cinematic zone text and notifications (zone changes, level up, boss emotes, achievements, quest updates).", dbKey = "_module_vista", get = function() return addon:IsModuleEnabled("vista") end, set = function(v) addon:SetModuleEnabled("vista", v) end },
+            { type = "toggle", name = "Enable Presence module", desc = "Cinematic zone text and notifications (zone changes, level up, boss emotes, achievements, quest updates).", dbKey = "_module_presence", get = function() return addon:IsModuleEnabled("presence") end, set = function(v) addon:SetModuleEnabled("presence", v) end },
         },
     },
     {
@@ -285,7 +285,7 @@ function OptionsData_BuildSearchIndex()
     for catIdx, cat in ipairs(OptionCategories) do
         local currentSection = ""
         local moduleKey = cat.moduleKey
-        local moduleLabel = (moduleKey == "focus" and "Focus") or (moduleKey == "vista" and "Vista") or "Modules"
+        local moduleLabel = (moduleKey == "focus" and "Focus") or (moduleKey == "presence" and "Presence") or "Modules"
         for _, opt in ipairs(cat.options) do
             if opt.type == "section" then
                 currentSection = opt.name or ""

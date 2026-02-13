@@ -1,10 +1,11 @@
-## Interface: 120001, 120000
+## Interface: 120001
 ## Title: Horizon Suite
 ## Notes: Core addon with pluggable modules. Focus (objective tracker) is the first module.
 ## Author: Crystilac
-## Version: 0.7.0
+## Version: 1.0.0
 ## SavedVariables: HorizonDB
 ## IconTexture: Interface\AddOns\HorizonSuite\icon
+## X-Wago-ID: jK8gY56y
 
 HorizonSuite.lua
 Utilities.lua
@@ -27,12 +28,12 @@ modules/Focus/FocusEvents.lua
 modules/Focus/FocusSlash.lua
 modules/Focus/FocusModule.lua
 
-modules/Vista/VistaCore.lua
-modules/Vista/VistaBlizzard.lua
-modules/Vista/VistaEvents.lua
-modules/Vista/VistaErrors.lua
-modules/Vista/VistaSlash.lua
-modules/Vista/VistaModule.lua
+modules/Presence/PresenceCore.lua
+modules/Presence/PresenceBlizzard.lua
+modules/Presence/PresenceEvents.lua
+modules/Presence/PresenceErrors.lua
+modules/Presence/PresenceSlash.lua
+modules/Presence/PresenceModule.lua
 
 options/OptionsWidgets.lua
 options/OptionsData.lua

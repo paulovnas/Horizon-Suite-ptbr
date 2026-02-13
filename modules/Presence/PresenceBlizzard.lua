@@ -1,11 +1,11 @@
 --[[
-    Horizon Suite - Vista - Blizzard Suppression
+    Horizon Suite - Presence - Blizzard Suppression
     Hide default zone text, level-up, boss emotes, achievements, event toasts.
-    Restore all when Vista is disabled.
+    Restore all when Presence is disabled.
 ]]
 
 local addon = _G.HorizonSuite
-if not addon or not addon.Vista then return end
+if not addon or not addon.Presence then return end
 
 -- ============================================================================
 -- BLIZZARD SUPPRESSION
@@ -33,11 +33,11 @@ local function KillBlizzardFrame(frame)
         frame:Hide()
         frame:SetAlpha(0)
     end)
-    if not ok1 and addon.HSPrint then addon.HSPrint("Vista KillBlizzardFrame hide failed: " .. tostring(err1)) end
+    if not ok1 and addon.HSPrint then addon.HSPrint("Presence KillBlizzardFrame hide failed: " .. tostring(err1)) end
     local ok2, err2 = pcall(function()
         frame:SetScript("OnShow", function(self) self:Hide() end)
     end)
-    if not ok2 and addon.HSPrint then addon.HSPrint("Vista KillBlizzardFrame OnShow hook failed: " .. tostring(err2)) end
+    if not ok2 and addon.HSPrint then addon.HSPrint("Presence KillBlizzardFrame OnShow hook failed: " .. tostring(err2)) end
 end
 
 local function RestoreBlizzardFrame(frame)
@@ -55,7 +55,7 @@ local function RestoreBlizzardFrame(frame)
         end
         frame:Show()
     end)
-    if not ok and addon.HSPrint then addon.HSPrint("Vista RestoreBlizzardFrame failed: " .. tostring(err)) end
+    if not ok and addon.HSPrint then addon.HSPrint("Presence RestoreBlizzardFrame failed: " .. tostring(err)) end
     suppressedFrames[frame] = nil
     originalParents[frame] = nil
     originalPoints[frame] = nil
@@ -71,8 +71,9 @@ local function SuppressBlizzard()
     KillBlizzardFrame(ObjectiveTrackerBonusBannerFrame)
     KillBlizzardFrame(EventToastManagerFrame)
 
-    if WorldQuestCompleteBannerFrame then
-        KillBlizzardFrame(WorldQuestCompleteBannerFrame)
+    local wqFrame = WorldQuestCompleteBannerFrame or _G["WorldQuestCompleteBannerFrame"]
+    if wqFrame then
+        KillBlizzardFrame(wqFrame)
     end
 end
 
@@ -83,16 +84,17 @@ local function RestoreBlizzard()
     RestoreBlizzardFrame(LevelUpDisplay)
     RestoreBlizzardFrame(BossBanner)
     RestoreBlizzardFrame(ObjectiveTrackerBonusBannerFrame)
-    RestoreBlizzardFrame(EventToastManagerFrame)
-    RestoreBlizzardFrame(WorldQuestCompleteBannerFrame)
+    local wqFrame = WorldQuestCompleteBannerFrame or _G["WorldQuestCompleteBannerFrame"]
+    if wqFrame then RestoreBlizzardFrame(wqFrame) end
 end
 
 local function KillWorldQuestBanner()
-    if WorldQuestCompleteBannerFrame then
-        KillBlizzardFrame(WorldQuestCompleteBannerFrame)
+    local frame = WorldQuestCompleteBannerFrame or _G["WorldQuestCompleteBannerFrame"]
+    if frame then
+        KillBlizzardFrame(frame)
     end
 end
 
-addon.Vista.SuppressBlizzard = SuppressBlizzard
-addon.Vista.RestoreBlizzard = RestoreBlizzard
-addon.Vista.KillWorldQuestBanner = KillWorldQuestBanner
+addon.Presence.SuppressBlizzard = SuppressBlizzard
+addon.Presence.RestoreBlizzard = RestoreBlizzard
+addon.Presence.KillWorldQuestBanner = KillWorldQuestBanner

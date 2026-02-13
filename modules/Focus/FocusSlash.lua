@@ -5,9 +5,7 @@
 
 local addon = _G.HorizonSuite
 if not addon then return end
-local HSPrint = addon.HSPrint or function(msg)
-    print("|cFF00CCFFHorizon Suite - Focus:|r " .. tostring(msg or ""))
-end
+local HSPrint = addon.HSPrint or function(msg) print("|cFF00CCFFHorizon Suite - Focus:|r " .. tostring(msg or "")) end
 
 -- ============================================================================
 -- SLASH COMMANDS

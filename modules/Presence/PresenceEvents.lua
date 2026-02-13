@@ -1,13 +1,13 @@
 --[[
-    Horizon Suite - Vista - Event Dispatch
+    Horizon Suite - Presence - Event Dispatch
     Zone changes, level up, boss emotes, achievements, quest events.
 ]]
 
 local addon = _G.HorizonSuite
-if not addon or not addon.Vista then return end
+if not addon or not addon.Presence then return end
 
 -- ============================================================================
--- QUEST TEXT DETECTION (used by VistaErrors and here)
+-- QUEST TEXT DETECTION (used by PresenceErrors and here)
 -- ============================================================================
 
 local function IsQuestText(msg)
@@ -20,7 +20,7 @@ local function IsQuestText(msg)
         or msg:find("Complete")
 end
 
-addon.Vista.IsQuestText = IsQuestText
+addon.Presence.IsQuestText = IsQuestText
 
 -- ============================================================================
 -- EVENT FRAME
@@ -29,7 +29,7 @@ addon.Vista.IsQuestText = IsQuestText
 local eventFrame = CreateFrame("Frame")
 local eventsRegistered = false
 
-local VISTA_EVENTS = {
+local PRESENCE_EVENTS = {
     "ADDON_LOADED",
     "ZONE_CHANGED",
     "ZONE_CHANGED_INDOORS",
@@ -43,14 +43,20 @@ local VISTA_EVENTS = {
 }
 
 local function OnAddonLoaded(addonName)
-    if addonName == "Blizzard_WorldQuestComplete" and addon.Vista.KillWorldQuestBanner then
-        addon.Vista.KillWorldQuestBanner()
-        eventFrame:UnregisterEvent("ADDON_LOADED")
+    if addonName == "Blizzard_WorldQuestComplete" and addon.Presence.KillWorldQuestBanner then
+        -- Defer so the addon has time to create WorldQuestCompleteBannerFrame
+        C_Timer.After(0, function()
+            addon.Presence.KillWorldQuestBanner()
+        end)
+        C_Timer.After(0.5, function()
+            addon.Presence.KillWorldQuestBanner()
+            eventFrame:UnregisterEvent("ADDON_LOADED")
+        end)
     end
 end
 
 local function OnPlayerLevelUp(_, level)
-    addon.Vista.QueueOrPlay("LEVEL_UP", "LEVEL UP", "You have reached level " .. (level or "??"))
+    addon.Presence.QueueOrPlay("LEVEL_UP", "LEVEL UP", "You have reached level " .. (level or "??"))
 end
 
 local function OnRaidBossEmote(_, msg, unitName)
@@ -61,20 +67,20 @@ local function OnRaidBossEmote(_, msg, unitName)
     formatted = formatted:gsub("|r", "")
     formatted = formatted:gsub("%%s", bossName)
     formatted = strtrim(formatted)
-    addon.Vista.QueueOrPlay("BOSS_EMOTE", bossName, formatted)
+    addon.Presence.QueueOrPlay("BOSS_EMOTE", bossName, formatted)
 end
 
 local function OnAchievementEarned(_, achID)
     local _, name = GetAchievementInfo(achID)
-    addon.Vista.QueueOrPlay("ACHIEVEMENT", "ACHIEVEMENT EARNED", name or "")
+    addon.Presence.QueueOrPlay("ACHIEVEMENT", "ACHIEVEMENT EARNED", name or "")
 end
 
 local function OnQuestAccepted(_, questID)
     if C_QuestLog and C_QuestLog.GetTitleForQuestID then
         local title = C_QuestLog.GetTitleForQuestID(questID) or "New Quest"
-        addon.Vista.QueueOrPlay("QUEST_ACCEPT", "QUEST ACCEPTED", title)
+        addon.Presence.QueueOrPlay("QUEST_ACCEPT", "QUEST ACCEPTED", title)
     else
-        addon.Vista.QueueOrPlay("QUEST_ACCEPT", "QUEST ACCEPTED", "New Quest")
+        addon.Presence.QueueOrPlay("QUEST_ACCEPT", "QUEST ACCEPTED", "New Quest")
     end
 end
 
@@ -85,36 +91,36 @@ local function OnQuestTurnedIn(_, questID)
             title = C_QuestLog.GetTitleForQuestID(questID) or title
         end
         if C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(questID) then
-            addon.Vista.QueueOrPlay("WORLD_QUEST", "WORLD QUEST", title)
+            addon.Presence.QueueOrPlay("WORLD_QUEST", "WORLD QUEST", title)
             return
         end
     end
-    addon.Vista.QueueOrPlay("QUEST_COMPLETE", "QUEST COMPLETE", title)
+    addon.Presence.QueueOrPlay("QUEST_COMPLETE", "QUEST COMPLETE", title)
 end
 
 local function OnUIInfoMessage(_, msgType, msg)
     if IsQuestText(msg) and not (msg and (msg:find("Quest Accepted") or msg:find("Accepted"))) then
-        addon.Vista.QueueOrPlay("QUEST_UPDATE", "QUEST UPDATE", msg or "")
+        addon.Presence.QueueOrPlay("QUEST_UPDATE", "QUEST UPDATE", msg or "")
     end
 end
 
 local function OnZoneChangedNewArea()
     local zone = GetZoneText() or "Unknown Zone"
     local sub  = GetSubZoneText() or ""
-    local wait = addon.Vista.DISCOVERY_WAIT or 0.15
+    local wait = addon.Presence.DISCOVERY_WAIT or 0.15
     C_Timer.After(wait, function()
-        if not addon:IsModuleEnabled("vista") then return end
-        local active = addon.Vista.active and addon.Vista.active()
-        local activeTitle = addon.Vista.activeTitle and addon.Vista.activeTitle()
-        local phase = addon.Vista.animPhase and addon.Vista.animPhase()
+        if not addon:IsModuleEnabled("presence") then return end
+        local active = addon.Presence.active and addon.Presence.active()
+        local activeTitle = addon.Presence.activeTitle and addon.Presence.activeTitle()
+        local phase = addon.Presence.animPhase and addon.Presence.animPhase()
         if active and activeTitle == zone and (phase == "hold" or phase == "entrance") then
-            addon.Vista.SoftUpdateSubtitle(sub)
-            if addon.Vista.pendingDiscovery then
-                addon.Vista.ShowDiscoveryLine()
-                addon.Vista.pendingDiscovery = nil
+            addon.Presence.SoftUpdateSubtitle(sub)
+            if addon.Presence.pendingDiscovery then
+                addon.Presence.ShowDiscoveryLine()
+                addon.Presence.pendingDiscovery = nil
             end
         else
-            addon.Vista.QueueOrPlay("ZONE_CHANGE", zone, sub)
+            addon.Presence.QueueOrPlay("ZONE_CHANGE", zone, sub)
         end
     end)
 end
@@ -123,20 +129,20 @@ local function OnZoneChanged()
     local sub = GetSubZoneText()
     if sub and sub ~= "" then
         local zone = GetZoneText() or ""
-        local wait = addon.Vista.DISCOVERY_WAIT or 0.15
+        local wait = addon.Presence.DISCOVERY_WAIT or 0.15
         C_Timer.After(wait, function()
-            if not addon:IsModuleEnabled("vista") then return end
-            local active = addon.Vista.active and addon.Vista.active()
-            local activeTitle = addon.Vista.activeTitle and addon.Vista.activeTitle()
-            local phase = addon.Vista.animPhase and addon.Vista.animPhase()
+            if not addon:IsModuleEnabled("presence") then return end
+            local active = addon.Presence.active and addon.Presence.active()
+            local activeTitle = addon.Presence.activeTitle and addon.Presence.activeTitle()
+            local phase = addon.Presence.animPhase and addon.Presence.animPhase()
             if active and activeTitle == zone and (phase == "hold" or phase == "entrance") then
-                addon.Vista.SoftUpdateSubtitle(sub)
-                if addon.Vista.pendingDiscovery then
-                    addon.Vista.ShowDiscoveryLine()
-                    addon.Vista.pendingDiscovery = nil
+                addon.Presence.SoftUpdateSubtitle(sub)
+                if addon.Presence.pendingDiscovery then
+                    addon.Presence.ShowDiscoveryLine()
+                    addon.Presence.pendingDiscovery = nil
                 end
             else
-                addon.Vista.QueueOrPlay("SUBZONE_CHANGE", zone, sub)
+                addon.Presence.QueueOrPlay("SUBZONE_CHANGE", zone, sub)
             end
         end)
     end
@@ -156,25 +162,25 @@ local eventHandlers = {
 }
 
 eventFrame:SetScript("OnEvent", function(self, event, ...)
-    if not addon:IsModuleEnabled("vista") then return end
+    if not addon:IsModuleEnabled("presence") then return end
     local fn = eventHandlers[event]
     if fn then fn(event, ...) end
 end)
 
-function addon.Vista.EnableEvents()
+function addon.Presence.EnableEvents()
     if eventsRegistered then return end
-    for _, evt in ipairs(VISTA_EVENTS) do
+    for _, evt in ipairs(PRESENCE_EVENTS) do
         eventFrame:RegisterEvent(evt)
     end
     eventsRegistered = true
 end
 
-function addon.Vista.DisableEvents()
+function addon.Presence.DisableEvents()
     if not eventsRegistered then return end
-    for _, evt in ipairs(VISTA_EVENTS) do
+    for _, evt in ipairs(PRESENCE_EVENTS) do
         eventFrame:UnregisterEvent(evt)
     end
     eventsRegistered = false
 end
 
-addon.Vista.eventFrame = eventFrame
+addon.Presence.eventFrame = eventFrame

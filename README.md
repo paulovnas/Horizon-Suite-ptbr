@@ -1,6 +1,6 @@
 # 🌌 Horizon Suite
 
-**Horizon Suite** is a core addon with pluggable modules. The **Focus** module is a cinematic overhaul of the World of Warcraft objective tracker—the first suite in the collection. The **Vista** module replaces default zone text, level-up, boss emotes, achievements, and quest notifications with high-fidelity cinematic displays. Designed for the Midnight era, it replaces static, cluttered lists with a fluid interface that grants you total agency over your goals. Additional suites will appear as modules in the same options panel.
+**Horizon Suite** is a core addon with pluggable modules: **Focus** (objective tracker) and **Presence** (zone text & notifications). Designed for the Midnight era—clean, cinematic, player-in-control. It replaces static, cluttered lists with a fluid interface that grants you total agency over your goals. Additional suites will appear as modules in the same options panel.
 
 <p align="center">
   <img width="400" alt="Horizon Suite Preview" src="https://github.com/user-attachments/assets/72072df2-7ba3-4205-a984-df561eaf3ed4" />
@@ -11,14 +11,14 @@
 ## 🧠 Intelligent Logic
 The systems driving your efficiency.
 
-* **Spatial Awareness** – Automatically filters quests by zone and floats nearby objectives to the top. Tracks sub-zones and micro-dungeons instantly without requiring a map refresh. The "Current Zone" (Nearby) grouping can be toggled on or off via keybind, `/horizon nearby`, or Content options.
+* **Spatial Awareness** – Automatically filters quests by zone and floats nearby objectives to the top. Tracks sub-zones and micro-dungeons instantly without requiring a map refresh. The Nearby (Current Zone) grouping can be toggled on or off via keybind, `/horizon nearby`, or Display → List.
 * **Dynamic Scanning** – Surfaces active Scenarios, Delves, and World Events in dedicated, high-priority sections. Includes support for cinematic progress bars, timers, and difficulty tiers.
 * **Rare Boss Tracker** – Scans for nearby vignettes, allowing you to super-track rares with a single click and optional audio alerts.
 * **Achievement Tracking** – Tracked achievements appear in a dedicated Achievements section. Left-click opens the achievement panel; right-click removes it from tracking. Toggle visibility in Features → Achievements. Use "Show achievement icons" to toggle achievement icons independently of quest type icons.
-* **Live Sync** – World Quests, Dailies, and Weeklies update dynamically so you never miss a pickup. The world quest list is re-evaluated when you move between zones.
+* **Live Sync** – World Quests, Dailies, and Weeklies update dynamically so you never miss a pickup. Dailies available to accept but not yet accepted show an "— Available" label. Dungeon objectives are supported and appear in the tracker. The world quest list is re-evaluated when you move between zones.
 * **Secure Quest Items** – High-performance quest item buttons built on secure templates, ensuring they work flawlessly mid-fight without UI errors.
 * **ATT Integration** – Full native support for **All The Things**, displaying collection data directly within your objectives.
-* **Vista Notifications** – Cinematic zone text, subzone changes, and "Discovered" lines. Level-up, boss emotes, achievements, quest accept/complete/update, and world quest banners appear as styled notifications with priority queueing and smooth entrance/exit animations. Enable in Modules → Enable Vista module.
+* **Presence Notifications** – Cinematic zone text, subzone changes, and "Discovered" lines. Level-up, boss emotes, achievements, quest accept/complete/update, and world quest banners appear as styled notifications with priority queueing and smooth entrance/exit animations. Enable in Modules → Enable Presence module.
 
 ---
 
@@ -38,7 +38,7 @@ Built for the heat of gameplay.
 
 * **Hide in Combat** – Maintain total focus during encounters. The tracker can be set to automatically vanish the moment you enter combat, clearing your screen for boss mechanics and reappearing instantly once the fight is over.
 * **Mythic+ Integration** – Cinematic banner for dungeon name, keystone level, timer, completion %, and affixes. Hover the banner to see detailed modifier descriptions.
-* **Instance Visibility** – Granular control over where the tracker appears. Choose to show or hide the interface specifically for Dungeons, Raids, Battlegrounds, or Arenas.
+* **Instance Visibility** – Granular control over where the tracker appears. Choose to show or hide the interface specifically for Dungeons, Raids, Battlegrounds, or Arenas. Filter by zone to hide quests outside your current zone entirely.
 * **Compact & Minimal Modes** – Optimize your screen real estate with adjustable spacing, "Super-Minimal" headers (hides the OBJECTIVES header and quest count for a pure text list), and backdrop opacity controls.
 
 ---
@@ -56,12 +56,12 @@ Built for the heat of gameplay.
 | `/horizon reset` | Clear test data and return to live objectives. |
 | `/horizon resetpos` | Snap the tracker back to its default screen position. |
 | `/horizon mplusdebug` | Toggle the Mythic+ block preview with example timer, completion %, and affixes so you can tune its appearance outside a dungeon. |
-| `/horizon vista` | Vista test commands. Use `zone`, `discover`, `level`, `boss`, `ach`, `quest`, `wq`, `accept`, `update`, or `all` for a demo reel. |
+| `/horizon presence` | Presence test commands. Use `zone`, `discover`, `level`, `boss`, `ach`, `quest`, `wq`, `accept`, `update`, or `all` for a demo reel. |
 
 ### 🎛️ Settings Panel
 
 * **Cinematic Options Panel** – Modern, minimalistic design with soft edges, subtle dividers, and a dark low-contrast palette. The search bar features a spyglass icon, integrated clear button, and focus-state styling.
-* **Organized Configuration** – Settings are grouped into nine categories: **Modules** (enable or disable each suite; Focus is the objective tracker), **Layout** (panel behaviour, dimensions), **Visibility** (instance, combat, filtering), **Display** (header, list options), **Features** (achievements, rare bosses, floating quest item, Mythic+, scenario & Delve), **Typography** (font, sizes, outline, text case, shadow), **Appearance** (panel backdrop/border, highlight), **Colors** (per-category colours with collapsible groups and per-group reset buttons; Grouping Overrides for Current Zone and Ready to Turn in; global colours), and **Organization** (focus order, sort mode, behaviour).
+* **Organized Configuration** – Settings are grouped into nine categories: **Modules** (enable or disable each suite; Focus is the objective tracker), **Layout** (panel behaviour, dimensions), **Visibility** (instance, combat, filtering), **Display** (header, list options), **Features** (achievements, rare bosses, floating quest item, Mythic+, scenario & Delve), **Typography** (font, sizes, outline, text case, shadow), **Appearance** (panel backdrop/border, highlight), **Colors** (per-category colours with collapsible groups and per-group reset buttons; Grouping Overrides for Current Zone and Ready to Turn in; global colours), and **Organization** (Focus category order via drag-and-drop; Focus sort mode: Alphabetical, Quest Type, Zone, or Quest Level; behaviour toggles: Require Ctrl, Animations, Objective progress flash). See in-game options for the full list.
 * **Smart Search** – Use the **search bar** to find any setting—type at least two characters to see matching results, then click a result to jump directly to that option. Press Escape to clear the search.
 * **Key Bind & Visibility Hooks** – Key bindings for **Collapse Tracker** and **Toggle Nearby Group** can be set under *Key Bindings → Horizon Suite*. The option "Show Nearby (Current Zone) group" in Display → List controls the same Nearby grouping. "Show category headers when collapsed" (Display → List) keeps section headers (Campaign, World Quests, etc.) visible when the tracker is collapsed; click a header to expand that category.
 
@@ -81,7 +81,24 @@ When **Require Ctrl for focus & remove** is enabled under **Options → Organiza
 
 ---
 
+## 🗺️ Roadmap
+
+Additional suites are planned as pluggable modules in the same spirit: clean, cinematic, and player-driven.
+
+* **Horizon Focus** — Quest Log
+* **Horizon Vista** — Minimap
+* **Horizon Yield** — Loot / Gathering Hub
+* **Horizon Presence** — Zone Text
+* **Horizon Pulse** — Combat Reports / Alerts
+* **Horizon Essence** — Unit Frames
+* **Horizon Insight** — Tooltips
+* **Horizon Verse** — Chat
+
+---
+
 ## 📥 Installation
+
+Requires World of Warcraft: Retail (The War Within or later).
 
 1. Download the latest release and extract the `HorizonSuite` folder.
 2. Place it in your `World of Warcraft\_retail_\Interface\AddOns\` directory.

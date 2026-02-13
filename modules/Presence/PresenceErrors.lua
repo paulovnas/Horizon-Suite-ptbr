@@ -1,10 +1,10 @@
 --[[
-    Horizon Suite - Vista - Error Frame & Alert Interception
+    Horizon Suite - Presence - Error Frame & Alert Interception
     UIErrorsFrame hook for "Discovered" and quest text. AlertFrame muting.
 ]]
 
 local addon = _G.HorizonSuite
-if not addon or not addon.Vista then return end
+if not addon or not addon.Presence then return end
 
 -- ============================================================================
 -- UIERRORSFRAME HOOK
@@ -15,16 +15,16 @@ local originalAddMessage = nil
 
 local function OnUIErrorsAddMessage(self, msg)
     if msg and msg:find("Discovered") then
-        addon.Vista.SetPendingDiscovery()
-        local phase = addon.Vista.animPhase and addon.Vista.animPhase()
-        if addon:IsModuleEnabled("vista") and phase and (phase == "entrance" or phase == "hold" or phase == "crossfade") then
-            addon.Vista.ShowDiscoveryLine()
-            addon.Vista.pendingDiscovery = nil
+        addon.Presence.SetPendingDiscovery()
+        local phase = addon.Presence.animPhase and addon.Presence.animPhase()
+        if addon:IsModuleEnabled("presence") and phase and (phase == "entrance" or phase == "hold" or phase == "crossfade") then
+            addon.Presence.ShowDiscoveryLine()
+            addon.Presence.pendingDiscovery = nil
         end
         if self.Clear then self:Clear() end
         return
     end
-    if addon.Vista.IsQuestText and addon.Vista.IsQuestText(msg) then
+    if addon.Presence.IsQuestText and addon.Presence.IsQuestText(msg) then
         if self.Clear then self:Clear() end
     end
 end
@@ -33,7 +33,7 @@ local function HookUIErrorsFrame()
     if uiErrorsHooked or not UIErrorsFrame then return end
     if hooksecurefunc then
         hooksecurefunc(UIErrorsFrame, "AddMessage", function(self, msg)
-            if not addon:IsModuleEnabled("vista") then return end
+            if not addon:IsModuleEnabled("presence") then return end
             OnUIErrorsAddMessage(self, msg)
         end)
         uiErrorsHooked = true
@@ -41,8 +41,8 @@ local function HookUIErrorsFrame()
 end
 
 local function UnhookUIErrorsFrame()
-    -- hooksecurefunc cannot be undone; we simply stop acting in the callback when Vista is disabled
-    -- The callback will remain but will no-op when addon:IsModuleEnabled("vista") is false
+    -- hooksecurefunc cannot be undone; we simply stop acting in the callback when Presence is disabled
+    -- The callback will remain but will no-op when addon:IsModuleEnabled("presence") is false
     uiErrorsHooked = false
 end
 
@@ -87,7 +87,7 @@ end
 -- EXPORTS
 -- ============================================================================
 
-addon.Vista.HookUIErrorsFrame = HookUIErrorsFrame
-addon.Vista.UnhookUIErrorsFrame = UnhookUIErrorsFrame
-addon.Vista.MuteAlerts = MuteAlerts
-addon.Vista.RestoreAlerts = RestoreAlerts
+addon.Presence.HookUIErrorsFrame = HookUIErrorsFrame
+addon.Presence.UnhookUIErrorsFrame = UnhookUIErrorsFrame
+addon.Presence.MuteAlerts = MuteAlerts
+addon.Presence.RestoreAlerts = RestoreAlerts

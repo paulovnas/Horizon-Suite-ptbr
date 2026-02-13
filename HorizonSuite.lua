@@ -115,6 +115,10 @@ function addon:EnsureModulesDB()
         -- Legacy install: default focus to enabled
         HorizonDB.modules.focus = { enabled = true }
     end
+    -- Migrate Vista module key to Presence (preserve enabled state for existing users)
+    if HorizonDB.modules.vista and not HorizonDB.modules.presence then
+        HorizonDB.modules.presence = { enabled = HorizonDB.modules.vista.enabled }
+    end
 end
 
 -- Binding display names for Key Bindings UI (must match Binding name in Bindings.xml exactly)

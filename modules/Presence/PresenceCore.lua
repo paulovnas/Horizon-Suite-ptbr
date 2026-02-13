@@ -1,5 +1,5 @@
 --[[
-    Horizon Suite - Vista - Core
+    Horizon Suite - Presence - Core
     Cinematic zone text and notification display. Frame, layers, animation engine,
     and public QueueOrPlay API. Ported from ModernZoneText.
 ]]
@@ -7,7 +7,7 @@
 local addon = _G.HorizonSuite
 if not addon then return end
 
-addon.Vista = addon.Vista or {}
+addon.Presence = addon.Presence or {}
 
 -- ============================================================================
 -- CONFIGURATION
@@ -239,10 +239,10 @@ end
 -- INIT & PUBLIC API
 -- ============================================================================
 
-function addon.Vista.Init()
+function addon.Presence.Init()
     if F then return end
 
-    F = CreateFrame("Frame", "HorizonSuiteVistaFrame", UIParent)
+    F = CreateFrame("Frame", "HorizonSuitePresenceFrame", UIParent)
     F:SetSize(FRAME_WIDTH, FRAME_HEIGHT)
     F:SetPoint("TOP", 0, FRAME_Y)
     F:Hide()
@@ -257,7 +257,7 @@ function addon.Vista.Init()
     activeTitle = nil
     queue = {}
     crossfadeStartAlpha = 1
-    addon.Vista.pendingDiscovery = nil
+    addon.Presence.pendingDiscovery = nil
 
     F:SetScript("OnUpdate", function(_, dt)
         if anim.phase == "idle" then return end
@@ -291,11 +291,11 @@ function addon.Vista.Init()
         end
     end)
 
-    addon.Vista.frame = F
-    addon.Vista.anim = anim
-    addon.Vista.active = function() return active end
-    addon.Vista.activeTitle = function() return activeTitle end
-    addon.Vista.animPhase = function() return anim.phase end
+    addon.Presence.frame = F
+    addon.Presence.anim = anim
+    addon.Presence.active = function() return active end
+    addon.Presence.activeTitle = function() return activeTitle end
+    addon.Presence.animPhase = function() return anim.phase end
 end
 
 PlayCinematic = function(typeName, title, subtitle)
@@ -329,10 +329,10 @@ PlayCinematic = function(typeName, title, subtitle)
     L.subText:ClearAllPoints()
     L.subText:SetPoint("TOP", L.divider, "BOTTOM", 0, -20)
 
-    if addon.Vista.pendingDiscovery and (typeName == "ZONE_CHANGE" or typeName == "SUBZONE_CHANGE") then
+    if addon.Presence.pendingDiscovery and (typeName == "ZONE_CHANGE" or typeName == "SUBZONE_CHANGE") then
         L.discoveryText:SetText("Discovered")
         L.discoveryShadow:SetText("Discovered")
-        addon.Vista.pendingDiscovery = nil
+        addon.Presence.pendingDiscovery = nil
     end
 
     active       = cfg
@@ -350,7 +350,7 @@ PlayCinematic = function(typeName, title, subtitle)
     F:Show()
 end
 
-function addon.Vista.SoftUpdateSubtitle(newSub)
+function addon.Presence.SoftUpdateSubtitle(newSub)
     if not curLayer then return end
     curLayer.subText:SetText(newSub or "")
     curLayer.subShadow:SetText(newSub or "")
@@ -359,7 +359,7 @@ function addon.Vista.SoftUpdateSubtitle(newSub)
     end
 end
 
-function addon.Vista.ShowDiscoveryLine()
+function addon.Presence.ShowDiscoveryLine()
     if not curLayer then return end
     curLayer.discoveryText:SetText("Discovered")
     curLayer.discoveryShadow:SetText("Discovered")
@@ -369,8 +369,8 @@ function addon.Vista.ShowDiscoveryLine()
     end
 end
 
-function addon.Vista.SetPendingDiscovery()
-    addon.Vista.pendingDiscovery = true
+function addon.Presence.SetPendingDiscovery()
+    addon.Presence.pendingDiscovery = true
 end
 
 local function interruptCurrent()
@@ -380,8 +380,8 @@ local function interruptCurrent()
     activeTitle = nil
 end
 
-function addon.Vista.QueueOrPlay(typeName, title, subtitle)
-    if not F then addon.Vista.Init() end
+function addon.Presence.QueueOrPlay(typeName, title, subtitle)
+    if not F then addon.Presence.Init() end
     local cfg = TYPES[typeName]
     if not cfg then return end
 
@@ -401,16 +401,16 @@ function addon.Vista.QueueOrPlay(typeName, title, subtitle)
     end
 end
 
-function addon.Vista.HideAndClear()
+function addon.Presence.HideAndClear()
     if not F then return end
     anim.phase  = "idle"
     active      = nil
     activeTitle = nil
     queue = {}
-    addon.Vista.pendingDiscovery = nil
+    addon.Presence.pendingDiscovery = nil
     resetLayer(curLayer)
     resetLayer(oldLayer)
     F:Hide()
 end
 
-addon.Vista.DISCOVERY_WAIT = 0.15
+addon.Presence.DISCOVERY_WAIT = 0.15
