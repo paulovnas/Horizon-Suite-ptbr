@@ -679,6 +679,9 @@ local function ToggleCollapse()
 
         addon.collapseAnimating = #visibleEntries > 0
         addon.collapseAnimStart = GetTime()
+        if addon.collapseAnimating and addon.EnsureFocusUpdateRunning then
+            addon.EnsureFocusUpdateRunning()
+        end
         if not addon.collapseAnimating then
             if showHeadersWhenCollapsed then
                 addon.FullLayout()
@@ -1013,10 +1016,20 @@ local function FullLayout()
         addon.UpdateFloatingQuestItem(quests)
         addon.UpdateHeaderQuestCount(#quests)
 
+        -- During panel collapse animation, skip full collapsed layout so section headers
+        -- stay visible; UpdateCollapseAnimations will call FullLayout when done.
+        if addon.collapseAnimating then
+            if #quests > 0 then
+                if addon.combatFadeState == "in" then addon.HS:SetAlpha(0) end
+                addon.HS:Show()
+            end
+            return
+        end
+
         if addon.GetDB("showSectionHeadersWhenCollapsed", false) then
             -- Collapsed-with-headers: show section headers only, no entries.
             local grouped = addon.SortAndGroupQuests(quests)
-            local showSections = #grouped > 1 and addon.GetDB("showSectionHeaders", true)
+            local showSections = #grouped >= 1 and addon.GetDB("showSectionHeaders", true)
 
             if showSections and #grouped > 0 then
                 scrollFrame:Show()

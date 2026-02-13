@@ -45,6 +45,10 @@ local function ReadTrackedAchievements()
             if not aOk or not name or name == "" then
                 name = "Achievement " .. tostring(achievementID)
             end
+            local isComplete = (completed == true) or (completed == 1)
+            if isComplete and not (addon.GetDB and addon.GetDB("showCompletedAchievements", false)) then
+                -- Skip completed achievements unless user opted in
+            else
             local achievementIcon = (icon and (type(icon) == "number" or (type(icon) == "string" and icon ~= ""))) and icon or nil
 
             local objectives = {}
@@ -78,7 +82,7 @@ local function ReadTrackedAchievements()
                 objectives    = objectives,
                 color         = achievementColor,
                 category      = "ACHIEVEMENT",
-                isComplete    = (completed == true) or (completed == 1),
+                isComplete    = isComplete,
                 isSuperTracked = false,
                 isNearby      = false,
                 zoneName      = nil,
@@ -88,6 +92,7 @@ local function ReadTrackedAchievements()
                 isTracked     = true,
                 achievementIcon = achievementIcon,
             }
+            end
         end
     end
 

@@ -4,6 +4,16 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [1.0.1] – 2026-02-13
+
+### Fixes
+
+- **Focus Tracker — completed achievements** — The tracker no longer clutters the list with achievements you’ve already finished. Completed achievements are hidden by default; you can turn on “Show completed achievements” in options if you want to see them.
+
+- **Focus Tracker — collapse** — Collapsing the tracker now behaves correctly: the collapse animation starts right away, section headers stay visible while it animates, and a single category still shows its header when collapsed.
+
+---
+
 ## [1.0.0] – 2026-02-13
 
 ### New Features
