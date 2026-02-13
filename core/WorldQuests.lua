@@ -112,22 +112,6 @@ local function GetNearbyQuestIDs()
         end
     end
 
-    -- Use cached zone WQ IDs for player map; only use parent's cache when we're in a subzone (Micro/Dungeon) so we don't pull in sibling zones from a broad parent cache.
-    if addon.zoneTaskQuestCache then
-        for i, checkMapID in ipairs(mapIDsToCheck) do
-            if i == 1 or (myMapType ~= nil and myMapType >= 4) then
-                local cached = addon.zoneTaskQuestCache[checkMapID]
-                if cached then
-                    for id, _ in pairs(cached) do
-                        if id then
-                            nearbySet[id] = true
-                            taskQuestOnlySet[id] = true
-                        end
-                    end
-                end
-            end
-        end
-    end
     return nearbySet, taskQuestOnlySet
 end
 
@@ -245,7 +229,6 @@ local function RemoveWorldQuestWatch(questID)
     end
 end
 
-addon.zoneTaskQuestCache = addon.zoneTaskQuestCache or {}
 addon.GetNearbyQuestIDs = GetNearbyQuestIDs
 addon.GetWorldAndCallingQuestIDsToShow = GetWorldAndCallingQuestIDsToShow
 addon.GetWeekliesAndDailiesInZone = GetWeekliesAndDailiesInZone

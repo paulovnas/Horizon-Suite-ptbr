@@ -42,6 +42,7 @@ local function UpdateMapCheck(dt)
         local mapID = C_Map.GetBestMapForUnit("player")
         if mapID and mapID ~= addon.lastPlayerMapID then
             addon.lastPlayerMapID = mapID
+            if addon.zoneTaskQuestCache then wipe(addon.zoneTaskQuestCache) end
             if addon.ScheduleRefresh then addon.ScheduleRefresh() end
         elseif not addon.lastPlayerMapID and mapID then
             addon.lastPlayerMapID = mapID

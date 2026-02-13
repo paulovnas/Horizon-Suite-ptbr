@@ -14,7 +14,7 @@ The systems driving your efficiency.
 * **Spatial Awareness** – Automatically filters quests by zone and floats nearby objectives to the top. Tracks sub-zones and micro-dungeons instantly without requiring a map refresh. The "Current Zone" (Nearby) grouping can be toggled on or off via keybind, `/horizon nearby`, or Content options.
 * **Dynamic Scanning** – Surfaces active Scenarios, Delves, and World Events in dedicated, high-priority sections. Includes support for cinematic progress bars, timers, and difficulty tiers.
 * **Rare Boss Tracker** – Scans for nearby vignettes, allowing you to super-track rares with a single click and optional audio alerts.
-* **Live Sync** – World Quests, Dailies, and Weeklies update dynamically. Unaccepted quests are marked as "Available" so you never miss a pickup.
+* **Live Sync** – World Quests, Dailies, and Weeklies update dynamically so you never miss a pickup. The world quest list is re-evaluated when you move between zones.
 * **Secure Quest Items** – High-performance quest item buttons built on secure templates, ensuring they work flawlessly mid-fight without UI errors.
 * **ATT Integration** – Full native support for **All The Things**, displaying collection data directly within your objectives.
 
@@ -37,7 +37,7 @@ Built for the heat of gameplay.
 * **Hide in Combat** – Maintain total focus during encounters. The tracker can be set to automatically vanish the moment you enter combat, clearing your screen for boss mechanics and reappearing instantly once the fight is over.
 * **Mythic+ Integration** – Clean, high-readability blocks for M+ timers, completion percentages, and active affixes with customizable positioning.
 * **Instance Visibility** – Granular control over where the tracker appears. Choose to show or hide the interface specifically for Dungeons, Raids, Battlegrounds, or Arenas.
-* **Compact & Minimal Modes** – Optimize your screen real estate with adjustable spacing, "Super-Minimal" headers, and backdrop opacity controls.
+* **Compact & Minimal Modes** – Optimize your screen real estate with adjustable spacing, "Super-Minimal" headers (hides the OBJECTIVES header and quest count for a pure text list), and backdrop opacity controls.
 
 ---
 

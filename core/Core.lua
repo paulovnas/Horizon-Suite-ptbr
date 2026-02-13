@@ -479,7 +479,7 @@ function addon.UpdateHeaderQuestCount(questCount)
     local countStr = (questCount and questCount > 0) and (questCount .. "/" .. maxQ) or ""
     addon.countText:SetText(countStr)
     addon.countShadow:SetText(countStr)
-    if addon.GetDB("showQuestCount", true) then
+    if addon.GetDB("showQuestCount", true) and not addon.GetDB("hideObjectivesHeader", false) then
         addon.countText:Show()
         addon.countShadow:Show()
     else

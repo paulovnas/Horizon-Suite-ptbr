@@ -402,10 +402,6 @@ local function PopulateEntry(entry, questData)
     if questData.category == "DELVES" and type(questData.delveTier) == "number" then
         displayTitle = displayTitle .. (" (Tier %d)"):format(questData.delveTier)
     end
-    -- Indicator for quests that are available to accept but not yet accepted (not for rares, scenario, delve, or dungeon).
-    if not questData.isAccepted and questData.category ~= "RARE" and questData.category ~= "SCENARIO" and questData.category ~= "DELVES" and questData.category ~= "DUNGEON" then
-        displayTitle = displayTitle .. "  — Available"
-    end
     displayTitle = addon.ApplyTextCase(displayTitle, "questTitleCase", "proper")
     entry.titleText:SetText(displayTitle)
     entry.titleShadow:SetText(displayTitle)

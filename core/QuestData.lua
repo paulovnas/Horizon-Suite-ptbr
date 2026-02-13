@@ -93,7 +93,6 @@ local function GetQuestColor(category)
     local db = HorizonDB and HorizonDB.questColors
     if db then
         if db[category] then return db[category] end
-        if category == "IMPORTANT" and db.CAMPAIGN then return db.CAMPAIGN end
         if category == "CALLING" and db.WORLD then return db.WORLD end
     end
     return addon.QUEST_COLORS[category] or addon.QUEST_COLORS.DEFAULT
@@ -422,8 +421,8 @@ local function SortAndGroupQuests(quests)
         elseif q.isNearby and not q.isAccepted then
             groups["AVAILABLE"][#groups["AVAILABLE"] + 1] = q
         elseif q.isNearby and q.isAccepted then
-            -- Accepted quests that are in the current zone. When showNearbyGroup is off, use their real category (e.g. daily → DAILY).
-            if addon.GetDB("showNearbyGroup", true) then
+            -- Accepted quests that are in the current zone. In Zone overtakes Ready to Turn in: complete quests in zone always go to NEARBY. When showNearbyGroup is off, other in-zone quests use their real category (e.g. daily → DAILY).
+            if addon.GetDB("showNearbyGroup", true) or q.category == "COMPLETE" then
                 groups["NEARBY"][#groups["NEARBY"] + 1] = q
             else
                 local grp = addon.CATEGORY_TO_GROUP[q.category] or "DEFAULT"

@@ -102,7 +102,7 @@ local TEXT_CASE_OPTIONS = {
     { "Proper", "proper" },
 }
 -- Use addon.QUEST_COLORS from Config as single source for quest type colors.
-local COLOR_KEYS_ORDER = { "DEFAULT", "CAMPAIGN", "LEGENDARY", "WORLD", "DELVES", "SCENARIO", "WEEKLY", "DAILY", "COMPLETE", "RARE" }
+local COLOR_KEYS_ORDER = { "DEFAULT", "CAMPAIGN", "IMPORTANT", "LEGENDARY", "WORLD", "DELVES", "SCENARIO", "WEEKLY", "DAILY", "COMPLETE", "RARE" }
 local ZONE_COLOR_DEFAULT = { 0.55, 0.65, 0.75 }
 local OBJ_COLOR_DEFAULT = { 0.78, 0.78, 0.78 }
 local OBJ_DONE_COLOR_DEFAULT = { 0.30, 0.80, 0.30 }

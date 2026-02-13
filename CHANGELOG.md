@@ -6,7 +6,9 @@ All notable changes to Horizon Suite - Focus are documented here.
 
 ## [Unreleased]
 
-(No changes yet.)
+### Improvements
+
+- **World quest map fallback removed** — World quests are now sourced only from live APIs (`GetTasksTable`, `C_QuestLog.GetQuestsOnMap`, `C_TaskQuest` map APIs, and waypoint fallback) without requiring the world map to be open. The previous map-open cache and heartbeat fallback have been removed.
 
 ---
 
