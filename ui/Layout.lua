@@ -711,6 +711,98 @@ function addon.StartGroupCollapse(groupKey)
     end
 end
 
+-- Visual-only collapse: same staggered slide-out animation, but do not persist
+-- category collapsed state. Used when toggling the Nearby group off so that
+-- when the user turns it back on the section is not collapsed.
+function addon.StartGroupCollapseVisual(groupKey)
+    if not groupKey then return end
+
+    local entries = {}
+    for i = 1, addon.POOL_SIZE do
+        local e = pool[i]
+        if e.groupKey == groupKey
+           and (e.questID or e.entryKey)
+           and (e.animState == "active" or e.animState == "fadein") then
+            entries[#entries + 1] = e
+        end
+    end
+
+    if #entries == 0 then
+        if addon.FullLayout then addon.FullLayout() end
+        return
+    end
+
+    table.sort(entries, function(a, b)
+        return a.finalY > b.finalY
+    end)
+
+    for i, e in ipairs(entries) do
+        e.animState     = "collapsing"
+        e.animTime      = 0
+        e.collapseDelay = (i - 1) * addon.ENTRY_STAGGER
+    end
+
+    addon.groupCollapses[groupKey] = GetTime()
+end
+
+-- Trigger fade-in for entries currently in the NEARBY group (used when turning Nearby group on with animations).
+function addon.TriggerNearbyEntriesFadeIn()
+    local entries = {}
+    for i = 1, addon.POOL_SIZE do
+        local e = pool[i]
+        if e.groupKey == "NEARBY" and (e.questID or e.entryKey) and (e.animState == "active" or e.animState == "fadein") then
+            entries[#entries + 1] = e
+        end
+    end
+    table.sort(entries, function(a, b)
+        return (a.finalY or 0) > (b.finalY or 0)
+    end)
+    for i, e in ipairs(entries) do
+        e.animState     = "fadein"
+        e.animTime      = 0
+        e.staggerDelay  = (i - 1) * addon.ENTRY_STAGGER
+        e:SetAlpha(0)
+    end
+end
+
+-- Two-phase "turn Nearby on": fade out entries from their current category, then reflow and fade them in under NEARBY.
+-- Call with showNearbyGroup already set to true.
+function addon.StartNearbyTurnOnTransition()
+    local quests = addon.ReadTrackedQuests()
+    local grouped = addon.SortAndGroupQuests(quests)
+    local nearbyKeys = {}
+    for _, grp in ipairs(grouped) do
+        if grp.key == "NEARBY" then
+            for _, q in ipairs(grp.quests) do
+                nearbyKeys[q.entryKey or q.questID] = true
+            end
+            break
+        end
+    end
+
+    local slideOutCount = 0
+    for i = 1, addon.POOL_SIZE do
+        local e = pool[i]
+        local key = e.questID or e.entryKey
+        if key and nearbyKeys[key] and e.groupKey ~= "NEARBY" and (e.animState == "active" or e.animState == "fadein") then
+            e.animState = "slideout"
+            e.animTime  = 0
+            slideOutCount = slideOutCount + 1
+        end
+    end
+
+    if slideOutCount > 0 then
+        addon.onSlideOutCompleteCallback = function()
+            addon.onSlideOutCompleteCallback = nil
+            if addon.FullLayout then addon.FullLayout() end
+            if addon.TriggerNearbyEntriesFadeIn then addon.TriggerNearbyEntriesFadeIn() end
+        end
+    else
+        if addon.FullLayout then addon.FullLayout() end
+        if addon.TriggerNearbyEntriesFadeIn then addon.TriggerNearbyEntriesFadeIn() end
+    end
+end
+
 local headerBtn = CreateFrame("Button", nil, addon.HS)
 headerBtn:SetPoint("TOPLEFT", addon.HS, "TOPLEFT", 0, 0)
 headerBtn:SetPoint("TOPRIGHT", addon.HS, "TOPRIGHT", 0, 0)
@@ -741,9 +833,30 @@ collapseKeybindBtn:RegisterForClicks("AnyUp")
 
 local nearbyToggleKeybindBtn = CreateFrame("Button", "HSNearbyToggleButton", nil)
 nearbyToggleKeybindBtn:SetScript("OnClick", function()
-    addon.SetDB("showNearbyGroup", not addon.GetDB("showNearbyGroup", true))
-    if _G.HorizonSuite_RequestRefresh then _G.HorizonSuite_RequestRefresh() end
-    if _G.HorizonSuite_FullLayout and not InCombatLockdown() then _G.HorizonSuite_FullLayout() end
+    local newShow = not addon.GetDB("showNearbyGroup", true)
+    addon.SetDB("showNearbyGroup", newShow)
+    if InCombatLockdown() then
+        if _G.HorizonSuite_RequestRefresh then _G.HorizonSuite_RequestRefresh() end
+        if _G.HorizonSuite_FullLayout then _G.HorizonSuite_FullLayout() end
+        return
+    end
+    if newShow then
+        -- Turning Nearby group on: with animations, fade out from current category then fade in under NEARBY; else reflow once.
+        if addon.GetDB("animations", true) and addon.StartNearbyTurnOnTransition then
+            addon.StartNearbyTurnOnTransition()
+        else
+            if _G.HorizonSuite_RequestRefresh then _G.HorizonSuite_RequestRefresh() end
+            if _G.HorizonSuite_FullLayout then _G.HorizonSuite_FullLayout() end
+        end
+    else
+        -- Turning Nearby group off: animate NEARBY entries collapsing out, then FullLayout runs on completion.
+        if addon.GetDB("animations", true) and addon.StartGroupCollapseVisual then
+            addon.StartGroupCollapseVisual("NEARBY")
+        else
+            if _G.HorizonSuite_RequestRefresh then _G.HorizonSuite_RequestRefresh() end
+            if _G.HorizonSuite_FullLayout then _G.HorizonSuite_FullLayout() end
+        end
+    end
 end)
 nearbyToggleKeybindBtn:RegisterForClicks("AnyUp")
 

@@ -173,6 +173,26 @@ local function UpdateEntryAnimations(dt, useAnim)
             end
             anyAnimating = true
 
+        elseif e.animState == "slideout" then
+            -- Horizontal slide out (same as collapse, no delay). Used for e.g. nearby turn-on transition.
+            e.animTime = e.animTime + dt
+            if not useAnim then
+                addon.ClearEntry(e)
+            else
+                local p = math.min(e.animTime / addon.COLLAPSE_DUR, 1)
+                local ep = addon.easeIn(p)
+                e:SetAlpha(1 - ep)
+                if not InCombatLockdown() then
+                    local slideX = ep * addon.SLIDE_OUT_X
+                    e:ClearAllPoints()
+                    e:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", e.finalX + slideX, e.finalY)
+                end
+                if p >= 1 then
+                    addon.ClearEntry(e)
+                end
+            end
+            anyAnimating = true
+
         elseif e.animState == "collapsing" then
             e.animTime = e.animTime + dt
             if not useAnim and e.animTime >= (e.collapseDelay or 0) then
@@ -202,6 +222,16 @@ local function UpdateEntryAnimations(dt, useAnim)
             e.flash:SetColorTexture(1, 1, 1, fp * 0.12)
             anyAnimating = true
         end
+    end
+    -- When all "slideout" entries have finished, run the completion callback (e.g. nearby turn-on phase 2).
+    local stillSlideOut = 0
+    for i = 1, addon.POOL_SIZE do
+        if pool[i].animState == "slideout" then stillSlideOut = stillSlideOut + 1 end
+    end
+    if stillSlideOut == 0 and addon.onSlideOutCompleteCallback then
+        local fn = addon.onSlideOutCompleteCallback
+        addon.onSlideOutCompleteCallback = nil
+        fn()
     end
     return anyAnimating
 end
