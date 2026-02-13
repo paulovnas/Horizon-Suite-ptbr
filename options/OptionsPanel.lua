@@ -328,7 +328,7 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                     h = h + OptionGap + allGroupFrames[i]:GetHeight()
                 end
                 h = h + SectionGap + RowHeights.sectionLabel     -- Other colors header
-                h = h + 2 * (GROUP_ROW_GAP + GROUP_ROW_H)       -- 2 other rows
+                h = h + 1 * (GROUP_ROW_GAP + GROUP_ROW_H)       -- 1 other row (Highlight)
                 currentCard:SetHeight(h + CardPadding)
                 currentCard.contentHeight = h
             end
@@ -556,8 +556,7 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             currentCard.contentHeight = currentCard.contentHeight + SectionGap + RowHeights.sectionLabel
 
             local otherDefs = {
-                { dbKey = "objectiveDoneColor", label = "Completed objective", def = addon.OBJ_DONE_COLOR or { 0.30, 0.80, 0.30 } },
-                { dbKey = "highlightColor",     label = "Highlight",           def = (addon.HIGHLIGHT_COLOR_DEFAULT or { 0.4, 0.7, 1 }) },
+                { dbKey = "highlightColor", label = "Highlight", def = (addon.HIGHLIGHT_COLOR_DEFAULT or { 0.4, 0.7, 1 }) },
             }
             local otherRows = {}
             for _, od in ipairs(otherDefs) do

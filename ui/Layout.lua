@@ -95,8 +95,8 @@ local function ApplyObjectives(entry, questData, textWidth, prevAnchor, totalH, 
 
     local cat = (effectiveCat ~= nil and effectiveCat ~= "") and effectiveCat or questData.category
     local objColor = (addon.GetObjectiveColor and addon.GetObjectiveColor(cat)) or addon.OBJ_COLOR or c
-    local doneColor = addon.GetDB("objectiveDoneColor", nil)
-    if not doneColor or #doneColor < 3 then doneColor = addon.OBJ_DONE_COLOR end
+    -- Completed objectives use effective category colour (respects override toggle)
+    local doneColor = (addon.GetObjectiveColor and addon.GetObjectiveColor(cat)) or addon.OBJ_DONE_COLOR
 
     local shownObjs = 0
     for j = 1, addon.MAX_OBJECTIVES do
@@ -406,7 +406,7 @@ local function PopulateEntry(entry, questData, groupKey)
     displayTitle = addon.ApplyTextCase(displayTitle, "questTitleCase", "proper")
     entry.titleText:SetText(displayTitle)
     entry.titleShadow:SetText(displayTitle)
-    local effectiveCat = (addon.GetEffectiveColorCategory and addon.GetEffectiveColorCategory(questData.category, groupKey)) or questData.category
+    local effectiveCat = (addon.GetEffectiveColorCategory and addon.GetEffectiveColorCategory(questData.category, groupKey, questData.baseCategory)) or questData.category
     local c = (addon.GetTitleColor and addon.GetTitleColor(effectiveCat)) or questData.color
     if questData.isDungeonQuest and not questData.isTracked then
         c = { c[1] * 0.65, c[2] * 0.65, c[3] * 0.65 }

@@ -52,11 +52,8 @@ end
 -- Single source of truth: C_QuestInfoSystem.GetQuestClassification + frequency + IsQuestWorldQuest.
 -- Order: COMPLETE (state) -> WORLD (WQ) -> Classification (Calling, Campaign, Recurring, Important, Legendary) -> Frequency (Weekly) -> DEFAULT.
 -- Meta and Questline are ignored and fall through to frequency/DEFAULT.
-local function GetQuestCategory(questID)
+local function GetQuestBaseCategory(questID)
     if not questID or questID <= 0 then return "DEFAULT" end
-    if C_QuestLog and C_QuestLog.IsComplete and C_QuestLog.IsComplete(questID) then
-        return "COMPLETE"
-    end
     if IsQuestWorldQuest(questID) then
         return "WORLD"
     end
@@ -87,6 +84,14 @@ local function GetQuestCategory(questID)
         end
     end
     return "DEFAULT"
+end
+
+local function GetQuestCategory(questID)
+    if not questID or questID <= 0 then return "DEFAULT" end
+    if C_QuestLog and C_QuestLog.IsComplete and C_QuestLog.IsComplete(questID) then
+        return "COMPLETE"
+    end
+    return GetQuestBaseCategory(questID)
 end
 
 -- ---------------------------------------------------------------------------
@@ -131,12 +136,16 @@ local function GetColorMatrix()
 end
 
 -- When override toggles are on, Completed and Current Zone sections use their row colours for all elements.
-local function GetEffectiveColorCategory(category, groupKey)
+-- When off, COMPLETE/NEARBY use baseCategory (the underlying quest type) for colours.
+local function GetEffectiveColorCategory(category, groupKey, baseCategory)
     if not category then return groupKey or "DEFAULT" end
     local cm = GetColorMatrix()
     local ov = cm and cm.overrides and type(cm.overrides) == "table" and cm.overrides or {}
     if groupKey == "COMPLETE" and ov.useCompletedOverride then
         return "COMPLETE"
+    end
+    if groupKey == "COMPLETE" and baseCategory then
+        return baseCategory  -- Use underlying category when override is off
     end
     if groupKey == "NEARBY" and ov.useCurrentZoneOverride then
         return "NEARBY"
@@ -323,6 +332,7 @@ local function ReadTrackedQuests()
         if scenarioRewardQuestIDs[questID] then return end
         seen[questID] = true
         local category   = opts.forceCategory or GetQuestCategory(questID)
+        local baseCategory = (category == "COMPLETE") and GetQuestBaseCategory(questID) or nil
         local title      = C_QuestLog.GetTitleForQuestID(questID) or "..."
         local objectives = C_QuestLog.GetQuestObjectives(questID) or {}
         local color      = GetQuestColor(category)
@@ -367,6 +377,7 @@ local function ReadTrackedQuests()
             objectives     = objectives,
             color          = color,
             category       = category,
+            baseCategory   = baseCategory,
             isComplete     = isComplete,
             isSuperTracked = isSuper,
             isNearby       = isNearby,
