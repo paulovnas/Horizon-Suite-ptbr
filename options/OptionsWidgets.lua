@@ -102,13 +102,6 @@ function OptionsWidgets_CreateToggleSwitch(parent, labelText, description, get, 
 
     local btn = CreateFrame("Button", nil, row)
     btn:SetAllPoints(track)
-    btn:SetScript("OnClick", function()
-        local next = not get()
-        set(next)
-        row.animStart = GetTime()
-        row.animFrom = row.thumbPos
-        row.animTo = next and 1 or 0
-    end)
 
     row.thumbPos = get() and 1 or 0
     row.animStart = nil
@@ -123,24 +116,37 @@ function OptionsWidgets_CreateToggleSwitch(parent, labelText, description, get, 
         trackFill:SetWidth(t * fillW)
     end
 
-    track:SetScript("OnUpdate", function()
-        if row.animStart then
-            local elapsed = GetTime() - row.animStart
-            if elapsed >= TOGGLE_ANIM_DUR then
-                row.thumbPos = row.animTo
-                row.animStart = nil
-                updateVisuals(row.thumbPos)
-                return
-            end
-            row.thumbPos = row.animFrom + (row.animTo - row.animFrom) * easeOut(elapsed / TOGGLE_ANIM_DUR)
+    local function toggleOnUpdate()
+        if not row.animStart then
+            track:SetScript("OnUpdate", nil)
+            return
         end
+        local elapsed = GetTime() - row.animStart
+        if elapsed >= TOGGLE_ANIM_DUR then
+            row.thumbPos = row.animTo
+            row.animStart = nil
+            updateVisuals(row.thumbPos)
+            track:SetScript("OnUpdate", nil)
+            return
+        end
+        row.thumbPos = row.animFrom + (row.animTo - row.animFrom) * easeOut(elapsed / TOGGLE_ANIM_DUR)
         updateVisuals(row.thumbPos)
+    end
+
+    btn:SetScript("OnClick", function()
+        local next = not get()
+        set(next)
+        row.animStart = GetTime()
+        row.animFrom = row.thumbPos
+        row.animTo = next and 1 or 0
+        track:SetScript("OnUpdate", toggleOnUpdate)
     end)
 
     function row:Refresh()
         local on = get()
         row.thumbPos = on and 1 or 0
         row.animStart = nil
+        track:SetScript("OnUpdate", nil)
         updateVisuals(row.thumbPos)
     end
 

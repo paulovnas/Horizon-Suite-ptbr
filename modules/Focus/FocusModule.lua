@@ -46,23 +46,49 @@ end
 
 local function StartScenarioTimerHeartbeat()
     if addon._scenarioTimerHeartbeat then return end
-    local f = CreateFrame("Frame", nil, UIParent)
-    f:SetSize(1, 1)
-    f:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", -1000, -1000)
-    f:Show()
-    f._elapsed = 0
-    f:SetScript("OnUpdate", function(self, elapsed)
+    addon._scenarioTimerHeartbeat = C_Timer.NewTicker(5, function()
         if not addon.enabled or addon.collapsed then return end
         if addon.ShouldHideInCombat and addon.ShouldHideInCombat() then return end
         if not addon.GetDB("showScenarioEvents", true) then return end
-        self._elapsed = (self._elapsed or 0) + elapsed
-        if self._elapsed < 5 then return end
-        self._elapsed = 0
         if addon.IsScenarioActive and addon.IsScenarioActive() then
             if addon.ScheduleRefresh then addon.ScheduleRefresh() end
         end
     end)
-    addon._scenarioTimerHeartbeat = f
+end
+
+local function StopScenarioTimerHeartbeat()
+    if addon._scenarioTimerHeartbeat then
+        addon._scenarioTimerHeartbeat:Cancel()
+        addon._scenarioTimerHeartbeat = nil
+    end
+end
+
+local function StartScenarioBarTicker()
+    if addon._scenarioBarTicker then return end
+    addon._scenarioBarTicker = C_Timer.NewTicker(1, function()
+        if addon.UpdateScenarioTimerBars then addon.UpdateScenarioTimerBars() end
+    end)
+end
+
+local function StopScenarioBarTicker()
+    if addon._scenarioBarTicker then
+        addon._scenarioBarTicker:Cancel()
+        addon._scenarioBarTicker = nil
+    end
+end
+
+local function StartMapCheckTicker()
+    if addon._mapCheckTicker then return end
+    addon._mapCheckTicker = C_Timer.NewTicker(0.5, function()
+        if addon.RunMapCheck then addon.RunMapCheck() end
+    end)
+end
+
+local function StopMapCheckTicker()
+    if addon._mapCheckTicker then
+        addon._mapCheckTicker:Cancel()
+        addon._mapCheckTicker = nil
+    end
 end
 
 local function tryHookWorldMap()
@@ -99,6 +125,9 @@ addon:RegisterModule("focus", {
             addon.currentHeight = addon.GetCollapsedHeight()
         end
         StartScenarioTimerHeartbeat()
+        StartScenarioBarTicker()
+        StartMapCheckTicker()
+        if addon.EnsureFocusUpdateRunning then addon.EnsureFocusUpdateRunning() end
         C_Timer.After(0.5, tryHookWorldMap)
         for attempt = 1, 5 do
             C_Timer.After(1 + attempt, tryHookWorldMap)
@@ -110,6 +139,10 @@ addon:RegisterModule("focus", {
 
     OnDisable = function()
         addon.enabled = false
+        StopScenarioTimerHeartbeat()
+        StopScenarioBarTicker()
+        StopMapCheckTicker()
+        if addon.HS then addon.HS:SetScript("OnUpdate", nil) end
         if addon.RestoreTracker then addon.RestoreTracker() end
         addon.HS:Hide()
         if addon.pool then

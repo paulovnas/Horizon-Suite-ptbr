@@ -2,9 +2,7 @@
 
 **Horizon Suite** is a core addon with pluggable modules: **Focus** (objective tracker) and **Presence** (zone text & notifications). Designed for the Midnight era—clean, cinematic, player-in-control. It replaces static, cluttered lists with a fluid interface that grants you total agency over your goals. Additional suites will appear as modules in the same options panel.
 
-<p align="center">
-  <img width="400" alt="Horizon Suite Preview" src="https://github.com/user-attachments/assets/72072df2-7ba3-4205-a984-df561eaf3ed4" />
-</p>
+![Horizon Suite Preview](https://github.com/user-attachments/assets/72072df2-7ba3-4205-a984-df561eaf3ed4)
 
 ---
 
@@ -15,7 +13,7 @@ The systems driving your efficiency.
 * **Dynamic Scanning** – Surfaces active Scenarios, Delves, and World Events in dedicated, high-priority sections. Includes support for cinematic progress bars, timers, and difficulty tiers.
 * **Rare Boss Tracker** – Scans for nearby vignettes, allowing you to super-track rares with a single click and optional audio alerts.
 * **Achievement Tracking** – Tracked achievements appear in a dedicated Achievements section. Left-click opens the achievement panel; right-click removes it from tracking. Toggle visibility in Features → Achievements. Use "Show achievement icons" to toggle achievement icons independently of quest type icons.
-* **Live Sync** – World Quests, Dailies, and Weeklies update dynamically so you never miss a pickup. Dailies available to accept but not yet accepted show an "— Available" label. Dungeon objectives are supported and appear in the tracker. The world quest list is re-evaluated when you move between zones. World quest visibility can be toggled in Features → Show world quests.
+* **Live Sync** – World Quests, Dailies, and Weeklies update dynamically so you never miss a pickup. Dailies available to accept but not yet accepted show an "— Available" label. Dungeon objectives are supported and appear in the tracker. The world quest list is re-evaluated when you move between zones.
 * **Secure Quest Items** – High-performance quest item buttons built on secure templates, ensuring they work flawlessly mid-fight without UI errors.
 * **ATT Integration** – Full native support for **All The Things**, displaying collection data directly within your objectives.
 * **Presence Notifications** – Cinematic zone text, subzone changes, and "Discovered" lines. Level-up, boss emotes, achievements, quest accept/complete/update, and world quest banners appear as styled notifications with priority queueing and smooth entrance/exit animations. Off by default (still being refined); enable in Modules → Enable Presence module if desired.
@@ -61,7 +59,7 @@ Built for the heat of gameplay.
 ### 🎛️ Settings Panel
 
 * **Cinematic Options Panel** – Modern, minimalistic design with soft edges, subtle dividers, and a dark low-contrast palette. The search bar features a spyglass icon, integrated clear button, and focus-state styling.
-* **Organized Configuration** – Settings are grouped into nine categories: **Modules** (enable or disable each suite; Focus is the objective tracker), **Layout** (panel behaviour, dimensions), **Visibility** (instance, combat, filtering), **Display** (header, list options), **Features** (world quests, achievements, rare bosses, floating quest item, Mythic+, scenario & Delve), **Typography** (font, sizes, outline, text case, shadow), **Appearance** (panel backdrop/border, highlight), **Colors** (per-category colours with collapsible groups and per-group reset buttons; Grouping Overrides for Current Zone and Ready to Turn in; global colours), and **Organization** (Focus category order via drag-and-drop; Focus sort mode: Alphabetical, Quest Type, Zone, or Quest Level; behaviour toggles: Require Ctrl, Animations, Objective progress flash). See in-game options for the full list.
+* **Organized Configuration** – Settings are grouped into nine categories: **Modules** (enable or disable each suite; Focus is the objective tracker), **Layout** (panel behaviour, dimensions), **Visibility** (instance, combat, filtering), **Display** (header, list options), **Features** (achievements, rare bosses, floating quest item, Mythic+, scenario & Delve), **Typography** (font, sizes, outline, text case, shadow), **Appearance** (panel backdrop/border, highlight), **Colors** (per-category colours with collapsible groups and per-group reset buttons; Grouping Overrides for Current Zone and Ready to Turn in; global colours), and **Organization** (Focus category order via drag-and-drop; Focus sort mode: Alphabetical, Quest Type, Zone, or Quest Level; behaviour toggles: Require Ctrl, Animations, Objective progress flash). See in-game options for the full list.
 * **Smart Search** – Use the **search bar** to find any setting—type at least two characters to see matching results, then click a result to jump directly to that option. Press Escape to clear the search.
 * **Key Bind & Visibility Hooks** – Key bindings for **Collapse Tracker** and **Toggle Nearby Group** can be set under *Key Bindings → Horizon Suite*. The option "Show Nearby (Current Zone) group" in Display → List controls the same Nearby grouping. "Show category headers when collapsed" (Display → List) keeps section headers (Campaign, World Quests, etc.) visible when the tracker is collapsed; click a header to expand that category.
 

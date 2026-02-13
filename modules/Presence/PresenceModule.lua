@@ -34,5 +34,6 @@ addon:RegisterModule("presence", {
             if addon.Presence.RestoreAlerts then addon.Presence.RestoreAlerts() end
             if addon.Presence.HideAndClear then addon.Presence.HideAndClear() end
         end
+        ReloadUI()
     end,
 })

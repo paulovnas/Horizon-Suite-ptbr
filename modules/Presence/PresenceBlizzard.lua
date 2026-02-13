@@ -40,6 +40,8 @@ local function KillBlizzardFrame(frame)
     if not ok2 and addon.HSPrint then addon.HSPrint("Presence KillBlizzardFrame OnShow hook failed: " .. tostring(err2)) end
 end
 
+local ZONE_TEXT_EVENTS = { "ZONE_CHANGED", "ZONE_CHANGED_INDOORS", "ZONE_CHANGED_NEW_AREA" }
+
 local function RestoreBlizzardFrame(frame)
     if not frame or not suppressedFrames[frame] then return end
     local ok, err = pcall(function()
@@ -53,7 +55,13 @@ local function RestoreBlizzardFrame(frame)
         else
             frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
         end
-        frame:Show()
+        local isZoneTextFrame = (frame == ZoneTextFrame) or (frame == SubZoneTextFrame)
+        if isZoneTextFrame then
+            if frame == ZoneTextFrame then
+                for _, ev in ipairs(ZONE_TEXT_EVENTS) do frame:RegisterEvent(ev) end
+            end
+        end
+        frame:Hide()
     end)
     if not ok and addon.HSPrint then addon.HSPrint("Presence RestoreBlizzardFrame failed: " .. tostring(err)) end
     suppressedFrames[frame] = nil
@@ -69,6 +77,10 @@ local function SuppressBlizzard()
     KillBlizzardFrame(LevelUpDisplay)
     KillBlizzardFrame(BossBanner)
     KillBlizzardFrame(ObjectiveTrackerBonusBannerFrame)
+    local topBannerFrame = ObjectiveTrackerTopBannerFrame or _G["ObjectiveTrackerTopBannerFrame"]
+    if topBannerFrame then
+        KillBlizzardFrame(topBannerFrame)
+    end
     KillBlizzardFrame(EventToastManagerFrame)
 
     local wqFrame = WorldQuestCompleteBannerFrame or _G["WorldQuestCompleteBannerFrame"]
@@ -84,6 +96,8 @@ local function RestoreBlizzard()
     RestoreBlizzardFrame(LevelUpDisplay)
     RestoreBlizzardFrame(BossBanner)
     RestoreBlizzardFrame(ObjectiveTrackerBonusBannerFrame)
+    local topBannerFrame = ObjectiveTrackerTopBannerFrame or _G["ObjectiveTrackerTopBannerFrame"]
+    if topBannerFrame then RestoreBlizzardFrame(topBannerFrame) end
     local wqFrame = WorldQuestCompleteBannerFrame or _G["WorldQuestCompleteBannerFrame"]
     if wqFrame then RestoreBlizzardFrame(wqFrame) end
 end

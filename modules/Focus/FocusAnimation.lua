@@ -34,19 +34,15 @@ local function SetPanelHeight(h)
     HS:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", right - uiRight, topBefore - uiTop)
 end
 
-local function UpdateMapCheck(dt)
+function addon.RunMapCheck()
     if not addon.enabled or not C_Map or not C_Map.GetBestMapForUnit then return end
-    addon.lastMapCheckTime = addon.lastMapCheckTime + dt
-    if addon.lastMapCheckTime >= 0.5 then
-        addon.lastMapCheckTime = 0
-        local mapID = C_Map.GetBestMapForUnit("player")
-        if mapID and mapID ~= addon.lastPlayerMapID then
-            addon.lastPlayerMapID = mapID
-            if addon.zoneTaskQuestCache then wipe(addon.zoneTaskQuestCache) end
-            if addon.ScheduleRefresh then addon.ScheduleRefresh() end
-        elseif not addon.lastPlayerMapID and mapID then
-            addon.lastPlayerMapID = mapID
-        end
+    local mapID = C_Map.GetBestMapForUnit("player")
+    if mapID and mapID ~= addon.lastPlayerMapID then
+        addon.lastPlayerMapID = mapID
+        if addon.zoneTaskQuestCache then wipe(addon.zoneTaskQuestCache) end
+        if addon.ScheduleRefresh then addon.ScheduleRefresh() end
+    elseif not addon.lastPlayerMapID and mapID then
+        addon.lastPlayerMapID = mapID
     end
 end
 
@@ -302,13 +298,22 @@ local function UpdateGroupCollapseCompletion()
         end
 end
 
---- OnUpdate: map check, panel height lerp, combat fade, entry/collapse animations, auto-hide when empty.
--- @param _ table Frame (unused)
--- @param dt number Elapsed time since last frame
-HS:SetScript("OnUpdate", function(_, dt)
+local function NeedsFocusUpdate()
+    if addon.targetHeight ~= addon.currentHeight then return true end
+    if addon.combatFadeState then return true end
+    if addon.groupCollapses and next(addon.groupCollapses) then return true end
+    for i = 1, addon.POOL_SIZE do
+        local s = pool[i].animState
+        if s ~= "idle" and s ~= "active" then return true end
+        if pool[i].flashTime > 0 then return true end
+    end
+    if addon.collapseAnimating then return true end
+    return false
+end
+
+local function FocusOnUpdate(_, dt)
     if not addon.enabled then return end
     local useAnim = addon.GetDB("animations", true)
-    UpdateMapCheck(dt)
     UpdatePanelHeight(dt)
     UpdateCombatFade(dt, useAnim)
     local anyAnimating = UpdateEntryAnimations(dt, useAnim)
@@ -324,4 +329,15 @@ HS:SetScript("OnUpdate", function(_, dt)
             HS:Hide()
         end
     end
-end)
+
+    if not NeedsFocusUpdate() then
+        HS:SetScript("OnUpdate", nil)
+    end
+end
+
+function addon.EnsureFocusUpdateRunning()
+    if not addon.enabled then return end
+    if HS:GetScript("OnUpdate") ~= FocusOnUpdate then
+        HS:SetScript("OnUpdate", FocusOnUpdate)
+    end
+end

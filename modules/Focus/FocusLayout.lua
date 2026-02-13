@@ -1178,6 +1178,8 @@ local function FullLayout()
         if addon.combatFadeState == "in" then addon.HS:SetAlpha(0) end
         addon.HS:Show()
     end
+
+    if addon.EnsureFocusUpdateRunning then addon.EnsureFocusUpdateRunning() end
 end
 
 addon.PopulateEntry       = PopulateEntry

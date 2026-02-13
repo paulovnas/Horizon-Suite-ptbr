@@ -189,7 +189,7 @@ local function CreateQuestEntry(parent, index)
     e.wqProgressText:SetJustifyH("CENTER")
     e.wqProgressText:Hide()
 
-    -- Per-criteria scenario timer bars (KT-aligned; OnUpdate driven).
+    -- Per-criteria scenario timer bars (KT-aligned; 1s tick driven).
     local slots = addon.SCENARIO_TIMER_BAR_SLOTS or 5
     e.scenarioTimerBars = {}
     for si = 1, slots do
@@ -209,46 +209,6 @@ local function CreateQuestEntry(parent, index)
         bar.duration = nil
         bar.startTime = nil
         bar._expiredAt = nil
-        bar:SetScript("OnUpdate", function(self)
-            local d, s = self.duration, self.startTime
-            if not d or not s then return end
-            local now = GetTime()
-            local remaining = d - (now - s)
-            -- Hold at 0 for 1s then trigger refresh and stop (KT-aligned).
-            if remaining < 0 then
-                if not self._expiredAt then self._expiredAt = now end
-                if (now - self._expiredAt) > 1 then
-                    self.duration = nil
-                    self.startTime = nil
-                    self._expiredAt = nil
-                    if addon.ScheduleRefresh then addon.ScheduleRefresh() end
-                    return
-                end
-                remaining = 0
-            else
-                self._expiredAt = nil
-            end
-            local pct = (d > 0) and (remaining / d) or 0
-            local w = self:GetWidth() or 1
-            self.Fill:SetWidth(math.max(2, w * pct))
-            local m = math.floor(remaining / 60)
-            local sec = math.floor(remaining % 60)
-            self.Label:SetText(("%02d:%02d"):format(m, sec))
-            -- Percentage-based color (KT: 66% white, 33% yellow, below red).
-            local pctLeft = (d > 0) and pct or 0
-            local r, g, b
-            if pctLeft > 0.66 then
-                local sc = addon.GetQuestColor and addon.GetQuestColor("SCENARIO") or (addon.QUEST_COLORS and addon.QUEST_COLORS.SCENARIO) or { 0.55, 0.35, 0.85 }
-                r, g, b = sc[1], sc[2], sc[3]
-            elseif pctLeft > 0.33 then
-                local blueOffset = (pctLeft - 0.33) / 0.33
-                r, g, b = 1, 1, blueOffset
-            else
-                local greenOffset = pctLeft / 0.33
-                r, g, b = 1, greenOffset, 0
-            end
-            self.Label:SetTextColor(r, g, b, 1)
-        end)
         bar:Hide()
         e.scenarioTimerBars[si] = bar
     end
@@ -276,6 +236,61 @@ end
 local scrollChild = addon.scrollChild
 for i = 1, addon.POOL_SIZE do
     pool[i] = CreateQuestEntry(scrollChild, i)
+end
+
+local function UpdateScenarioBar(bar, now)
+    local d, s = bar.duration, bar.startTime
+    if not d or not s then return end
+    local remaining = d - (now - s)
+    -- Hold at 0 for 1s then trigger refresh and stop (KT-aligned).
+    if remaining < 0 then
+        if not bar._expiredAt then bar._expiredAt = now end
+        if (now - bar._expiredAt) > 1 then
+            bar.duration = nil
+            bar.startTime = nil
+            bar._expiredAt = nil
+            if addon.ScheduleRefresh then addon.ScheduleRefresh() end
+            return
+        end
+        remaining = 0
+    else
+        bar._expiredAt = nil
+    end
+    local pct = (d > 0) and (remaining / d) or 0
+    local w = bar:GetWidth() or 1
+    bar.Fill:SetWidth(math.max(2, w * pct))
+    local m = math.floor(remaining / 60)
+    local sec = math.floor(remaining % 60)
+    bar.Label:SetText(("%02d:%02d"):format(m, sec))
+    -- Percentage-based color (KT: 66% white, 33% yellow, below red).
+    local pctLeft = (d > 0) and pct or 0
+    local r, g, b
+    if pctLeft > 0.66 then
+        local sc = addon.GetQuestColor and addon.GetQuestColor("SCENARIO") or (addon.QUEST_COLORS and addon.QUEST_COLORS.SCENARIO) or { 0.55, 0.35, 0.85 }
+        r, g, b = sc[1], sc[2], sc[3]
+    elseif pctLeft > 0.33 then
+        local blueOffset = (pctLeft - 0.33) / 0.33
+        r, g, b = 1, 1, blueOffset
+    else
+        local greenOffset = pctLeft / 0.33
+        r, g, b = 1, greenOffset, 0
+    end
+    bar.Label:SetTextColor(r, g, b, 1)
+end
+
+function addon.UpdateScenarioTimerBars()
+    if not addon.enabled or not addon.pool then return end
+    local now = GetTime()
+    for i = 1, addon.POOL_SIZE do
+        local entry = pool[i]
+        if entry.scenarioTimerBars then
+            for _, bar in ipairs(entry.scenarioTimerBars) do
+                if bar.duration and bar.startTime then
+                    UpdateScenarioBar(bar, now)
+                end
+            end
+        end
+    end
 end
 
 local sectionPool = {}

@@ -112,12 +112,13 @@ function addon:EnsureModulesDB()
     if not HorizonDB then HorizonDB = {} end
     if not HorizonDB.modules then
         HorizonDB.modules = {}
-        -- Legacy install: default focus to enabled
+        -- Legacy install: default focus to enabled, Presence off (still has issues)
         HorizonDB.modules.focus = { enabled = true }
+        HorizonDB.modules.presence = { enabled = false }
     end
-    -- Migrate Vista module key to Presence (preserve enabled state for existing users)
+    -- Migrate Vista module key to Presence (default off; user can enable in options)
     if HorizonDB.modules.vista and not HorizonDB.modules.presence then
-        HorizonDB.modules.presence = { enabled = HorizonDB.modules.vista.enabled }
+        HorizonDB.modules.presence = { enabled = false }
     end
 end
 

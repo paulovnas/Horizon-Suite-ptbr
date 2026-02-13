@@ -19,7 +19,6 @@ addon.collapseAnimating  = false  -- panel-wide collapse
 addon.collapseAnimStart  = 0
 addon.groupCollapses     = {}     -- per-group collapses: [groupKey] = startTime
 addon.lastPlayerMapID    = nil
-addon.lastMapCheckTime   = 0
 addon.combatFadeState   = nil   -- "out" = fading out for combat, "in" = fading in after combat
 addon.combatFadeTime    = 0
 
@@ -404,15 +403,19 @@ local function ReadTrackedQuests()
             -- changes and they momentarily fall out of nearbySet).
             local isWorld = IsQuestWorldQuest(questID)
             if (not filterByZone or nearbySet[questID] or isWorld) then
-                addQuest(questID)
+                if addon.GetDB("showWorldQuests", true) or not IsQuestWorldQuest(questID) then
+                    addQuest(questID)
+                end
             end
         end
     end
 
     -- Active zone world quests and callings are automatically included from GetNearbyQuestIDs/GetWorldAndCallingQuestIDsToShow.
-    for _, entry in ipairs(addon.GetWorldAndCallingQuestIDsToShow(nearbySet, taskQuestOnlySet)) do
-        if not seen[entry.questID] then
-            addQuest(entry.questID, { isTracked = entry.isTracked, forceCategory = entry.forceCategory })
+    if addon.GetDB("showWorldQuests", true) then
+        for _, entry in ipairs(addon.GetWorldAndCallingQuestIDsToShow(nearbySet, taskQuestOnlySet)) do
+            if not seen[entry.questID] then
+                addQuest(entry.questID, { isTracked = entry.isTracked, forceCategory = entry.forceCategory })
+            end
         end
     end
 
@@ -448,7 +451,9 @@ local function ReadTrackedQuests()
 
     -- Always show super-tracked quest in the list even if not on current map or watch list (e.g. super-tracked from map).
     if superTracked and superTracked > 0 and not seen[superTracked] and not scenarioRewardQuestIDs[superTracked] then
-        addQuest(superTracked, { isTracked = true })
+        if addon.GetDB("showWorldQuests", true) or not IsQuestWorldQuest(superTracked) then
+            addQuest(superTracked, { isTracked = true })
+        end
     end
 
     -- Append scenario entries (main + bonus steps); prefer scenario over duplicate quest rows.

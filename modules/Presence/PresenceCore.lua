@@ -215,7 +215,41 @@ local function finalizeEntrance()
     end
 end
 
-local function onComplete()
+local onComplete
+local function PresenceOnUpdate(_, dt)
+    if anim.phase == "idle" then return end
+    anim.elapsed = anim.elapsed + dt
+
+    if anim.phase == "entrance" then
+        updateEntrance()
+        if anim.elapsed >= ENTRANCE_DUR then
+            finalizeEntrance()
+            anim.phase   = "hold"
+            anim.elapsed = 0
+        end
+    elseif anim.phase == "crossfade" then
+        updateCrossfade()
+        if anim.elapsed >= ENTRANCE_DUR then
+            finalizeEntrance()
+            resetLayer(oldLayer)
+            anim.phase   = "hold"
+            anim.elapsed = 0
+        end
+    elseif anim.phase == "hold" then
+        if anim.elapsed >= anim.holdDur then
+            anim.phase   = "exit"
+            anim.elapsed = 0
+        end
+    elseif anim.phase == "exit" then
+        updateExit()
+        if anim.elapsed >= EXIT_DUR then
+            onComplete()
+        end
+    end
+end
+
+onComplete = function()
+    F:SetScript("OnUpdate", nil)
     anim.phase  = "idle"
     active      = nil
     activeTitle = nil
@@ -258,38 +292,6 @@ function addon.Presence.Init()
     queue = {}
     crossfadeStartAlpha = 1
     addon.Presence.pendingDiscovery = nil
-
-    F:SetScript("OnUpdate", function(_, dt)
-        if anim.phase == "idle" then return end
-        anim.elapsed = anim.elapsed + dt
-
-        if anim.phase == "entrance" then
-            updateEntrance()
-            if anim.elapsed >= ENTRANCE_DUR then
-                finalizeEntrance()
-                anim.phase   = "hold"
-                anim.elapsed = 0
-            end
-        elseif anim.phase == "crossfade" then
-            updateCrossfade()
-            if anim.elapsed >= ENTRANCE_DUR then
-                finalizeEntrance()
-                resetLayer(oldLayer)
-                anim.phase   = "hold"
-                anim.elapsed = 0
-            end
-        elseif anim.phase == "hold" then
-            if anim.elapsed >= anim.holdDur then
-                anim.phase   = "exit"
-                anim.elapsed = 0
-            end
-        elseif anim.phase == "exit" then
-            updateExit()
-            if anim.elapsed >= EXIT_DUR then
-                onComplete()
-            end
-        end
-    end)
 
     addon.Presence.frame = F
     addon.Presence.anim = anim
@@ -346,6 +348,7 @@ PlayCinematic = function(typeName, title, subtitle)
         anim.phase = "entrance"
     end
 
+    F:SetScript("OnUpdate", PresenceOnUpdate)
     F:SetAlpha(1)
     F:Show()
 end
@@ -403,6 +406,7 @@ end
 
 function addon.Presence.HideAndClear()
     if not F then return end
+    F:SetScript("OnUpdate", nil)
     anim.phase  = "idle"
     active      = nil
     activeTitle = nil

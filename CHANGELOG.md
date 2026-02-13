@@ -14,6 +14,8 @@ All notable changes to Horizon Suite are documented here.
 
 ### Improvements
 
+- **Performance optimizations** — Reduced CPU usage by replacing per-frame OnUpdate with event-driven logic and timers: scenario heartbeat and map check now use C_Timer tickers; main tracker OnUpdate runs only when animating or lerping; Presence OnUpdate runs only during cinematics; scenario timer bars use a shared 1s tick instead of per-bar updates; options toggle OnUpdate runs only during its short animation.
+
 - **Options panel UX overhaul** — Cinematic, modern, minimalistic redesign: softer colour palette with low-contrast borders and dividers; pill-shaped search input; taller sidebar tabs with hover states; minimal X close button; section cards with inset backgrounds; refined toggles, sliders, dropdowns, and colour swatches; subtle dividers between colour-matrix sections; consistent hover feedback on buttons and tabs.
 
 - **Search bar redesign** — Custom-styled search input without Blizzard template: search icon (spyglass) on the left, integrated clear button (visible only when typing), subtle focus state with accent-colour border, and tighter visual connection to the results dropdown.

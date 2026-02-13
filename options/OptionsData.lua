@@ -195,6 +195,8 @@ local OptionCategories = {
             { type = "section", name = "Rare bosses" },
             { type = "toggle", name = "Show rare bosses", desc = "Show rare boss vignettes in the list.", dbKey = "showRareBosses", get = function() return getDB("showRareBosses", true) end, set = function(v) setDB("showRareBosses", v) end },
             { type = "toggle", name = "Rare added sound", desc = "Play a sound when a rare is added.", dbKey = "rareAddedSound", get = function() return getDB("rareAddedSound", true) end, set = function(v) setDB("rareAddedSound", v) end },
+            { type = "section", name = "World quests" },
+            { type = "toggle", name = "Show world quests", desc = "Show world quests and callings in the list.", dbKey = "showWorldQuests", get = function() return getDB("showWorldQuests", true) end, set = function(v) setDB("showWorldQuests", v) end },
             { type = "section", name = "Floating quest item" },
             { type = "toggle", name = "Show floating quest item", desc = "Show quick-use button for the focused quest's usable item.", dbKey = "showFloatingQuestItem", get = function() return getDB("showFloatingQuestItem", false) end, set = function(v) setDB("showFloatingQuestItem", v) end },
             { type = "toggle", name = "Lock floating quest item position", desc = "Prevent dragging the floating quest item button.", dbKey = "lockFloatingQuestItemPosition", get = function() return getDB("lockFloatingQuestItemPosition", false) end, set = function(v) setDB("lockFloatingQuestItemPosition", v) end },

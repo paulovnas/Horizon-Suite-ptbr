@@ -88,6 +88,7 @@ local function OnPlayerRegenDisabled()
         if useAnim and addon.HS:IsShown() then
             addon.combatFadeState = "out"
             addon.combatFadeTime  = 0
+            if addon.EnsureFocusUpdateRunning then addon.EnsureFocusUpdateRunning() end
         else
             addon.HS:Hide()
             if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
@@ -102,11 +103,13 @@ local function OnPlayerRegenEnabled()
         if addon.GetDB("hideInCombat", false) and addon.enabled then
             addon.combatFadeState = "in"
             addon.combatFadeTime  = 0
+            if addon.EnsureFocusUpdateRunning then addon.EnsureFocusUpdateRunning() end
         end
         addon.FullLayout()
     elseif addon.GetDB("hideInCombat", false) and addon.enabled then
         addon.combatFadeState = "in"
         addon.combatFadeTime  = 0
+        if addon.EnsureFocusUpdateRunning then addon.EnsureFocusUpdateRunning() end
         ScheduleRefresh()
     end
 end
