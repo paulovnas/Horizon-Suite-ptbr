@@ -448,7 +448,10 @@ local function PopulateEntry(entry, questData, groupKey)
 
     local prevAnchor = entry.titleText
     local titleToContentSpacing = ((questData.category == "DELVES" or questData.category == "DUNGEON") and addon.DELVE_OBJ_SPACING) or addon.GetObjSpacing()
-    if addon.GetDB("showZoneLabels", true) and questData.zoneName and not questData.isNearby then
+    local showZoneLabels = addon.GetDB("showZoneLabels", true)
+    local useNearbyGroup = addon.GetDB("showNearbyGroup", true)
+    local shouldShowZone = showZoneLabels and questData.zoneName and (not useNearbyGroup or not questData.isNearby)
+    if shouldShowZone then
         local zoneLabel = questData.zoneName
         -- For off-map WORLD quests, prefix the zone with a clear marker so they are easy to spot.
         if isOffMapWorld then
