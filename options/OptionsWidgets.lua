@@ -861,7 +861,7 @@ function OptionsWidgets_CreateReorderList(parent, anchor, opt, scrollFrameRef, p
 
     local totalH = Def.CardPadding + 14 + (#keys * (REORDER_ROW_HEIGHT + REORDER_ROW_GAP)) + 6 + 22 + Def.CardPadding
     container:SetHeight(totalH)
-    container.searchText = (opt.name or "order") .. " " .. (opt.tooltip or "")
+    container.searchText = (opt.name or "order") .. " " .. (opt.desc or opt.tooltip or "")
     function container:Refresh()
         local newKeys = opt.get and opt.get() or {}
         if type(newKeys) == "function" then newKeys = newKeys() end

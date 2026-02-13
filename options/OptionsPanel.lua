@@ -209,7 +209,7 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             anchor = currentCard
             local keys = opt.keys or addon.COLOR_KEYS_ORDER
             local defaultMap = opt.defaultMap or addon.QUEST_COLORS
-            local sub = OptionsWidgets_CreateSectionHeader(currentCard, "Quest type colors")
+            local sub = OptionsWidgets_CreateSectionHeader(currentCard, "Quest types")
             sub:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -SectionGap)
             currentCard.contentAnchor = sub
             currentCard.contentHeight = currentCard.contentHeight + SectionGap + RowHeights.sectionLabel
@@ -516,7 +516,7 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             numPerCategoryGroups = #perCategoryOrder
 
             -- Per-category collapsible groups (excludes NEARBY and COMPLETE)
-            local catHdr = OptionsWidgets_CreateSectionHeader(currentCard, "Per category (click to expand)")
+            local catHdr = OptionsWidgets_CreateSectionHeader(currentCard, "Per category")
             catHdr:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -SectionGap)
             currentCard.contentAnchor = catHdr
             currentCard.contentHeight = currentCard.contentHeight + SectionGap + RowHeights.sectionLabel
@@ -533,13 +533,13 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             currentCard.contentAnchor = goHdr
             currentCard.contentHeight = currentCard.contentHeight + SectionGap + RowHeights.sectionLabel
 
-            local ovCompleted = OptionsWidgets_CreateToggleSwitch(currentCard, "Completed overrides base colours", "When on, READY TO TURN IN uses its row colours for all quests in that section.", function() return getOverride("useCompletedOverride") end, function(v) setOverride("useCompletedOverride", v) end)
+            local ovCompleted = OptionsWidgets_CreateToggleSwitch(currentCard, "Ready to Turn In overrides base colours", "Ready to Turn In uses its colours for quests in that section.", function() return getOverride("useCompletedOverride") end, function(v) setOverride("useCompletedOverride", v) end)
             ovCompleted:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -OptionGap)
             ovCompleted:SetPoint("RIGHT", currentCard, "RIGHT", -CardPadding, 0)
             currentCard.contentAnchor = ovCompleted
             currentCard.contentHeight = currentCard.contentHeight + OptionGap + 38
 
-            local ovCurrentZone = OptionsWidgets_CreateToggleSwitch(currentCard, "Current Zone overrides base colours", "When on, CURRENT ZONE uses its row colours for all quests in that section.", function() return getOverride("useCurrentZoneOverride") end, function(v) setOverride("useCurrentZoneOverride", v) end)
+            local ovCurrentZone = OptionsWidgets_CreateToggleSwitch(currentCard, "Current Zone overrides base colours", "Current Zone uses its colours for quests in that section.", function() return getOverride("useCurrentZoneOverride") end, function(v) setOverride("useCurrentZoneOverride", v) end)
             ovCurrentZone:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -OptionGap)
             ovCurrentZone:SetPoint("RIGHT", currentCard, "RIGHT", -CardPadding, 0)
             currentCard.contentAnchor = ovCurrentZone
