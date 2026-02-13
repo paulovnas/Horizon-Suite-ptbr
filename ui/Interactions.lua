@@ -151,6 +151,7 @@ for i = 1, addon.POOL_SIZE do
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             local ok, err = pcall(GameTooltip.SetHyperlink, GameTooltip, "quest:" .. self.questID)
             if not ok and addon.HSPrint then addon.HSPrint("Tooltip SetHyperlink (quest) failed: " .. tostring(err)) end
+            addon.AddQuestRewardsToTooltip(GameTooltip, self.questID)
             GameTooltip:Show()
         elseif self.entryKey then
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")

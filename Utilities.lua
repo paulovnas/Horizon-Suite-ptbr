@@ -156,6 +156,158 @@ end
 -- QUEST / MAP HELPERS
 -- ============================================================================
 
+--- Append default quest rewards (gold, XP, items, currencies, spells) to a tooltip.
+--- All API calls are wrapped in pcall; missing or unavailable data is skipped.
+--- @param tooltip GameTooltip
+--- @param questID number
+function addon.AddQuestRewardsToTooltip(tooltip, questID)
+    if not tooltip or not questID then return end
+    local hasAny = false
+
+    -- Some reward APIs need the quest selected; backup and restore
+    local prevQuestID = (C_QuestLog and C_QuestLog.GetSelectedQuest) and C_QuestLog.GetSelectedQuest() or nil
+    if C_QuestLog and C_QuestLog.SetSelectedQuest then
+        pcall(C_QuestLog.SetSelectedQuest, questID)
+    end
+
+    local function restoreQuest()
+        if prevQuestID and C_QuestLog and C_QuestLog.SetSelectedQuest then
+            pcall(C_QuestLog.SetSelectedQuest, prevQuestID)
+        end
+    end
+
+    -- Gold
+    local ok, money = pcall(GetQuestLogRewardMoney, questID)
+    if ok and money and money > 0 then
+        local ok2, str = pcall(GetCoinTextureString, money)
+        if ok2 and str and str ~= "" then
+            tooltip:AddLine(" ")
+            tooltip:AddLine(str or tostring(money))
+            hasAny = true
+        end
+    end
+
+    -- Experience (skip at max level)
+    local atMaxLevel = (IsPlayerAtEffectiveMaxLevel and IsPlayerAtEffectiveMaxLevel()) or (UnitLevel("player") and UnitLevel("player") >= (GetMaxPlayerLevel and GetMaxPlayerLevel() or 70))
+    if not atMaxLevel then
+        local ok, xp = pcall(GetQuestLogRewardXP, questID)
+        if ok and xp and xp > 0 then
+            if not hasAny then tooltip:AddLine(" ") end
+            local label = COMBAT_XP_GAIN or "Experience"
+            tooltip:AddDoubleLine(label, tostring(xp))
+            hasAny = true
+        end
+    end
+
+    -- Honor
+    if GetQuestLogRewardHonor then
+        local ok, honor = pcall(GetQuestLogRewardHonor, questID)
+        if ok and honor and honor > 0 then
+            if not hasAny then tooltip:AddLine(" ") end
+            tooltip:AddDoubleLine(HONOR or "Honor", tostring(honor))
+            hasAny = true
+        end
+    end
+
+    -- Currencies (Retail: C_QuestLog.GetQuestRewardCurrencies; fallback: legacy APIs)
+    local currencyRewards = nil
+    if C_QuestLog and C_QuestLog.GetQuestRewardCurrencies then
+        local ok, cur = pcall(C_QuestLog.GetQuestRewardCurrencies, questID)
+        if ok and cur and #cur > 0 then currencyRewards = cur end
+    end
+    if currencyRewards then
+        local FormatLargeNumber = FormatLargeNumber or tostring
+        for _, cr in ipairs(currencyRewards) do
+            local name = cr.name
+            local currencyID = cr.currencyID
+            local texture = cr.texture or cr.icon
+            local amount = cr.totalRewardAmount or cr.quantity or cr.amount
+                or ((cr.baseRewardAmount or 0) + (cr.bonusRewardAmount or 0))
+                or 0
+            if (name or currencyID) and amount > 0 then
+                if not hasAny then tooltip:AddLine(" ") end
+                local amountStr = (type(FormatLargeNumber) == "function" and FormatLargeNumber(amount)) or tostring(amount)
+                local link
+                if currencyID and C_CurrencyInfo and C_CurrencyInfo.GetCurrencyLink then
+                    local ok3, l = pcall(C_CurrencyInfo.GetCurrencyLink, currencyID, amount)
+                    if ok3 and l then link = l end
+                end
+                local iconStr = (texture and ("|T" .. texture .. ":0|t ")) or ""
+                local line = iconStr .. amountStr .. " " .. (link or (name or ("Currency " .. tostring(currencyID))))
+                tooltip:AddLine(line)
+                hasAny = true
+            end
+        end
+    elseif GetNumQuestLogRewardCurrencies and GetQuestLogRewardCurrencyInfo then
+        local ok, n = pcall(GetNumQuestLogRewardCurrencies, questID)
+        if ok and n and n > 0 then
+            local FormatLargeNumber = FormatLargeNumber or tostring
+            for i = 1, n do
+                local ok2, name, texture, numItems, currencyID, quality = pcall(GetQuestLogRewardCurrencyInfo, i, questID)
+                if ok2 and (name or currencyID) and (numItems == nil or numItems > 0) then
+                    if not hasAny then tooltip:AddLine(" ") end
+                    local amount = numItems or 0
+                    local amountStr = (type(FormatLargeNumber) == "function" and FormatLargeNumber(amount)) or tostring(amount)
+                    local link
+                    if currencyID and C_CurrencyInfo and C_CurrencyInfo.GetCurrencyLink then
+                        local ok3, l = pcall(C_CurrencyInfo.GetCurrencyLink, currencyID, amount)
+                        if ok3 and l then link = l end
+                    end
+                    local iconStr = (texture and ("|T" .. texture .. ":0|t ")) or ""
+                    local line = iconStr .. amountStr .. " " .. (link or (name or ""))
+                    tooltip:AddLine(line)
+                    hasAny = true
+                end
+            end
+        end
+    end
+
+    -- Item rewards
+    if GetNumQuestLogRewards and GetQuestLogRewardInfo then
+        local ok, numItems = pcall(GetNumQuestLogRewards, questID)
+        if ok and numItems and numItems > 0 then
+            for i = 1, numItems do
+                local ok2, itemName, texture, quantity, quality, isUsable, itemID, itemLevel = pcall(GetQuestLogRewardInfo, i, questID)
+                if ok2 and (itemName or itemID) then
+                    if not hasAny then tooltip:AddLine(" ") end
+                    local link
+                    if itemID then
+                        local ok3, l = pcall(GetItemInfo, itemID)
+                        if ok3 and l then link = l end
+                    end
+                    local iconStr = (texture and ("|T" .. texture .. ":0|t ")) or ""
+                    local qty = (quantity and quantity > 1) and (" x" .. quantity) or ""
+                    tooltip:AddLine(iconStr .. (link or (itemName or ("Item " .. tostring(itemID)))) .. qty)
+                    hasAny = true
+                end
+            end
+        end
+    end
+
+    -- Spell rewards
+    if C_QuestInfoSystem and C_QuestInfoSystem.GetQuestRewardSpells and C_QuestInfoSystem.GetQuestRewardSpellInfo then
+        local ok, spellIDs = pcall(C_QuestInfoSystem.GetQuestRewardSpells, questID)
+        if ok and spellIDs and #spellIDs > 0 then
+            for _, spellID in ipairs(spellIDs) do
+                local ok2, info = pcall(C_QuestInfoSystem.GetQuestRewardSpellInfo, questID, spellID)
+                if ok2 and info and info.name then
+                    if not hasAny then tooltip:AddLine(" ") end
+                    local spellLink
+                    if spellID and GetSpellLink then
+                        local ok3, l = pcall(GetSpellLink, spellID)
+                        if ok3 and l then spellLink = l end
+                    end
+                    local iconStr = (info.texture and ("|T" .. info.texture .. ":0|t ")) or ""
+                    tooltip:AddLine(iconStr .. (spellLink or (info.name or ("Spell " .. tostring(spellID)))))
+                    hasAny = true
+                end
+            end
+        end
+    end
+
+    restoreQuest()
+end
+
 --- Parse a Task POI table into a simple set of quest IDs.
 -- Handles both array-style lists and keyed tables used by various C_TaskQuest APIs.
 -- @param taskPOIs Table returned from C_TaskQuest.* APIs (may be nil).
