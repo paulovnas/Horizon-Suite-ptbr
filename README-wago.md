@@ -37,7 +37,7 @@ Built for the heat of gameplay.
 * **Hide in Combat** – Maintain total focus during encounters. The tracker can be set to automatically vanish the moment you enter combat, clearing your screen for boss mechanics and reappearing instantly once the fight is over.
 * **Mythic+ Integration** – Cinematic banner for dungeon name, keystone level, timer, completion %, and affixes. Hover the banner to see detailed modifier descriptions.
 * **Instance Visibility** – Granular control over where the tracker appears. Choose to show or hide the interface specifically for Dungeons, Raids, Battlegrounds, or Arenas. Filter by zone to hide quests outside your current zone entirely.
-* **Compact & Minimal Modes** – Optimize your screen real estate with granular spacing sliders (Display → Spacing: entries, category headers, objectives), "Super-Minimal" headers (hides the OBJECTIVES header and quest count for a pure text list), and backdrop opacity controls. Header count format (Display → Header): choose **Tracked / in log** (e.g. 4/19, default) or **In log / max slots** (e.g. 19/35); tracked excludes world/live-in-zone quests.
+* **Compact & Minimal Modes** – Optimize your screen real estate with granular spacing sliders (Display → Spacing: entries, category headers, objectives), "Super-Minimal" headers (hides the OBJECTIVES header and quest count for a pure text list), and backdrop opacity controls. Super-minimal mode keeps a thin bar with expand/collapse and options (shown on hover) so you can open options and expand when starting collapsed. Header count format (Display → Header): choose **Tracked / in log** (e.g. 4/19, default) or **In log / max slots** (e.g. 19/35); tracked excludes world/live-in-zone quests.
 
 ---
 

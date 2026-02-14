@@ -276,20 +276,34 @@ optionsLabel:SetText("Options")
 optionsBtn:SetSize(math.max(optionsLabel:GetStringWidth() + 4, 44), 20)
 optionsBtn:SetPoint("RIGHT", chevron, "LEFT", -6, 0)
 optionsLabel:SetPoint("RIGHT", optionsBtn, "RIGHT", -2, 0)
+-- Delayed tooltip hide: cancels if mouse re-enters within 0.15s (stops flicker when cursor briefly leaves)
+local optionsTooltipHideRequested = false
 optionsBtn:SetScript("OnClick", function()
     if _G.HorizonSuite_ShowOptions then _G.HorizonSuite_ShowOptions() end
 end)
 optionsBtn:SetScript("OnEnter", function(self)
+    optionsTooltipHideRequested = false
     optionsLabel:SetTextColor(0.85, 0.85, 0.90, 1)
+    -- Super-minimal: keep chevron and options visible when hovering options (header OnLeave fires when we move here)
+    if addon.GetDB("hideObjectivesHeader", false) then
+        addon.chevron:SetAlpha(1)
+        addon.optionsBtn:SetAlpha(1)
+    end
     if GameTooltip then
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetOwner(self, "ANCHOR_LEFT")
         GameTooltip:SetText("Options", nil, nil, nil, nil, true)
         GameTooltip:Show()
     end
 end)
 optionsBtn:SetScript("OnLeave", function()
     optionsLabel:SetTextColor(0.60, 0.65, 0.75, 1)
-    if GameTooltip then GameTooltip:Hide() end
+    optionsTooltipHideRequested = true
+    C_Timer.After(0.15, function()
+        if optionsTooltipHideRequested and GameTooltip then
+            GameTooltip:Hide()
+        end
+        optionsTooltipHideRequested = false
+    end)
 end)
 
 local divider = HS:CreateTexture(nil, "ARTWORK")
@@ -298,14 +312,12 @@ divider:SetPoint("TOP", HS, "TOPLEFT", addon.GetPanelWidth() / 2, -(addon.PADDIN
 divider:SetColorTexture(addon.DIVIDER_COLOR[1], addon.DIVIDER_COLOR[2], addon.DIVIDER_COLOR[3], addon.DIVIDER_COLOR[4])
 
 function addon.GetContentTop()
-    if addon.GetDB("hideObjectivesHeader", false) then
-        return -8
-    end
+    -- Super-minimal uses same offset as full header so categories/quests do not move up (no overlap with chevron/options)
     return -(addon.PADDING + addon.HEADER_HEIGHT + addon.DIVIDER_HEIGHT + 6)
 end
 function addon.GetCollapsedHeight()
     if addon.GetDB("hideObjectivesHeader", false) then
-        return 8
+        return addon.MINIMAL_HEADER_HEIGHT + 6
     end
     return addon.PADDING + addon.HEADER_HEIGHT + 6
 end

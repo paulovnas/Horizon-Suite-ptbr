@@ -1,5 +1,5 @@
 ---
-description: Update the pipeline when asked or when completing bug fixes/plans
+description: Update the pipeline when asked or when the user confirms completion
 alwaysApply: true
 ---
 
@@ -8,10 +8,9 @@ alwaysApply: true
 The project has a local pipeline at `pipeline.md` (root). Update it when:
 
 - The user says "add to the log", "log this", "add to pipeline", "add to upcoming notes", or similar
-- We fix a bug — add a Changelog entry and move the bug to Closed/Fixed with `BUG` FIXED
-- We complete a planned change — add a Changelog entry and move to Closed/Fixed with `FEAT`/`MOD`/`IMPR` CLOSED
 - The user reports a new bug — add under Open Items with `BUG` OPEN, date, optional [P2], and brief description
 - The user shares a plan or idea — add under Open Items with appropriate tag (`FEAT`, `MOD`, `IMPR`, `IDEA`)
+- **Only when the user agrees work is complete:** add a Changelog entry and move the item to Closed/Fixed with `BUG` FIXED or `FEAT`/`MOD`/`IMPR` CLOSED — do not auto-close or auto-add to changelog; when you believe work is complete, request confirmation (e.g. "Should I close this and add it to the changelog?") before updating
 
 **Entry format:** `tag` `status` `YYYY-MM-DD` [priority] (module) Title. Optional detail or → plan link.
 

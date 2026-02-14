@@ -856,6 +856,20 @@ headerBtn:RegisterForClicks("LeftButtonUp")
 headerBtn:SetScript("OnClick", function()
     ToggleCollapse()
 end)
+headerBtn:SetScript("OnEnter", function()
+    if addon.GetDB("hideObjectivesHeader", false) then
+        addon.chevron:SetAlpha(1)
+        addon.optionsBtn:SetAlpha(1)
+    end
+end)
+headerBtn:SetScript("OnLeave", function()
+    if addon.GetDB("hideObjectivesHeader", false) then
+        -- Don't hide when moving to options button (it's on top of header, so we get OnLeave when hovering it)
+        if addon.optionsBtn:IsMouseOver() then return end
+        addon.chevron:SetAlpha(0)
+        addon.optionsBtn:SetAlpha(0)
+    end
+end)
 headerBtn:RegisterForDrag("LeftButton")
 headerBtn:SetScript("OnDragStart", function()
     if HorizonDB and HorizonDB.lockPosition then return end
@@ -942,6 +956,7 @@ end
 -- reuse pool entry and PopulateEntry. (7) Place section headers and entries by group,
 -- respecting collapsed categories. (8) Set scroll child height, clamp scroll offset,
 -- compute target panel height and show frame.
+local lastMinimal = false
 local function FullLayout()
     if not addon.enabled then return end
     if InCombatLockdown() then
@@ -974,11 +989,24 @@ local function FullLayout()
         addon.headerShadow:Hide()
         addon.countText:Hide()
         addon.countShadow:Hide()
-        addon.chevron:Hide()
-        addon.optionsBtn:Hide()
         addon.divider:Hide()
-        headerBtn:SetHeight(8)
+        addon.optionsLabel:SetText("Options")
+        addon.optionsBtn:SetWidth(math.max(addon.optionsLabel:GetStringWidth() + 4, 44))
+        addon.optionsBtn:SetFrameLevel(headerBtn:GetFrameLevel() + 1)
+        addon.optionsBtn:SetParent(addon.HS)
+        headerBtn:SetHeight(addon.MINIMAL_HEADER_HEIGHT)
+        addon.chevron:Show()
+        addon.optionsBtn:Show()
+        -- Visible on hover only: use alpha so frames stay in layout and remain clickable
+        if not lastMinimal then
+            addon.chevron:SetAlpha(headerBtn:IsMouseOver() and 1 or 0)
+            addon.optionsBtn:SetAlpha(headerBtn:IsMouseOver() and 1 or 0)
+        end
     else
+        addon.optionsBtn:SetFrameLevel(headerBtn:GetFrameLevel() + 1)
+        addon.optionsBtn:SetParent(addon.HS)
+        addon.chevron:SetAlpha(1)
+        addon.optionsBtn:SetAlpha(1)
         addon.headerText:Show()
         addon.headerShadow:Show()
         local headerStr = addon.ApplyTextCase("OBJECTIVES", "headerTextCase", "upper")
@@ -987,9 +1015,12 @@ local function FullLayout()
         if addon.GetDB("showQuestCount", true) then addon.countText:Show(); addon.countShadow:Show() else addon.countText:Hide(); addon.countShadow:Hide() end
         addon.chevron:Show()
         addon.optionsBtn:Show()
+        addon.optionsLabel:SetText("Options")
+        addon.optionsBtn:SetWidth(math.max(addon.optionsLabel:GetStringWidth() + 4, 44))
         addon.divider:SetShown(addon.GetDB("showHeaderDivider", true))
         headerBtn:SetHeight(addon.PADDING + addon.HEADER_HEIGHT)
     end
+    lastMinimal = minimal
 
     local contentTop = addon.GetContentTop()
 

@@ -8,6 +8,14 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [1.0.5] – 2026-02-14
+
+### New Features
+
+- **(Focus) Super-compact mode — options and collapse** — Super-minimal mode now has a thin bar with expand/collapse and a compact "O" options button. Objectives can be opened when "Start collapsed" is set.
+
+---
+
 ## [1.0.4] – 2026-02-14
 
 ### Improvements

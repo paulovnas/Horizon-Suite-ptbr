@@ -10,4 +10,4 @@ When the user asks to release, do a version bump, or says "release vX.Y.Z" or si
 1. **Changelog** — Add a new `## [X.Y.Z]` section to CHANGELOG.md using entries from pipeline.md (Changelog section). Group into New Features, Improvements, Fixes. Preserve module when present in pipeline entries (e.g. `(Focus)`, `(Presence)`) so the changelog shows which module each item applies to; optionally group by module within each category.
 2. **TOC** — Update `HorizonSuite.toc` `## Version:` to the new version.
 3. **Clear pipeline** — Clear the Changelog section in pipeline.md so the next release does not re-add the same entries.
-4. **Git** — Stage relevant files, commit with message like "vX.Y.Z - summary", push to main, create and push tag `vX.Y.Z`.
+4. **Git** — Stage all uncommitted changes (addon code, CHANGELOG.md, HorizonSuite.toc, README files, etc.) so the release commit includes the full implementation, not just the changelog and TOC. Commit with message like "vX.Y.Z - summary", push to main, create and push tag `vX.Y.Z`.
