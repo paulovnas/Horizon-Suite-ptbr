@@ -947,6 +947,143 @@ local function CountTrackedInLog(quests)
     return n
 end
 
+--- Content-only refresh during combat. Updates text and colors on visible entries.
+-- Only SetText and SetTextColor; no Show/Hide, SetPoint, or SetAttribute.
+local function RefreshContentInCombat()
+    if not addon.enabled then return end
+    if addon.ShouldHideInCombat and addon.ShouldHideInCombat() then return end
+
+    local quests = addon.ReadTrackedQuests and addon.ReadTrackedQuests() or {}
+    if not quests or #quests == 0 then return end
+
+    local grouped = addon.SortAndGroupQuests and addon.SortAndGroupQuests(quests) or {}
+    local dataMap = {}
+    for _, grp in ipairs(grouped) do
+        for _, qData in ipairs(grp.quests) do
+            local key = qData.questID or qData.entryKey
+            if key then
+                dataMap[key] = { questData = qData, groupKey = grp.key }
+            end
+        end
+    end
+
+    local showObjectiveNumbers = addon.GetDB("showObjectiveNumbers", false)
+
+    for i = 1, addon.POOL_SIZE do
+        local entry = pool[i]
+        if not entry then break end
+
+        local key = entry.questID or entry.entryKey
+        if key and entry.animState ~= "fadeout" and entry.animState ~= "collapsing" then
+            local rec = dataMap[key]
+            if rec then
+                local questData = rec.questData
+        local groupKey = rec.groupKey
+        local effectiveCat = (addon.GetEffectiveColorCategory and addon.GetEffectiveColorCategory(questData.category, groupKey, questData.baseCategory)) or questData.category
+        local objColor = (addon.GetObjectiveColor and addon.GetObjectiveColor(effectiveCat)) or addon.OBJ_COLOR or { 0.9, 0.9, 0.9 }
+        local doneColor = (addon.GetObjectiveColor and addon.GetObjectiveColor(effectiveCat)) or addon.OBJ_DONE_COLOR or { 0.5, 0.8, 0.5 }
+
+        -- Title
+        local displayTitle = questData.title or ""
+        if (addon.GetDB("showCompletedCount", false) or questData.isAchievement) and questData.objectives and #questData.objectives > 0 then
+            local done, total = 0, #questData.objectives
+            for _, o in ipairs(questData.objectives) do if o.finished then done = done + 1 end end
+            displayTitle = ("%s (%d/%d)"):format(questData.title or "", done, total)
+        end
+        if addon.GetDB("showQuestLevel", false) and questData.level then
+            displayTitle = ("%s [L%d]"):format(displayTitle, questData.level)
+        end
+        if questData.category == "DELVES" and type(questData.delveTier) == "number" then
+            displayTitle = displayTitle .. (" (Tier %d)"):format(questData.delveTier)
+        end
+        displayTitle = addon.ApplyTextCase and addon.ApplyTextCase(displayTitle, "questTitleCase", "proper") or displayTitle
+        entry.titleText:SetText(displayTitle)
+        entry.titleShadow:SetText(displayTitle)
+
+        -- Zone label
+        local showZoneLabels = addon.GetDB("showZoneLabels", true)
+        local playerZone = GetPlayerCurrentZoneName()
+        local inCurrentZone = questData.isNearby or (questData.zoneName and playerZone and questData.zoneName:lower() == playerZone:lower())
+        local shouldShowZone = showZoneLabels and questData.zoneName and not inCurrentZone
+        if shouldShowZone then
+            local zoneLabel = questData.zoneName
+            local isOffMapWorld = (questData.category == "WORLD") and questData.isTracked and not questData.isNearby
+            if isOffMapWorld then zoneLabel = ("[Off-map] %s"):format(zoneLabel) end
+            entry.zoneText:SetText(zoneLabel)
+            entry.zoneShadow:SetText(zoneLabel)
+            local zoneColor = (addon.GetZoneColor and addon.GetZoneColor(effectiveCat)) or addon.ZONE_COLOR or { 0.8, 0.8, 0.8 }
+            entry.zoneText:SetTextColor(zoneColor[1], zoneColor[2], zoneColor[3], 1)
+        end
+
+        -- Objectives (SetText, SetTextColor only)
+        local objectives = questData.objectives or {}
+        local showEllipsis = questData.isAchievement and #objectives > 4
+        for j = 1, addon.MAX_OBJECTIVES do
+            local obj = entry.objectives[j]
+            if not obj then break end
+
+            local oData = objectives[j]
+            if showEllipsis then
+                if j == 5 then oData = { text = "...", finished = false }
+                elseif j > 4 then oData = nil
+                end
+            end
+
+            if oData and oData.text then
+                local objText = oData.text or ""
+                if showObjectiveNumbers then objText = ("%d. %s"):format(j, objText) end
+                obj.text:SetText(objText)
+                obj.shadow:SetText(objText)
+                if oData.finished then
+                    obj.text:SetTextColor(doneColor[1], doneColor[2], doneColor[3], 1)
+                else
+                    obj.text:SetTextColor(objColor[1], objColor[2], objColor[3], 1)
+                end
+            end
+        end
+
+        if questData.isComplete and (not objectives or #objectives == 0) then
+            local obj = entry.objectives[1]
+            if obj then
+                local turnInText = showObjectiveNumbers and "1. Ready to turn in" or "Ready to turn in"
+                obj.text:SetText(turnInText)
+                obj.shadow:SetText(turnInText)
+                obj.text:SetTextColor(doneColor[1], doneColor[2], doneColor[3], 1)
+            end
+        end
+
+        -- WQ/Scenario timer and progress text
+        local isWorld = questData.category == "WORLD" or questData.category == "CALLING"
+        local isScenario = questData.category == "SCENARIO"
+        if (isWorld or isScenario) and not questData.isRare then
+            local timerStr
+            if questData.timeLeftSeconds and questData.timeLeftSeconds > 0 then
+                timerStr = FormatTimeLeftSeconds(questData.timeLeftSeconds)
+            elseif questData.timeLeft and questData.timeLeft > 0 then
+                timerStr = FormatTimeLeftMinutes(questData.timeLeft)
+            end
+            if timerStr then
+                local showTimer = isScenario or addon.GetDB("showWorldQuestTimer", true)
+                if showTimer then
+                    entry.wqTimerText:SetText(timerStr)
+                end
+            end
+
+            local firstPercent
+            for _, o in ipairs(objectives) do
+                if o.percent ~= nil and not o.finished then firstPercent = o.percent; break end
+            end
+            if firstPercent ~= nil then
+                entry.wqProgressText:SetText(tostring(firstPercent) .. "%")
+            end
+        end
+            end
+        end
+    end
+end
+
+addon.RefreshContentInCombat = RefreshContentInCombat
+
 --- Full layout of the objectives panel.
 -- @brief Computes and applies the complete tracker layout: visibility, quest list, section headers, entry positions, scroll height.
 -- Algorithm: (1) Bail if disabled or in combat. (2) Hide panel if instance visibility

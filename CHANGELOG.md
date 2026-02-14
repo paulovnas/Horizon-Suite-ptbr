@@ -8,6 +8,15 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [1.0.6] – 2026-02-14
+
+### Fixes
+
+- **(Focus)** Quest text (objectives, timers) now updates during combat — Content-only refresh runs when ScheduleRefresh is requested in combat.
+- **(Presence)** Quest progress and kills in combat now show Presence toasts — Removed combat lock in QueueOrPlay so progress and kills (e.g. Argent Tournament jousting) appear.
+
+---
+
 ## [1.0.5] – 2026-02-14
 
 ### New Features

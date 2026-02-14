@@ -46,7 +46,14 @@ local function ScheduleRefresh()
     addon.refreshPending = true
     C_Timer.After(0.05, function()
         addon.refreshPending = false
-        if addon.enabled and addon.FullLayout then addon.FullLayout() end
+        if not addon.enabled then return end
+        if InCombatLockdown() then
+            addon.layoutPendingAfterCombat = true
+            if addon.RefreshContentInCombat then addon.RefreshContentInCombat() end
+            return
+        end
+        addon.layoutPendingAfterCombat = false
+        if addon.FullLayout then addon.FullLayout() end
     end)
 end
 

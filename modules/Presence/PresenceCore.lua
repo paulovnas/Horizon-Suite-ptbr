@@ -455,8 +455,6 @@ function addon.Presence.QueueOrPlay(typeName, title, subtitle, opts)
 
     opts = opts or {}
 
-    if InCombatLockdown() and cfg.pri < 4 then return end
-
     if active then
         if cfg.pri >= active.pri then
             interruptCurrent()
