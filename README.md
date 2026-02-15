@@ -1,5 +1,9 @@
 # 🌌 Horizon Suite
 
+[![Release](https://img.shields.io/github/v/release/Crystilac93/Horizon-Suite?display_name=release)](https://github.com/Crystilac93/Horizon-Suite/releases) [![Release Date](https://img.shields.io/github/release-date-pre/Crystilac93/Horizon-Suite)](https://github.com/Crystilac93/Horizon-Suite/releases) [![Discord](https://img.shields.io/discord/1471477531805749412?label=Discord&labelColor=%237289da)](https://discord.gg/MndCSYQ2ra)
+
+[![Patreon](https://img.shields.io/badge/build-donate-orange?label=patreon)](https://www.patreon.com/c/HorizonSuite)  [![Ko-fi](https://img.shields.io/badge/build-tip-purple?label=Ko-fi)](https://ko-fi.com/horizonsuite)
+
 **Horizon Suite** is a core addon with pluggable modules: **Focus** (objective tracker) and **Presence** (zone text & notifications). Designed for the Midnight era—clean, cinematic, player-in-control. It replaces static, cluttered lists with a fluid interface that grants you total agency over your goals. Additional suites will appear as modules in the same options panel.
 
 <p align="center">
