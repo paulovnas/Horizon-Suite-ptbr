@@ -35,6 +35,19 @@ jobs:
           if [ -z "$ZIP" ]; then echo "No zip found in .release/"; exit 1; fi
           cp "$ZIP" .release/HorizonSuite-beta.zip
 
+      - name: Extract pipeline changelog
+        id: extract_changelog
+        run: |
+          CONTENT=$(awk '/^## Changelog$/{flag=1;next} /^---$|^## /{flag=0} flag' pipeline.md)
+          if [ -z "$CONTENT" ]; then
+            BODY="Rolling beta from **main**. Download the zip below."
+          else
+            BODY="Rolling beta from **main**. Download the zip below."$'\n\n'"## Recent changes"$'\n\n'"$CONTENT"
+          fi
+          echo "changelog<<CHANGELOG_EOF" >> $GITHUB_OUTPUT
+          printf '%s\n' "$BODY" >> $GITHUB_OUTPUT
+          echo "CHANGELOG_EOF" >> $GITHUB_OUTPUT
+
       - name: Create or update Beta release
         uses: IsaacShelton/update-existing-release@v1.3.5
         with:
@@ -43,7 +56,7 @@ jobs:
           tag: beta
           replace: true
           prerelease: true
-          body: "Rolling beta from **main**. Download the zip below."
+          body: ${{ steps.extract_changelog.outputs.changelog }}
           files: .release/HorizonSuite-beta.zip
 
       - name: Post to Discord
@@ -56,6 +69,4 @@ jobs:
           avatar-url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
           embed-title: "New Beta Build: ${{ github.event.repository.name }}"
           embed-url: "https://github.com/${{ github.repository }}/releases/tag/beta"
-          embed-description: |
-            **Rolling beta updated from main**
-            [Download zip](https://github.com/${{ github.repository }}/releases/tag/beta)
+          embed-description: ${{ steps.extract_changelog.outputs.changelog }}
