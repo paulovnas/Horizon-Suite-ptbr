@@ -10,6 +10,26 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [1.1.3] – 2026-02-15
+
+### New Features
+
+- **(Focus) In-zone world quests, weeklies and dailies** — Shown when in zone; right-click untracks and hides until zone change (not subzone). Option in Display → List to show a suffix for in-zone but not yet in log.
+
+### Improvements
+
+- **(Focus) Tracked WQs and in-log weeklies/dailies** — Now sort to the top of their section.
+
+- **(Focus) Promotion animation** — Only the promoted quest fades out then fades in at the top; fixed blank space until next event.
+
+- **(Focus) Right-click on world quests** — Untracks only (no abandon popup); Ctrl+right-click still abandons.
+
+### Fixes
+
+- **(Focus) Category reordering** — Drop target now matches cursor; auto-scroll direction when dragging near top or bottom corrected.
+
+---
+
 ## [1.1.2] – 2026-02-15
 
 ### Fixes
