@@ -128,6 +128,16 @@ Horizon is built for players who value an intentional, clean UI. If the suite ha
 
 ---
 
+## Contributing
+
+**Bug reports & feature requests** — Use [GitHub Issues](https://github.com/Crystilac93/Horizon-Suite/issues). Choose the Bug report or Feature request template for structured intake. Reports from Discord, Reddit, or CurseForge are also welcome; you can paste them into a new issue.
+
+**Pull requests** — Contributions are welcome. Use the PR template and include `Closes #N` in the description to link your PR to an issue. When merged, linked issues auto-close and the beta build updates automatically.
+
+**Labels** — Issues use labels for type (`bug`, `feature`, `improvement`), module (`module:Focus`, `module:Presence`), and priority (`priority:P0`, `P1`, `P2`). Filter by label to find issues to work on.
+
+---
+
 ## Contributors
 
 Thanks to everyone who has contributed to Horizon Suite:

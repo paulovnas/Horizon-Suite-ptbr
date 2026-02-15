@@ -35,14 +35,48 @@ jobs:
           if [ -z "$ZIP" ]; then echo "No zip found in .release/"; exit 1; fi
           cp "$ZIP" .release/HorizonSuite-beta.zip
 
-      - name: Extract changelog
+      - name: Build beta changelog from closed issues
         id: extract_changelog
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          CONTENT=$(awk '/^## \[Unreleased\]$/{flag=1;next} /^---$|^## /{flag=0} flag' CHANGELOG.md)
-          if [ -z "$CONTENT" ]; then
-            BODY="Rolling beta from **main**. Download the zip below."
+          LAST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            TAG_DATE=$(git log -1 --format=%cd --date=short "$LAST_TAG")
+            SEARCH="closed:>$TAG_DATE"
           else
-            BODY="Rolling beta from **main**. Download the zip below."$'\n\n'"## Recent changes"$'\n\n'"$CONTENT"
+            SEARCH="closed:>2020-01-01"
+          fi
+          FEATURES=""
+          IMPROVEMENTS=""
+          FIXES=""
+          while IFS= read -r line; do
+            num=$(echo "$line" | jq -r '.number')
+            title=$(echo "$line" | jq -r '.title')
+            labels=$(echo "$line" | jq -r '.labels[].name' | tr '\n' ' ')
+            module=""
+            [[ "$labels" =~ module:Focus ]] && module="(Focus) "
+            [[ "$labels" =~ module:Presence ]] && module="(Presence) "
+            [[ "$labels" =~ module:Core ]] && module="(Core) "
+            bullet="- ${module}${title} (#${num})"
+            if [[ "$labels" =~ \bfeature\b ]]; then
+              FEATURES="${FEATURES}${bullet}"$'\n'
+            elif [[ "$labels" =~ \bimprovement\b ]]; then
+              IMPROVEMENTS="${IMPROVEMENTS}${bullet}"$'\n'
+            elif [[ "$labels" =~ \bbug\b ]]; then
+              FIXES="${FIXES}${bullet}"$'\n'
+            fi
+          done < <(gh issue list --state closed --search "$SEARCH" --json number,title,labels --limit 100 | jq -c '.[]' 2>/dev/null || true)
+          SECTIONS=""
+          [ -n "$FEATURES" ] && SECTIONS="${SECTIONS}### New Features"$'\n\n'"$FEATURES"$'\n'
+          [ -n "$IMPROVEMENTS" ] && SECTIONS="${SECTIONS}### Improvements"$'\n\n'"$IMPROVEMENTS"$'\n'
+          [ -n "$FIXES" ] && SECTIONS="${SECTIONS}### Fixes"$'\n\n'"$FIXES"$'\n'
+          if [ -n "$SECTIONS" ]; then
+            SINCE=""
+            [ -n "$LAST_TAG" ] && SINCE=" (since $LAST_TAG)"
+            BODY="Rolling beta from **main**. Download the zip below."$'\n\n'"## Recent changes${SINCE}"$'\n\n'"$SECTIONS"
+          else
+            BODY="Rolling beta from **main**. Download the zip below."
           fi
           echo "changelog<<CHANGELOG_EOF" >> $GITHUB_OUTPUT
           printf '%s\n' "$BODY" >> $GITHUB_OUTPUT

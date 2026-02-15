@@ -1,0 +1,58 @@
+name: Setup Labels
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  create-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = [
+              { name: 'bug', description: 'Defect / broken behavior', color: 'd73a4a' },
+              { name: 'feature', description: 'New capability', color: 'a2eeef' },
+              { name: 'improvement', description: 'Enhancement to existing functionality', color: '84b6eb' },
+              { name: 'idea', description: 'Speculative / backlog', color: 'fef2c0' },
+              { name: 'module:Focus', description: 'Focus tracker module', color: '1d76db' },
+              { name: 'module:Presence', description: 'Presence notification module', color: '1d76db' },
+              { name: 'module:Core', description: 'Core addon / options / general', color: '1d76db' },
+              { name: 'priority:P0', description: 'Major / blocking', color: 'b60205' },
+              { name: 'priority:P1', description: 'Minor / next', color: 'fbca04' },
+              { name: 'priority:P2', description: 'Patch / low', color: '0e8a16' },
+              { name: 'source:reddit', description: 'Report from Reddit', color: 'ededed' },
+              { name: 'source:discord', description: 'Report from Discord', color: 'ededed' },
+              { name: 'source:curseforge', description: 'Report from CurseForge', color: 'ededed' },
+              { name: 'source:github', description: 'Report from GitHub', color: 'ededed' },
+            ];
+            for (const label of labels) {
+              try {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label.name,
+                  description: label.description,
+                  color: label.color.replace('#', ''),
+                });
+                console.log(`Created label: ${label.name}`);
+              } catch (err) {
+                if (err.status === 422) {
+                  await github.rest.issues.updateLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name: label.name,
+                    description: label.description,
+                    color: label.color.replace('#', ''),
+                  });
+                  console.log(`Updated label: ${label.name}`);
+                } else {
+                  throw err;
+                }
+              }
+            }

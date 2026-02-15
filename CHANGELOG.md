@@ -6,11 +6,7 @@ All notable changes to Horizon Suite are documented here.
 
 ## [Unreleased]
 
-- 2026-02-15 — Fixed reordering of organization categories: drop target now matches cursor; auto-scroll direction when dragging near top or bottom corrected.
-- 2026-02-15 — (Focus) In-zone world quests, weeklies & dailies: shown when in zone; right-click untracks and hides until zone change (not subzone). Option to show `**` suffix for in-zone but not in log (Display → List).
-- 2026-02-15 — (Focus) Tracked world quests and in-log weeklies/dailies sort to the top of their section.
-- 2026-02-15 — (Focus) Promotion animation: only the promoted quest fades out then fades in at the top; fixed blank space until next event.
-- 2026-02-15 — (Focus) Right-click on world quests untracks only (no abandon popup); Ctrl+right-click still abandons.
+<!-- Changelog entries are generated from closed GitHub Issues at release time. -->
 
 ---
 
