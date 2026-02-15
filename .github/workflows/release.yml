@@ -21,3 +21,16 @@ jobs:
 
       - name: WoW Packager
         uses: BigWigsMods/packager@v2.5.1
+
+      - name: Post to Discord
+        if: success()
+        continue-on-error: true
+        uses: tsickert/discord-webhook@v5.3.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+          username: "Addon Release Bot"
+          avatar-url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+          embed-title: "New Release: ${{ github.event.repository.name }} — ${{ github.ref_name }}"
+          embed-url: "https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+          embed-description: |
+            **Full release.** [Download on GitHub](https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}) · CurseForge · Wago
