@@ -6,18 +6,18 @@ $labels = @(
     @{ name = "feature"; desc = "New capability"; color = "a2eeef" },
     @{ name = "improvement"; desc = "Enhancement to existing functionality"; color = "84b6eb" },
     @{ name = "idea"; desc = "Speculative / backlog"; color = "fef2c0" },
-    @{ name = "module:Focus"; desc = "Focus tracker module"; color = "1d76db" },
-    @{ name = "module:Presence"; desc = "Presence notification module"; color = "1d76db" },
-    @{ name = "module:Core"; desc = "Core addon / options / general"; color = "1d76db" },
-    @{ name = "module:Vista"; desc = "Vista / minimap module"; color = "1d76db" },
-    @{ name = "module:Yield"; desc = "Yield / loot module"; color = "1d76db" },
-    @{ name = "module:Pulse"; desc = "Pulse / combat module"; color = "1d76db" },
-    @{ name = "module:Essence"; desc = "Essence / unit frames module"; color = "1d76db" },
-    @{ name = "module:Insight"; desc = "Insight / tooltips module"; color = "1d76db" },
-    @{ name = "module:Verse"; desc = "Verse / chat module"; color = "1d76db" },
-    @{ name = "priority:P0"; desc = "Major / blocking"; color = "b60205" },
-    @{ name = "priority:P1"; desc = "Minor / next"; color = "fbca04" },
-    @{ name = "priority:P2"; desc = "Patch / low"; color = "0e8a16" }
+    @{ name = "Focus"; desc = "Focus tracker module"; color = "1d76db" },
+    @{ name = "Presence"; desc = "Presence notification module"; color = "1d76db" },
+    @{ name = "Core"; desc = "Core addon / options / general"; color = "1d76db" },
+    @{ name = "Vista"; desc = "Vista / minimap module"; color = "1d76db" },
+    @{ name = "Yield"; desc = "Yield / loot module"; color = "1d76db" },
+    @{ name = "Pulse"; desc = "Pulse / combat module"; color = "1d76db" },
+    @{ name = "Essence"; desc = "Essence / unit frames module"; color = "1d76db" },
+    @{ name = "Insight"; desc = "Insight / tooltips module"; color = "1d76db" },
+    @{ name = "Verse"; desc = "Verse / chat module"; color = "1d76db" },
+    @{ name = "Priority 0"; desc = "Major / blocking"; color = "b60205" },
+    @{ name = "Priority 1"; desc = "Minor / next"; color = "fbca04" },
+    @{ name = "Priority 2"; desc = "Patch / low"; color = "0e8a16" }
 )
 
 foreach ($l in $labels) {

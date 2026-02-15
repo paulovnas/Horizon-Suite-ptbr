@@ -55,15 +55,15 @@ jobs:
             title=$(echo "$line" | jq -r '.title')
             labels=$(echo "$line" | jq -r '.labels[].name' | tr '\n' ' ')
             module=""
-            [[ "$labels" =~ module:Focus ]] && module="(Focus) "
-            [[ "$labels" =~ module:Presence ]] && module="(Presence) "
-            [[ "$labels" =~ module:Core ]] && module="(Core) "
-            [[ "$labels" =~ module:Vista ]] && module="(Vista) "
-            [[ "$labels" =~ module:Yield ]] && module="(Yield) "
-            [[ "$labels" =~ module:Pulse ]] && module="(Pulse) "
-            [[ "$labels" =~ module:Essence ]] && module="(Essence) "
-            [[ "$labels" =~ module:Insight ]] && module="(Insight) "
-            [[ "$labels" =~ module:Verse ]] && module="(Verse) "
+            [[ "$labels" =~ \bFocus\b ]] && module="(Focus) "
+            [[ "$labels" =~ \bPresence\b ]] && module="(Presence) "
+            [[ "$labels" =~ \bCore\b ]] && module="(Core) "
+            [[ "$labels" =~ \bVista\b ]] && module="(Vista) "
+            [[ "$labels" =~ \bYield\b ]] && module="(Yield) "
+            [[ "$labels" =~ \bPulse\b ]] && module="(Pulse) "
+            [[ "$labels" =~ \bEssence\b ]] && module="(Essence) "
+            [[ "$labels" =~ \bInsight\b ]] && module="(Insight) "
+            [[ "$labels" =~ \bVerse\b ]] && module="(Verse) "
             bullet="- ${module}${title} (#${num})"
             if [[ "$labels" =~ \bfeature\b ]]; then
               FEATURES="${FEATURES}${bullet}"$'\n'

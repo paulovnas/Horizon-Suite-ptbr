@@ -134,7 +134,7 @@ Horizon is built for players who value an intentional, clean UI. If the suite ha
 
 **Pull requests** — Contributions are welcome. Use the PR template and include `Closes #N` in the description to link your PR to an issue. When merged, linked issues auto-close and the beta build updates automatically.
 
-**Labels** — Issues use labels for type (`bug`, `feature`, `improvement`), module (`module:Focus`, `module:Presence`), and priority (`priority:P0`, `P1`, `P2`). Filter by label to find issues to work on.
+**Labels** — Issues use labels for type (`bug`, `feature`, `improvement`), module (`Focus`, `Presence`, `Vista`, etc.), and priority (`Priority 0`, `Priority 1`, `Priority 2`). Filter by label to find issues to work on.
 
 ---
 

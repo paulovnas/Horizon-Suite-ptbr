@@ -10,7 +10,6 @@ $pipelinePath = Join-Path $PSScriptRoot "..\pipeline.md"
 $content = if (Test-Path $pipelinePath) {
     Get-Content $pipelinePath -Raw
 } else {
-    # pipeline.md was removed; try to read from git history
     $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
     Push-Location $repoRoot
     try {
@@ -25,27 +24,44 @@ $content = if (Test-Path $pipelinePath) {
     }
 }
 
-$openSection = $content -match '(?s)## Open Items\s*\n(.*?)\n---\s*\n\n## Closed'
+if (-not $content) { Write-Error "Could not read pipeline.md"; exit 1 }
+
+$openSection = $content -match '(?s)## Open Items\s*\n(.*?)\n---'
 if (-not $openSection) { Write-Error "Could not find Open Items section"; exit 1 }
 
 $openBlock = $Matches[1]
-$lines = $openBlock -split '\n' | Where-Object { $_.Trim() -match '^- `' }
+$lines = $openBlock -split "`n" | Where-Object { $_.Trim() -like '- ``*' }
 
 $count = 0
 foreach ($line in $lines) {
-    if ($line -notmatch '^- `(BUG|FEAT|IMPR|IDEA|MOD|DOC)` OPEN \d{4}-\d{2}-\d{2} (\[P\d\])? ') { continue }
-
-    $rest = $line -replace '^- `(BUG|FEAT|IMPR|IDEA|MOD|DOC)` OPEN \d{4}-\d{2}-\d{2} (\[P\d\])? ', ''
-    $rest = $rest -replace '^`\[(Focus|Presence|Vista)\]` ', ''
+    if ($line -notmatch '- `(BUG|FEAT|IMPR|IDEA|MOD|DOC)` OPEN \d{4}-\d{2}-\d{2}') { continue }
 
     $tag = $Matches[1]
-    $priority = if ($Matches[2]) { $Matches[2] -replace '\[|\]' } else { "P2" }
+
+    # Extract priority
+    $priority = "Priority 2"
+    if ($line -match '\[P0\]') { $priority = "Priority 0" }
+    elseif ($line -match '\[P1\]') { $priority = "Priority 1" }
+    elseif ($line -match '\[P2\]') { $priority = "Priority 2" }
+
+    # Extract module
     $module = $null
     if ($line -match '`\[Focus\]`') { $module = "Focus" }
     elseif ($line -match '`\[Presence\]`') { $module = "Presence" }
     elseif ($line -match '`\[Vista\]`') { $module = "Vista" }
 
-    $title = $rest.Trim() -replace '^`|`$', '' -replace '\. →.*$', ''
+    # Extract title: strip tag, status, date, priority, module prefix
+    $title = $line -replace '^\s*-\s*`(BUG|FEAT|IMPR|IDEA|MOD|DOC)` OPEN \d{4}-\d{2}-\d{2}\s*', ''
+    $title = $title -replace '^\[P[012]\]\s*', ''
+    $title = $title -replace '^`\[(Focus|Presence|Vista)\]`\s*', ''
+    # Remove trailing plan links
+    if ($title -match '\.\s') {
+        $idx = $title.IndexOf('. ')
+        if ($idx -gt 0 -and $title.Substring($idx) -match 'plan') {
+            $title = $title.Substring(0, $idx + 1)
+        }
+    }
+    $title = $title.Trim()
     if ($title.Length -gt 256) { $title = $title.Substring(0, 253) + "..." }
 
     # Map tag to GitHub label
@@ -59,16 +75,16 @@ foreach ($line in $lines) {
         default { "feature" }
     }
 
-    $labels = @($typeLabel)
-    $labels += "priority:$priority"
-    if ($module) { $labels += "module:$module" }
+    $labelArgs = @($typeLabel, $priority)
+    if ($module) { $labelArgs += $module }
+    $labelStr = ($labelArgs | ForEach-Object { "--label ""$_""" }) -join " "
 
-    $labelArg = ($labels | ForEach-Object { "--label `"$_`"" }) -join " "
+    $safeTitle = $title -replace '"', '\"'
     $body = "Migrated from pipeline.md (GitHub Issues workflow)"
-    $titleEscaped = $title -replace '"', '\"'
+    $cmd = "gh issue create --title ""$safeTitle"" --body ""$body"" $labelStr"
 
-    $cmd = "gh issue create --title `"$titleEscaped`" --body `"$body`" $labelArg"
     if ($Execute) {
+        Write-Host "Creating: $title"
         Invoke-Expression $cmd
         if ($LASTEXITCODE -ne 0) { Write-Warning "Failed: $cmd" }
     } else {
