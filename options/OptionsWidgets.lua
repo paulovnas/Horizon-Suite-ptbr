@@ -328,6 +328,24 @@ function OptionsWidgets_CreateCustomDropdown(parent, labelText, description, opt
     listBg:SetColorTexture(Def.SectionCardBg[1], Def.SectionCardBg[2], Def.SectionCardBg[3], Def.SectionCardBg[4])
     addon.CreateBorder(list, Def.SectionCardBorder)
 
+    -- ScrollFrame for dropdown content
+    local scrollFrame = CreateFrame("ScrollFrame", nil, list)
+    scrollFrame:SetAllPoints(list)
+    
+    local scrollChild = CreateFrame("Frame", nil, scrollFrame)
+    scrollFrame:SetScrollChild(scrollChild)
+    scrollChild:SetWidth(1)
+    scrollChild:SetHeight(1)
+
+    -- Enable mousewheel scrolling
+    list:EnableMouseWheel(true)
+    list:SetScript("OnMouseWheel", function(self, delta)
+        local current = scrollFrame:GetVerticalScroll()
+        local maxScroll = math.max(0, scrollChild:GetHeight() - scrollFrame:GetHeight())
+        local newScroll = math.max(0, math.min(current - (delta * 22), maxScroll))
+        scrollFrame:SetVerticalScroll(newScroll)
+    end)
+
     local catch = CreateFrame("Button", nil, UIParent)
     catch:SetFrameStrata("TOOLTIP")
     catch:SetAllPoints(UIParent)
@@ -356,13 +374,19 @@ function OptionsWidgets_CreateCustomDropdown(parent, labelText, description, opt
         local opts = (type(options) == "function" and options()) or options or {}
         local num = #opts
         local rowH = 22
-        list:SetHeight(num * rowH)
+        local maxHeight = 220
+        local totalHeight = num * rowH
+        list:SetHeight(math.min(totalHeight, maxHeight))
         list:SetWidth(btn:GetWidth())
-        while list:GetNumChildren() < num do
-            local b = CreateFrame("Button", nil, list)
+        scrollChild:SetWidth(btn:GetWidth())
+        scrollChild:SetHeight(totalHeight)
+        scrollFrame:SetVerticalScroll(0)
+        
+        while scrollChild:GetNumChildren() < num do
+            local b = CreateFrame("Button", nil, scrollChild)
             b:SetHeight(rowH)
-            b:SetPoint("LEFT", list, "LEFT", 0, 0)
-            b:SetPoint("RIGHT", list, "RIGHT", 0, 0)
+            b:SetPoint("LEFT", scrollChild, "LEFT", 0, 0)
+            b:SetPoint("RIGHT", scrollChild, "RIGHT", 0, 0)
             local tb = b:CreateFontString(nil, "OVERLAY")
             tb:SetFont(Def.FontPath, Def.LabelSize, "OUTLINE")
             tb:SetPoint("LEFT", b, "LEFT", 8, 0)
@@ -375,13 +399,13 @@ function OptionsWidgets_CreateCustomDropdown(parent, labelText, description, opt
             b:SetScript("OnEnter", function() hi:Show() end)
             b:SetScript("OnLeave", function() hi:Hide() end)
         end
-        local children = { list:GetChildren() }
+        local children = { scrollChild:GetChildren() }
         for i, opt in ipairs(opts) do
             local name = opt[1]
             local value = opt[2]
             local b = children[i]
             if b then
-                b:SetPoint("TOP", list, "TOP", 0, -(i - 1) * rowH)
+                b:SetPoint("TOP", scrollChild, "TOP", 0, -(i - 1) * rowH)
                 b.text:SetText(name)
                 b:SetScript("OnClick", function()
                     setValue(value, name)
