@@ -35,10 +35,10 @@ jobs:
           if [ -z "$ZIP" ]; then echo "No zip found in .release/"; exit 1; fi
           cp "$ZIP" .release/HorizonSuite-beta.zip
 
-      - name: Extract pipeline changelog
+      - name: Extract changelog
         id: extract_changelog
         run: |
-          CONTENT=$(awk '/^## Changelog$/{flag=1;next} /^---$|^## /{flag=0} flag' pipeline.md)
+          CONTENT=$(awk '/^## \[Unreleased\]$/{flag=1;next} /^---$|^## /{flag=0} flag' CHANGELOG.md)
           if [ -z "$CONTENT" ]; then
             BODY="Rolling beta from **main**. Download the zip below."
           else
