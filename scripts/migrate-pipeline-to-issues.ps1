@@ -43,7 +43,7 @@ foreach ($line in $lines) {
     $module = $null
     if ($line -match '`\[Focus\]`') { $module = "Focus" }
     elseif ($line -match '`\[Presence\]`') { $module = "Presence" }
-    elseif ($line -match '`\[Vista\]`') { $module = "Presence" }
+    elseif ($line -match '`\[Vista\]`') { $module = "Vista" }
 
     $title = $rest.Trim() -replace '^`|`$', '' -replace '\. →.*$', ''
     if ($title.Length -gt 256) { $title = $title.Substring(0, 253) + "..." }
@@ -62,7 +62,6 @@ foreach ($line in $lines) {
     $labels = @($typeLabel)
     $labels += "priority:$priority"
     if ($module) { $labels += "module:$module" }
-    $labels += "source:github"
 
     $labelArg = ($labels | ForEach-Object { "--label `"$_`"" }) -join " "
     $body = "Migrated from pipeline.md (GitHub Issues workflow)"

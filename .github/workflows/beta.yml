@@ -58,6 +58,12 @@ jobs:
             [[ "$labels" =~ module:Focus ]] && module="(Focus) "
             [[ "$labels" =~ module:Presence ]] && module="(Presence) "
             [[ "$labels" =~ module:Core ]] && module="(Core) "
+            [[ "$labels" =~ module:Vista ]] && module="(Vista) "
+            [[ "$labels" =~ module:Yield ]] && module="(Yield) "
+            [[ "$labels" =~ module:Pulse ]] && module="(Pulse) "
+            [[ "$labels" =~ module:Essence ]] && module="(Essence) "
+            [[ "$labels" =~ module:Insight ]] && module="(Insight) "
+            [[ "$labels" =~ module:Verse ]] && module="(Verse) "
             bullet="- ${module}${title} (#${num})"
             if [[ "$labels" =~ \bfeature\b ]]; then
               FEATURES="${FEATURES}${bullet}"$'\n'
