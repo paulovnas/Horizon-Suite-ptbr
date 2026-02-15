@@ -346,7 +346,10 @@ function OptionsWidgets_CreateCustomDropdown(parent, labelText, description, opt
     end
 
     btn:SetScript("OnClick", function()
-        if list:IsShown() then closeList() return end
+        if list:IsShown() then
+             closeList()
+             return
+        end
         list:SetParent(UIParent)
         list:ClearAllPoints()
         list:SetPoint("TOPLEFT", btn, "BOTTOMLEFT", 0, -2)
@@ -378,7 +381,7 @@ function OptionsWidgets_CreateCustomDropdown(parent, labelText, description, opt
             local value = opt[2]
             local b = children[i]
             if b then
-                b:SetPoint("TOP", list, "TOP", 0, -(i-1)*rowH)
+                b:SetPoint("TOP", list, "TOP", 0, -(i - 1) * rowH)
                 b.text:SetText(name)
                 b:SetScript("OnClick", function()
                     setValue(value, name)
@@ -789,28 +792,27 @@ function OptionsWidgets_CreateReorderList(parent, anchor, opt, scrollFrameRef, p
     end
 
     --- Compute insertion index from cursor Y using row screen bounds (avoids IsMouseOver quirks in scroll frames).
-    local function getInsertionIndexFromCursor(cursorScreenY)
-        if #rows == 0 then return 1 end
-        if not cursorScreenY then
-            local _, y = GetCursorPosition()
-            local scale = UIParent and UIParent:GetEffectiveScale() or 1
-            cursorScreenY = scale > 0 and (y / scale) or y
-        end
-        -- Rows are ordered 1=top (larger Y in WoW screen coords). Find which row or gap contains cursor.
-        for i = 1, #rows do
-            local r = rows[i]
-            local top, bottom = r:GetTop(), r:GetBottom()
+    local function getInsertionIndexFromCursor()
+        local activeRows = state.rows
+        if not activeRows or #activeRows == 0 then return 1 end
+        local _, cursorY = GetCursorPosition()
+        local scale = UIParent:GetEffectiveScale()
+        cursorY = cursorY / scale
+        for i = 1, #activeRows do
+            local row = activeRows[i]
+            local top = row:GetTop()
+            local bottom = row:GetBottom()
+
             if top and bottom then
-                if cursorScreenY <= top and cursorScreenY >= bottom then
-                    return i
-                end
-                if cursorScreenY > top then
+                local mid = (top + bottom) / 2
+                if cursorY > mid then
                     return i
                 end
             end
         end
-        return #rows + 1
+        return #activeRows + 1
     end
+
 
     local presetOrder = { "Collection Focused", "Quest Focused", "Campaign Focused", "World / Rare Focused" }
     local presets = (opt.presets and addon.GROUP_ORDER_PRESETS) and opt.presets or nil
@@ -875,71 +877,88 @@ function OptionsWidgets_CreateReorderList(parent, anchor, opt, scrollFrameRef, p
 
     local function applyReorderAndCleanup()
         if not state.active or not state.rows or #state.rows == 0 then return end
+
         panelRef:SetScript("OnUpdate", nil)
         state.active = false
+
         local fromIdx = state.sourceIndex
         local toIdx = state.targetIndex or fromIdx
+
         if state.ghostFrame then state.ghostFrame:Hide() end
         if state.insertionLine then state.insertionLine:Hide() end
         if state.sourceRow then state.sourceRow:SetAlpha(1) end
         if toIdx == fromIdx then return end
+
         local orderedKeys = {}
-        for i, row in ipairs(state.rows) do orderedKeys[i] = row.key end
-        local k = orderedKeys[fromIdx]
+        for i, row in ipairs(state.rows) do
+            orderedKeys[i] = row.key
+        end
+
+        local key = orderedKeys[fromIdx]
         table.remove(orderedKeys, fromIdx)
         local insertAt = (fromIdx < toIdx) and (toIdx - 1) or toIdx
-        table.insert(orderedKeys, insertAt, k)
+        table.insert(orderedKeys, insertAt, key)
         state.set(orderedKeys)
         repositionRows(orderedKeys)
-        if notifyMainAddonFn then notifyMainAddonFn() end
+        if notifyMainAddonFn then
+                notifyMainAddonFn()
+        end
     end
 
+
     local function onReorderUpdate()
-        if not state.active or not IsMouseButtonDown("LeftButton") then
-            applyReorderAndCleanup()
-            return
-        end
+    if not state.active or not IsMouseButtonDown("LeftButton") then
+        applyReorderAndCleanup() return end
+
         local ghost = ensureGhost()
         local line = ensureInsertionLine()
+
         local x, y = GetCursorPosition()
         local scale = UIParent:GetEffectiveScale()
-        if scale and scale > 0 then x, y = x / scale, y / scale end
+        x, y = x / scale, y / scale
+
         ghost:ClearAllPoints()
         ghost:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x, y)
         ghost:Show()
-        if state.ghostLabel and state.sourceRow and state.sourceRow.label then
-            state.ghostLabel:SetText(state.sourceRow.label:GetText() or "")
-        end
-        local insertIdx = getInsertionIndexFromCursor(y)
+
+        local insertIdx = getInsertionIndexFromCursor()
         state.targetIndex = insertIdx
-        if insertIdx <= #rows then
-            local ref = rows[insertIdx]
-            line:ClearAllPoints()
-            line:SetPoint("LEFT", ref, "LEFT", 0, 0)
-            line:SetPoint("RIGHT", ref, "RIGHT", 0, 0)
-            line:SetPoint("BOTTOM", ref, "TOP", 0, REORDER_ROW_GAP / 2)
-            line:Show()
-        elseif #rows > 0 then
-            local last = rows[#rows]
-            line:ClearAllPoints()
-            line:SetPoint("LEFT", last, "LEFT", 0, 0)
-            line:SetPoint("RIGHT", last, "RIGHT", 0, 0)
-            line:SetPoint("TOP", last, "BOTTOM", 0, -REORDER_ROW_GAP / 2)
-            line:Show()
-        end
-        if scrollFrameRef then
-            local vh = scrollFrameRef:GetHeight()
-            local cur = scrollFrameRef:GetVerticalScroll()
-            local maxScroll = math.max((scrollFrameRef:GetScrollChild() and scrollFrameRef:GetScrollChild():GetHeight() or 0) - vh, 0)
-            local sy = select(2, GetCursorPosition()) / (scrollFrameRef:GetEffectiveScale() or 1)
-            local sfBottom = scrollFrameRef:GetBottom()
-            local sfTop = scrollFrameRef:GetTop()
-            if sfTop and sy > sfTop - REORDER_AUTOSCROLL_MARGIN and maxScroll > 0 then
-                scrollFrameRef:SetVerticalScroll(math.min(cur + REORDER_AUTOSCROLL_STEP, maxScroll))
-            elseif sfBottom and sy < sfBottom + REORDER_AUTOSCROLL_MARGIN and cur > 0 then
-                scrollFrameRef:SetVerticalScroll(math.max(cur - REORDER_AUTOSCROLL_STEP, 0))
+
+        local activeRows = state.rows
+        if not activeRows or #activeRows == 0 then return end
+
+            if insertIdx <= #activeRows then
+                local ref = activeRows[insertIdx]
+                line:ClearAllPoints()
+                line:SetPoint("LEFT", ref, "LEFT", 0, 0)
+                line:SetPoint("RIGHT", ref, "RIGHT", 0, 0)
+                line:SetPoint("BOTTOM", ref, "TOP", 0, REORDER_ROW_GAP / 2)
+                line:Show()
+            else
+                local last = activeRows[#activeRows]
+                line:ClearAllPoints()
+                line:SetPoint("LEFT", last, "LEFT", 0, 0)
+                line:SetPoint("RIGHT", last, "RIGHT", 0, 0)
+                line:SetPoint("TOP", last, "BOTTOM", 0, -REORDER_ROW_GAP / 2)
+                line:Show()
             end
-        end
+
+            -- Auto scroll
+            if scrollFrameRef then
+                local sy = y
+                local sfTop = scrollFrameRef:GetTop()
+                local sfBottom = scrollFrameRef:GetBottom()
+                local cur = scrollFrameRef:GetVerticalScroll()
+                local vh = scrollFrameRef:GetHeight()
+                local scrollChild = scrollFrameRef:GetScrollChild()
+                local maxScroll = math.max(((scrollChild and scrollChild:GetHeight() or 0) - vh), 0)
+
+                if sfTop and sy > sfTop - REORDER_AUTOSCROLL_MARGIN and cur > 0 then
+                    scrollFrameRef:SetVerticalScroll(math.max(cur - REORDER_AUTOSCROLL_STEP, 0))
+                elseif sfBottom and sy < sfBottom + REORDER_AUTOSCROLL_MARGIN and maxScroll > 0 then
+                    scrollFrameRef:SetVerticalScroll(math.min(cur + REORDER_AUTOSCROLL_STEP, maxScroll))
+                end
+            end
     end
 
     local prevAnchor = rowListAnchor
@@ -976,6 +995,7 @@ function OptionsWidgets_CreateReorderList(parent, anchor, opt, scrollFrameRef, p
         end)
         rows[i] = row
     end
+    state.rows = rows
 
     local resetBtn = CreateFrame("Button", nil, container)
     state.resetBtn = resetBtn
