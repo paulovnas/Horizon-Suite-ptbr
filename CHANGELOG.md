@@ -10,6 +10,32 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [1.1.4] – 2026-02-16
+
+### New Features
+
+- **(Focus) Quest text adapts to tracker height** — Full text shows or hides based on available space when the tracker is short.
+
+- **(Vista)** Game reports addon action no longer blocked when opening the World Map.
+
+- **Setting to hide or show the drag-to-resize handle** — Option for the bottom-right corner of the quest list.
+
+### Fixes
+
+- **(Focus)** Quest titles with apostrophes no longer show wrong capitalization (e.g. "Traitor'S Rest").
+
+- **(Core)** Version number in settings window now matches the addon version.
+
+- **(Presence)** Quest update bugs fixed: race conditions causing 0/X display, intermediate progress numbers, and suppressed completion toasts.
+
+- **(Focus)** World quest zone labels corrected; in-zone redundancy and off-map missing labels fixed.
+
+- **(Core)** Font dropdown is now scrollable so fonts below the fold can be selected.
+
+- **(Focus)** SharedMedia compatibility added so addons and custom fonts can be used across the suite.
+
+---
+
 ## [1.1.3] – 2026-02-15
 
 ### New Features
