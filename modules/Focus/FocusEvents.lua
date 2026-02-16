@@ -127,6 +127,29 @@ local function OnPlayerRegenEnabled()
     end
 end
 
+-- When entering a Delve/dungeon, APIs can lag. Poll until instance state is true, then run FullLayout directly
+-- (same as options toggle path) so "hide other categories in Delve/Dungeon" is applied even if ScheduleRefresh was no-op.
+local function StartInstanceStatePoll()
+    if not addon.enabled or not (addon.IsDelveActive or addon.IsInPartyDungeon) then return end
+    local attempts = 0
+    local function poll()
+        attempts = attempts + 1
+        if not addon.enabled then return end
+        local inDelve = addon.IsDelveActive and addon.IsDelveActive()
+        local inDungeon = addon.IsInPartyDungeon and addon.IsInPartyDungeon()
+        if inDelve or inDungeon then
+            if addon.FullLayout and not InCombatLockdown() then
+                addon.FullLayout()
+            end
+            return
+        end
+        if attempts < 10 then
+            C_Timer.After(0.5, poll)
+        end
+    end
+    C_Timer.After(0.5, poll)
+end
+
 local function OnPlayerLoginOrEnteringWorld()
     if addon.enabled then
         addon.zoneJustChanged = true
@@ -134,6 +157,7 @@ local function OnPlayerLoginOrEnteringWorld()
         ScheduleRefresh()
         C_Timer.After(0.4, function() if addon.enabled then addon.FullLayout() end end)
         C_Timer.After(1.5, function() if addon.enabled then ScheduleRefresh() end end)
+        StartInstanceStatePoll()
         -- Prime endeavor cache so GetInitiativeTaskInfo returns objectives without user opening the panel (Blizz bug workaround)
         C_Timer.After(0.2, function()
             if addon.enabled and addon.GetTrackedEndeavorIDs and addon.RequestEndeavorTaskInfo then
@@ -223,6 +247,7 @@ local function OnZoneChanged(event)
     ScheduleRefresh()
     C_Timer.After(0.4, function() if addon.enabled then addon.FullLayout() end end)
     C_Timer.After(1.5, function() if addon.enabled then ScheduleRefresh() end end)
+    StartInstanceStatePoll()
 end
 
 local eventHandlers = {

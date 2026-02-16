@@ -313,7 +313,42 @@ local function RemoveWorldQuestWatch(questID)
     end
 end
 
+local function GetNearbyDebugInfo()
+    local lines = {}
+    if not C_Map or not C_Map.GetBestMapForUnit then
+        lines[#lines + 1] = "C_Map.GetBestMapForUnit not available."
+        return lines
+    end
+    local mapID = C_Map.GetBestMapForUnit("player")
+    if mapID and C_Map.GetMapInfo then
+        local info = C_Map.GetMapInfo(mapID)
+        lines[#lines + 1] = ("GetBestMapForUnit mapID: %s, name: %s"):format(tostring(mapID), info and (info.name or "nil") or "nil")
+        if info then
+            lines[#lines + 1] = ("  mapType: %s, parentMapID: %s"):format(tostring(info.mapType), tostring(info.parentMapID or "nil"))
+        end
+    else
+        lines[#lines + 1] = "GetBestMapForUnit returned nil or GetMapInfo not available."
+    end
+    if GetZoneText then
+        lines[#lines + 1] = ("GetZoneText: %s"):format(tostring(GetZoneText()))
+    end
+    if GetSubZoneText then
+        lines[#lines + 1] = ("GetSubZoneText: %s"):format(tostring(GetSubZoneText()))
+    end
+    if GetMinimapZoneText then
+        lines[#lines + 1] = ("GetMinimapZoneText: %s"):format(tostring(GetMinimapZoneText()))
+    end
+    lines[#lines + 1] = ("IsDelveActive: %s"):format((addon.IsDelveActive and addon.IsDelveActive()) and "true" or "false")
+    lines[#lines + 1] = ("IsInPartyDungeon: %s"):format((addon.IsInPartyDungeon and addon.IsInPartyDungeon()) and "true" or "false")
+    if addon.GetPlayerCurrentZoneName then
+        local currentZone = addon.GetPlayerCurrentZoneName()
+        lines[#lines + 1] = ("GetPlayerCurrentZoneName (resolved): %s"):format(tostring(currentZone or "nil"))
+    end
+    return lines
+end
+
 addon.GetNearbyQuestIDs = GetNearbyQuestIDs
+addon.GetNearbyDebugInfo = GetNearbyDebugInfo
 addon.GetWorldAndCallingQuestIDsToShow = GetWorldAndCallingQuestIDsToShow
 addon.GetWeekliesAndDailiesInZone = GetWeekliesAndDailiesInZone
 addon.GetCurrentWorldQuestWatchSet = GetCurrentWorldQuestWatchSet

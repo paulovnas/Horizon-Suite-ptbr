@@ -339,6 +339,7 @@ local function ReadTrackedQuests()
     local numWatches = C_QuestLog.GetNumQuestWatches()
     local superTracked = (C_SuperTrack and C_SuperTrack.GetSuperTrackedQuestID) and C_SuperTrack.GetSuperTrackedQuestID() or 0
     local nearbySet, taskQuestOnlySet = addon.GetNearbyQuestIDs()
+    local playerZone = (addon.GetPlayerCurrentZoneName and addon.GetPlayerCurrentZoneName()) or nil
 
     local function addQuest(questID, opts)
         opts = opts or {}
@@ -352,8 +353,10 @@ local function ReadTrackedQuests()
         local color      = GetQuestColor(category)
         local isComplete = C_QuestLog.IsComplete(questID)
         local isSuper    = (questID == superTracked)
-        local isNearby   = nearbySet[questID] or false
         local zoneName   = GetQuestZoneName(questID)
+        -- When map API returns wrong zone (e.g. Dornegol when in K'aresh), filter by zone name so quests from wrong zone don't appear in Current Zone.
+        local isNearby   = (nearbySet[questID] or false)
+            and (not zoneName or not playerZone or zoneName:lower() == playerZone:lower())
         local isDungeonQuest = opts.isDungeonQuest or (IsInPartyDungeon() and isNearby)
         local isTracked  = opts.isTracked ~= false
 
@@ -412,12 +415,20 @@ local function ReadTrackedQuests()
             -- to remain visible while you're in the broader zone (even if the child map
             -- changes and they momentarily fall out of nearbySet).
             local isWorld = IsQuestWorldQuest(questID)
-            if (not filterByZone or nearbySet[questID] or isWorld) then
+            local zoneNameForFilter = GetQuestZoneName(questID)
+            local zoneMatchesFilter = (not zoneNameForFilter or not playerZone or zoneNameForFilter:lower() == playerZone:lower())
+            if (not filterByZone or isWorld or (nearbySet[questID] and zoneMatchesFilter)) then
                 if addon.GetDB("showWorldQuests", true) or not IsQuestWorldQuest(questID) then
                     addQuest(questID)
                 end
             end
         end
+    end
+
+    -- Helper: when filterByZone is on, only include quests whose zone matches player zone.
+    local function zoneMatchesPlayer(questID)
+        local zn = GetQuestZoneName(questID)
+        return not zn or not playerZone or zn:lower() == playerZone:lower()
     end
 
     -- Active zone world quests and callings are automatically included from GetNearbyQuestIDs/GetWorldAndCallingQuestIDsToShow.
@@ -427,7 +438,9 @@ local function ReadTrackedQuests()
     for _, entry in ipairs(addon.GetWorldAndCallingQuestIDsToShow(nearbySet, taskQuestOnlySet)) do
         local isBlacklisted = (usePermanent and permanentBlacklist[entry.questID]) or (not usePermanent and addon.recentlyUntrackedWorldQuests and addon.recentlyUntrackedWorldQuests[entry.questID])
         if not seen[entry.questID] and not isBlacklisted and (addon.GetDB("showWorldQuests", true) or entry.isTracked or entry.isInQuestArea) then
-            addQuest(entry.questID, { isTracked = entry.isTracked, forceCategory = entry.forceCategory })
+            if not filterByZone or zoneMatchesPlayer(entry.questID) then
+                addQuest(entry.questID, { isTracked = entry.isTracked, forceCategory = entry.forceCategory })
+            end
         end
     end
 
@@ -439,7 +452,9 @@ local function ReadTrackedQuests()
         for _, entry in ipairs(addon.GetWeekliesAndDailiesInZone(nearbySet)) do
             local isBlacklisted = (usePermanent and permanentBlacklist[entry.questID]) or (not usePermanent and recentlyUntracked and recentlyUntracked[entry.questID])
             if not seen[entry.questID] and not isBlacklisted then
-                addQuest(entry.questID, { isTracked = false, forceCategory = entry.forceCategory })
+                if not filterByZone or zoneMatchesPlayer(entry.questID) then
+                    addQuest(entry.questID, { isTracked = false, forceCategory = entry.forceCategory })
+                end
             end
         end
     end
@@ -458,17 +473,22 @@ local function ReadTrackedQuests()
     -- Only add quests whose map matches the player's current map (safeguard against zone quests in nearbySet).
     if addon.IsDelveActive and addon.IsDelveActive() then
         local playerMapID = (C_Map and C_Map.GetBestMapForUnit) and C_Map.GetBestMapForUnit("player") or nil
-        for questID, _ in pairs(nearbySet) do
-            if not seen[questID] and not IsQuestWorldQuest(questID) then
-                if not (C_QuestLog.IsQuestCalling and C_QuestLog.IsQuestCalling(questID)) then
-                    local questOnCurrentMap = true
-                    if playerMapID and C_TaskQuest and C_TaskQuest.GetQuestInfoByQuestID then
-                        local info = C_TaskQuest.GetQuestInfoByQuestID(questID)
-                        local questMapID = info and (info.mapID or info.uiMapID)
-                        questOnCurrentMap = (questMapID == playerMapID)
-                    end
-                    if questOnCurrentMap then
-                        addQuest(questID, { isTracked = false, forceCategory = "DELVES" })
+        local mapInfo = (playerMapID and C_Map and C_Map.GetMapInfo) and C_Map.GetMapInfo(playerMapID) or nil
+        local mapType = mapInfo and mapInfo.mapType
+        local isInstanceMap = (mapType == 4 or mapType == 5)  -- 4 = Dungeon, 5 = Micro (Delve)
+        if playerMapID and isInstanceMap then
+            for questID, _ in pairs(nearbySet) do
+                if not seen[questID] and not IsQuestWorldQuest(questID) then
+                    if not (C_QuestLog.IsQuestCalling and C_QuestLog.IsQuestCalling(questID)) then
+                        local questOnCurrentMap = true
+                        if C_TaskQuest and C_TaskQuest.GetQuestInfoByQuestID then
+                            local info = C_TaskQuest.GetQuestInfoByQuestID(questID)
+                            local questMapID = info and (info.mapID or info.uiMapID)
+                            questOnCurrentMap = (questMapID == playerMapID)
+                        end
+                        if questOnCurrentMap then
+                            addQuest(questID, { isTracked = false, forceCategory = "DELVES" })
+                        end
                     end
                 end
             end

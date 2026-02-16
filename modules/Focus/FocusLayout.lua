@@ -38,11 +38,42 @@ local function SchedulePlaceholderRefreshes(quests)
     end
 end
 
+--- Player's current zone name. Uses Zone tier (whole zone, e.g. K'aresh), not continent or micro.
+--- Dungeon/Delve: current map only. Overworld: GetZoneText() or walk up to Zone (mapType 3).
 local function GetPlayerCurrentZoneName()
     if not C_Map or not C_Map.GetBestMapForUnit then return nil end
     local mapID = C_Map.GetBestMapForUnit("player")
     if not mapID or not C_Map.GetMapInfo then return nil end
-    local info = C_Map.GetMapInfo(mapID)
+
+    -- Dungeon or Delve: use current map only (no walk-up).
+    if (addon.IsDelveActive and addon.IsDelveActive()) or (addon.IsInPartyDungeon and addon.IsInPartyDungeon()) then
+        local info = C_Map.GetMapInfo(mapID)
+        return info and info.name or nil
+    end
+
+    -- Overworld: prefer GetZoneText() (fixes wrong-map e.g. Dornegol when in K'aresh).
+    if GetZoneText and type(GetZoneText) == "function" then
+        local zoneText = GetZoneText()
+        if zoneText and zoneText:match("%S") then
+            return zoneText:match("^%s*(.-)%s*$") or zoneText
+        end
+    end
+
+    -- Fallback: walk up via parentMapID until Zone (mapType 3) or no parent.
+    local UIMAPTYPE_ZONE = 3
+    local current = mapID
+    local info = C_Map.GetMapInfo(current)
+    while info do
+        if info.mapType == UIMAPTYPE_ZONE then
+            return info.name
+        end
+        if not info.parentMapID or info.parentMapID == 0 then
+            break
+        end
+        current = info.parentMapID
+        info = C_Map.GetMapInfo(current)
+    end
+    info = C_Map.GetMapInfo(mapID)
     return info and info.name or nil
 end
 
@@ -1439,13 +1470,28 @@ local function FullLayout()
         currentIDs[q.entryKey or q.questID] = true
     end
 
+    local onlyDelveShown = (#grouped == 1 and grouped[1] and grouped[1].key == "DELVES")
+        and (addon.IsDelveActive and addon.IsDelveActive())
     for key, entry in pairs(activeMap) do
         if not currentIDs[key] then
-            if entry.animState ~= "completing" and entry.animState ~= "fadeout" then
+            if onlyDelveShown and addon.ClearEntry then
+                addon.ClearEntry(entry)
+            elseif entry.animState ~= "completing" and entry.animState ~= "fadeout" then
                 entry.animState = "fadeout"
                 entry.animTime  = 0
             end
             activeMap[key] = nil
+        end
+    end
+    if onlyDelveShown and addon.ClearEntry then
+        for i = 1, addon.POOL_SIZE do
+            local e = pool[i]
+            if e and (e.questID or e.entryKey) then
+                local key = e.questID or e.entryKey
+                if not currentIDs[key] then
+                    addon.ClearEntry(e)
+                end
+            end
         end
     end
 
@@ -1617,6 +1663,7 @@ local function FullLayout()
     if addon.EnsureFocusUpdateRunning then addon.EnsureFocusUpdateRunning() end
 end
 
+addon.GetPlayerCurrentZoneName = GetPlayerCurrentZoneName
 addon.PopulateEntry       = PopulateEntry
 addon.AcquireEntry       = AcquireEntry
 addon.HideAllSectionHeaders = HideAllSectionHeaders
