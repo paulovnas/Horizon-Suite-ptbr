@@ -24,18 +24,30 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check if building beta (skip when HEAD is at a release tag)
+        id: check
+        run: |
+          if git tag --points-at HEAD 2>/dev/null | grep -qE '^v'; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Package addon (build only)
+        if: steps.check.outputs.skip != 'true'
         uses: BigWigsMods/packager@v2.5.1
         with:
           args: -d
 
       - name: Prepare zip for rolling release
+        if: steps.check.outputs.skip != 'true'
         run: |
           ZIP=$(ls .release/*.zip 2>/dev/null | head -1)
           if [ -z "$ZIP" ]; then echo "No zip found in .release/"; exit 1; fi
           cp "$ZIP" .release/HorizonSuite-beta.zip
 
       - name: Build beta changelog from closed issues
+        if: steps.check.outputs.skip != 'true'
         id: extract_changelog
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -43,10 +55,10 @@ jobs:
           LAST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || echo "")
           if [ -n "$LAST_TAG" ]; then
             TAG_DATE=$(git log -1 --format=%cd --date=short "$LAST_TAG")
-            SEARCH="closed:>$TAG_DATE"
           else
-            SEARCH="closed:>2020-01-01"
+            TAG_DATE="2020-01-01"
           fi
+          # Use Issues API (closed_at) instead of search to avoid index lag; exclude PRs, filter by closed_at >= tag date
           FEATURES=""
           IMPROVEMENTS=""
           FIXES=""
@@ -72,7 +84,7 @@ jobs:
             elif [[ "$labels" =~ \bbug\b ]]; then
               FIXES="${FIXES}${bullet}"$'\n'
             fi
-          done < <(gh issue list --state closed --search "$SEARCH" --json number,title,labels --limit 100 | jq -c '.[]' 2>/dev/null || true)
+          done < <(gh api "repos/$GITHUB_REPOSITORY/issues?state=closed&sort=updated&direction=desc&per_page=100" 2>/dev/null | jq -c --arg tagdate "$TAG_DATE" '.[] | select(.pull_request == null) | select(.closed_at != null) | select(.closed_at >= ($tagdate + "T00:00:00Z")) | {number, title, labels}' 2>/dev/null || true)
           SECTIONS=""
           [ -n "$FEATURES" ] && SECTIONS="${SECTIONS}### New Features"$'\n\n'"$FEATURES"$'\n'
           [ -n "$IMPROVEMENTS" ] && SECTIONS="${SECTIONS}### Improvements"$'\n\n'"$IMPROVEMENTS"$'\n'
@@ -89,6 +101,7 @@ jobs:
           echo "CHANGELOG_EOF" >> $GITHUB_OUTPUT
 
       - name: Create or update Beta release
+        if: steps.check.outputs.skip != 'true'
         uses: IsaacShelton/update-existing-release@v1.3.5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -100,11 +113,11 @@ jobs:
           files: .release/HorizonSuite-beta.zip
 
       - name: Post to Discord
-        if: success()
+        if: success() && steps.check.outputs.skip != 'true'
         continue-on-error: true
         uses: tsickert/discord-webhook@v5.3.0
         with:
-          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_BETA }}
           username: "Addon Beta Bot"
           avatar-url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
           embed-title: "New Beta Build: ${{ github.event.repository.name }}"
