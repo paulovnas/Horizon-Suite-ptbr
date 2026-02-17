@@ -56,30 +56,6 @@ local function GetQuestTimerInfo(questID)
     return nil, nil
 end
 
---- True when the player is in an active Delve (guarded API).
-local function IsDelveActive()
-    if C_PartyInfo and C_PartyInfo.IsDelveInProgress then
-        local ok, inDelve = pcall(C_PartyInfo.IsDelveInProgress)
-        if ok and inDelve then return true end
-    end
-    return false
-end
-
---- Current Delve tier (1-11) or nil if unknown/not in delve. Guarded API.
--- Uses CVar "lastSelectedDelvesTier" written by Blizzard's DelvesDifficultyPicker (1-indexed).
--- Other APIs tested and ruled out: GetActiveDelveGossip() always returns orderIndex=0 inside;
--- difficultyID=208 is a single ID for all tiers; difficultyName is just "Delves" (no tier).
-local function GetActiveDelveTier()
-    if not IsDelveActive() then return nil end
-    if GetCVarNumberOrDefault then
-        local ok, cvarTier = pcall(GetCVarNumberOrDefault, "lastSelectedDelvesTier")
-        if ok and type(cvarTier) == "number" and cvarTier >= 1 and cvarTier <= 11 then
-            return cvarTier
-        end
-    end
-    return nil
-end
-
 local function IsScenarioActive()
     if not C_Scenario then return false end
     if C_Scenario.IsInScenario then
@@ -113,7 +89,7 @@ end
 --- @return title, subtitle, category or nil, nil, nil
 local function GetScenarioDisplayInfo()
     if not IsScenarioActive() then return nil, nil, nil end
-    local isDelve = IsDelveActive()
+    local isDelve = addon.IsDelveActive and addon.IsDelveActive()
     local inPartyDungeon = addon.IsInPartyDungeon and addon.IsInPartyDungeon()
     local category = isDelve and "DELVES" or (inPartyDungeon and "DUNGEON") or "SCENARIO"
 
@@ -132,7 +108,7 @@ local function GetScenarioDisplayInfo()
     local title = scenarioName
     if not title or title == "" then
         if isDelve then
-            local tier = GetActiveDelveTier()
+            local tier = addon.GetActiveDelveTier and addon.GetActiveDelveTier()
             title = tier and ("Delves (Tier " .. tier .. ")") or "Delves"
         elseif inPartyDungeon then
             title = "Dungeon"
@@ -140,7 +116,7 @@ local function GetScenarioDisplayInfo()
             title = "Scenario"
         end
     elseif isDelve then
-        local tier = GetActiveDelveTier()
+        local tier = addon.GetActiveDelveTier and addon.GetActiveDelveTier()
         if tier then title = title .. " (Tier " .. tier .. ")" end
     end
 
@@ -155,11 +131,11 @@ local function ReadScenarioEntries()
     if not C_Scenario then return out end
     if not IsScenarioActive() then return out end
 
-    local isDelve = IsDelveActive()
+    local isDelve = addon.IsDelveActive and addon.IsDelveActive()
     local inPartyDungeon = addon.IsInPartyDungeon and addon.IsInPartyDungeon()
     local category = isDelve and "DELVES" or (inPartyDungeon and "DUNGEON") or "SCENARIO"
     local scenarioColor = addon.GetQuestColor and addon.GetQuestColor(category) or (addon.QUEST_COLORS and addon.QUEST_COLORS[category]) or { 0.38, 0.52, 0.88 }
-    local delveTier = isDelve and GetActiveDelveTier() or nil
+    local delveTier = isDelve and (addon.GetActiveDelveTier and addon.GetActiveDelveTier()) or nil
 
     -- Main step
     if C_Scenario.GetStepInfo and C_ScenarioInfo and C_ScenarioInfo.GetCriteriaInfo then
@@ -340,5 +316,4 @@ end
 
 addon.ReadScenarioEntries    = ReadScenarioEntries
 addon.IsScenarioActive      = IsScenarioActive
-addon.IsDelveActive        = IsDelveActive
 addon.GetScenarioDisplayInfo = GetScenarioDisplayInfo

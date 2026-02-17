@@ -206,14 +206,14 @@ local function GetWorldAndCallingQuestIDsToShow(nearbySet, taskQuestOnlySet)
     local out = {}
     local seen = {}
     if C_QuestLog.GetNumWorldQuestWatches and C_QuestLog.GetQuestIDForWorldQuestWatchIndex then
-        addon.lastWorldQuestWatchSet = addon.lastWorldQuestWatchSet or {}
-        wipe(addon.lastWorldQuestWatchSet)
+        addon.focus.lastWorldQuestWatchSet = addon.focus.lastWorldQuestWatchSet or {}
+        wipe(addon.focus.lastWorldQuestWatchSet)
         local numWorldWatches = C_QuestLog.GetNumWorldQuestWatches()
         for i = 1, numWorldWatches do
             local questID = C_QuestLog.GetQuestIDForWorldQuestWatchIndex(i)
             if questID and not seen[questID] then
                 seen[questID] = true
-                addon.lastWorldQuestWatchSet[questID] = true
+                addon.focus.lastWorldQuestWatchSet[questID] = true
                 out[#out + 1] = { questID = questID, isTracked = true }
             end
         end
@@ -227,7 +227,7 @@ local function GetWorldAndCallingQuestIDsToShow(nearbySet, taskQuestOnlySet)
         end
     end
     if nearbySet and (addon.IsQuestWorldQuest or C_QuestLog.IsWorldQuest) then
-        local recentlyUntracked = addon.recentlyUntrackedWorldQuests
+        local recentlyUntracked = addon.focus.recentlyUntrackedWorldQuests
         local ids = {}
         for questID, _ in pairs(nearbySet) do
             if not seen[questID] and (not recentlyUntracked or not recentlyUntracked[questID]) then
@@ -272,36 +272,18 @@ local function GetWorldAndCallingQuestIDsToShow(nearbySet, taskQuestOnlySet)
     return out
 end
 
--- Returns weeklies and dailies that appear in the zone (nearbySet). Used to auto-add them to the tracker like world quests.
--- Each returned entry has questID and forceCategory ("WEEKLY" or "DAILY"). Quests not yet accepted are "available to collect".
-local function GetWeekliesAndDailiesInZone(nearbySet)
+--- Provider: returns world quests and callings from GetWorldAndCallingQuestIDsToShow in aggregator format.
+-- Blacklist and zone filtering are applied by the aggregator.
+local function CollectWorldQuests(ctx)
+    local nearbySet = ctx.nearbySet or {}
+    local taskQuestOnlySet = ctx.taskQuestOnlySet or {}
+    local raw = GetWorldAndCallingQuestIDsToShow(nearbySet, taskQuestOnlySet)
     local out = {}
-    if not nearbySet or not C_QuestInfoSystem or not C_QuestInfoSystem.GetQuestClassification then return out end
-    local ids = {}
-    for questID, _ in pairs(nearbySet) do
-        if addon.IsQuestWorldQuest and addon.IsQuestWorldQuest(questID) then
-            -- Skip world quests; they are handled by GetWorldAndCallingQuestIDsToShow.
-        elseif C_QuestLog.IsQuestCalling and C_QuestLog.IsQuestCalling(questID) then
-            -- Skip callings.
-        else
-            local qc = C_QuestInfoSystem.GetQuestClassification(questID)
-            local isRecurring = (qc == Enum.QuestClassification.Recurring)
-            local freq = addon.GetQuestFrequency and addon.GetQuestFrequency(questID)
-            local isWeekly = isRecurring
-                or (freq ~= nil and (freq == 2 or (LE_QUEST_FREQUENCY_WEEKLY and freq == LE_QUEST_FREQUENCY_WEEKLY)))
-                or (freq ~= nil and Enum.QuestFrequency and Enum.QuestFrequency.Weekly and freq == Enum.QuestFrequency.Weekly)
-            local isDaily = (freq ~= nil and (freq == 1 or (LE_QUEST_FREQUENCY_DAILY and freq == LE_QUEST_FREQUENCY_DAILY)))
-                or (freq ~= nil and Enum.QuestFrequency and Enum.QuestFrequency.Daily and freq == Enum.QuestFrequency.Daily)
-            if isWeekly then
-                ids[#ids + 1] = { questID = questID, forceCategory = "WEEKLY" }
-            elseif isDaily then
-                ids[#ids + 1] = { questID = questID, forceCategory = "DAILY" }
-            end
-        end
-    end
-    table.sort(ids, function(a, b) return a.questID < b.questID end)
-    for _, e in ipairs(ids) do
-        out[#out + 1] = e
+    for _, entry in ipairs(raw) do
+        out[#out + 1] = {
+            questID = entry.questID,
+            opts = { isTracked = entry.isTracked, isInQuestArea = entry.isInQuestArea, forceCategory = entry.forceCategory }
+        }
     end
     return out
 end
@@ -347,9 +329,9 @@ local function GetNearbyDebugInfo()
     return lines
 end
 
-addon.GetNearbyQuestIDs = GetNearbyQuestIDs
-addon.GetNearbyDebugInfo = GetNearbyDebugInfo
+addon.GetNearbyQuestIDs          = GetNearbyQuestIDs
+addon.GetNearbyDebugInfo         = GetNearbyDebugInfo
 addon.GetWorldAndCallingQuestIDsToShow = GetWorldAndCallingQuestIDsToShow
-addon.GetWeekliesAndDailiesInZone = GetWeekliesAndDailiesInZone
+addon.CollectWorldQuests         = CollectWorldQuests
 addon.GetCurrentWorldQuestWatchSet = GetCurrentWorldQuestWatchSet
-addon.RemoveWorldQuestWatch = RemoveWorldQuestWatch
+addon.RemoveWorldQuestWatch      = RemoveWorldQuestWatch

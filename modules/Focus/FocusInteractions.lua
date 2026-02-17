@@ -282,8 +282,8 @@ for i = 1, addon.POOL_SIZE do
                         -- Trigger blacklist grid refresh
                         if addon.RefreshBlacklistGrid then addon.RefreshBlacklistGrid() end
                     else
-                        if not addon.recentlyUntrackedWorldQuests then addon.recentlyUntrackedWorldQuests = {} end
-                        addon.recentlyUntrackedWorldQuests[self.questID] = true
+                        if not addon.focus.recentlyUntrackedWorldQuests then addon.focus.recentlyUntrackedWorldQuests = {} end
+                        addon.focus.recentlyUntrackedWorldQuests[self.questID] = true
                     end
                 elseif C_QuestLog.RemoveQuestWatch then
                     C_QuestLog.RemoveQuestWatch(self.questID)

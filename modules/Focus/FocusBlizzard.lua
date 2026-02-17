@@ -40,9 +40,9 @@ local function TrySuppressTracker()
             wqtSuppressed = true
         end
     end
-    if not wqtSuppressionTicker and addon.enabled then
+    if not wqtSuppressionTicker and addon.focus.enabled then
         wqtSuppressionTicker = C_Timer.NewTicker(0.1, function()
-            if not addon.enabled then
+            if not addon.focus.enabled then
                 if wqtSuppressionTicker then
                     wqtSuppressionTicker:Cancel()
                     wqtSuppressionTicker = nil
@@ -99,13 +99,13 @@ addon.RestoreTracker    = RestoreTracker
 local wqtHooked = false
 local function HookWQTTracking()
     if wqtHooked then return end
-    if not addon.enabled then return end
+    if not addon.focus.enabled then return end
     local WQT = _G.WorldQuestTrackerAddon
     if not WQT then return end
     
     if WQT.RefreshTrackerAnchor then
         hooksecurefunc(WQT, "RefreshTrackerAnchor", function()
-            if not addon.enabled then return end
+            if not addon.focus.enabled then return end
             local wqtPanel = _G.WorldQuestTrackerScreenPanel
             if wqtPanel and wqtPanel:IsShown() then
                 wqtPanel:Hide()
@@ -115,7 +115,7 @@ local function HookWQTTracking()
     
     if WQT.AddQuestToTracker then
         hooksecurefunc(WQT, "AddQuestToTracker", function(self, questID, mapID)
-            if not addon.enabled then return end
+            if not addon.focus.enabled then return end
             local qid = self and self.questID or questID
             if not qid then return end
             local isWorldQuest = (C_QuestLog and C_QuestLog.IsWorldQuest and C_QuestLog.IsWorldQuest(qid))
@@ -144,7 +144,7 @@ local function HookWQTTracking()
     
     if WQT.RemoveQuestFromTracker then
         hooksecurefunc(WQT, "RemoveQuestFromTracker", function(questID, noUpdate)
-            if not addon.enabled or not questID then return end
+            if not addon.focus.enabled or not questID then return end
             if addon.wqtTrackedQuests and addon.wqtTrackedQuests[questID] then
                 addon.wqtTrackedQuests[questID] = nil
                 if HorizonDB and HorizonDB.wqtTrackedQuests then

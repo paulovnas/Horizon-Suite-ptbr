@@ -278,7 +278,7 @@ local function UpdateScenarioBar(bar, now)
 end
 
 function addon.UpdateScenarioTimerBars()
-    if not addon.enabled or not addon.pool then return end
+    if not addon.focus.enabled or not addon.pool then return end
     local now = GetTime()
     for i = 1, addon.POOL_SIZE do
         local entry = pool[i]

@@ -35,34 +35,34 @@ local function SetPanelHeight(h)
 end
 
 function addon.RunMapCheck()
-    if not addon.enabled or not C_Map or not C_Map.GetBestMapForUnit then return end
+    if not addon.focus.enabled or not C_Map or not C_Map.GetBestMapForUnit then return end
     local mapID = C_Map.GetBestMapForUnit("player")
-    if mapID and mapID ~= addon.lastPlayerMapID then
-        addon.lastPlayerMapID = mapID
+    if mapID and mapID ~= addon.focus.lastPlayerMapID then
+        addon.focus.lastPlayerMapID = mapID
         if addon.zoneTaskQuestCache then wipe(addon.zoneTaskQuestCache) end
         if addon.ScheduleRefresh then addon.ScheduleRefresh() end
-    elseif not addon.lastPlayerMapID and mapID then
-        addon.lastPlayerMapID = mapID
+    elseif not addon.focus.lastPlayerMapID and mapID then
+        addon.focus.lastPlayerMapID = mapID
     end
 end
 
 local function UpdatePanelHeight(dt)
-    local targetHeight  = addon.targetHeight
-    local currentHeight = addon.currentHeight
+    local targetHeight  = addon.focus.layout.targetHeight
+    local currentHeight = addon.focus.layout.currentHeight
     if math.abs(currentHeight - targetHeight) > 0.5 then
-        addon.currentHeight = currentHeight + (targetHeight - currentHeight) * math.min(addon.HEIGHT_SPEED * dt, 1)
-        SetPanelHeight(addon.currentHeight)
+        addon.focus.layout.currentHeight = currentHeight + (targetHeight - currentHeight) * math.min(addon.HEIGHT_SPEED * dt, 1)
+        SetPanelHeight(addon.focus.layout.currentHeight)
     elseif currentHeight ~= targetHeight then
-        addon.currentHeight = targetHeight
-        SetPanelHeight(addon.currentHeight)
+        addon.focus.layout.currentHeight = targetHeight
+        SetPanelHeight(addon.focus.layout.currentHeight)
     end
 end
 
 local function UpdateCombatFade(dt, useAnim)
-    local combatState = addon.combatFadeState
+    local combatState = addon.focus.combat.fadeState
     if not combatState then return end
     local dur = addon.COMBAT_FADE_DUR or 0.4
-    addon.combatFadeTime = addon.combatFadeTime + dt
+    addon.focus.combat.fadeTime = addon.focus.combat.fadeTime + dt
     local floatingBtn = _G.HSFloatingQuestItem
 
     if combatState == "out" then
@@ -73,12 +73,12 @@ local function UpdateCombatFade(dt, useAnim)
                 if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
                 if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
             else
-                addon.pendingHideAfterCombat = true
+                addon.focus.pendingHideAfterCombat = true
             end
-            addon.combatFadeState = nil
-            addon.combatFadeTime = 0
+            addon.focus.combat.fadeState = nil
+            addon.focus.combat.fadeTime = 0
         else
-            local p = math.min(addon.combatFadeTime / dur, 1)
+            local p = math.min(addon.focus.combat.fadeTime / dur, 1)
             HS:SetAlpha(1 - p)
             if floatingBtn and floatingBtn:IsShown() then floatingBtn:SetAlpha(1 - p) end
             if p >= 1 then
@@ -88,27 +88,27 @@ local function UpdateCombatFade(dt, useAnim)
                     if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
                     if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
                 else
-                    addon.pendingHideAfterCombat = true
+                    addon.focus.pendingHideAfterCombat = true
                 end
-                addon.combatFadeState = nil
-                addon.combatFadeTime = 0
+                addon.focus.combat.fadeState = nil
+                addon.focus.combat.fadeTime = 0
             end
         end
     elseif combatState == "in" then
         if not useAnim then
             HS:SetAlpha(1)
             if floatingBtn and floatingBtn:IsShown() then floatingBtn:SetAlpha(1) end
-            addon.combatFadeState = nil
-            addon.combatFadeTime = 0
+            addon.focus.combat.fadeState = nil
+            addon.focus.combat.fadeTime = 0
         else
-            local p = math.min(addon.combatFadeTime / dur, 1)
+            local p = math.min(addon.focus.combat.fadeTime / dur, 1)
             if HS:IsShown() then HS:SetAlpha(p) end
             if floatingBtn and floatingBtn:IsShown() then floatingBtn:SetAlpha(p) end
             if p >= 1 then
                 HS:SetAlpha(1)
                 if floatingBtn and floatingBtn:IsShown() then floatingBtn:SetAlpha(1) end
-                addon.combatFadeState = nil
-                addon.combatFadeTime = 0
+                addon.focus.combat.fadeState = nil
+                addon.focus.combat.fadeTime = 0
             end
         end
     end
@@ -258,7 +258,7 @@ local function UpdateEntryAnimations(dt, useAnim)
 end
 
 local function UpdateCollapseAnimations()
-    if not addon.collapseAnimating then return end
+    if not addon.focus.collapse.animating then return end
     local stillCollapsing = false
     for i = 1, addon.POOL_SIZE do
         if pool[i].animState == "collapsing" then
@@ -267,7 +267,7 @@ local function UpdateCollapseAnimations()
         end
     end
     if not stillCollapsing then
-        addon.collapseAnimating = false
+        addon.focus.collapse.animating = false
         for i = 1, addon.POOL_SIZE do
             if pool[i].animState == "idle" and (pool[i].questID or pool[i].entryKey) then
                 addon.ClearEntry(pool[i], false)
@@ -280,9 +280,9 @@ local function UpdateCollapseAnimations()
             if not InCombatLockdown() then
                 scrollFrame:Hide()
             else
-                addon.layoutPendingAfterCombat = true
+                addon.focus.layoutPendingAfterCombat = true
             end
-            addon.targetHeight = addon.GetCollapsedHeight()
+            addon.focus.layout.targetHeight = addon.GetCollapsedHeight()
         end
     end
 end
@@ -290,8 +290,8 @@ end
 -- Group collapse completion: when no entries in a group are collapsing anymore,
 -- mark that group as collapsed and trigger a layout refresh.
 local function UpdateGroupCollapseCompletion()
-    if not addon.groupCollapses then return end
-    for groupKey, startTime in pairs(addon.groupCollapses) do
+    if not addon.focus.collapse.groups then return end
+    for groupKey, startTime in pairs(addon.focus.collapse.groups) do
             local stillCollapsing = false
             for i = 1, addon.POOL_SIZE do
                 local e = pool[i]
@@ -305,7 +305,7 @@ local function UpdateGroupCollapseCompletion()
             local timedOut = (GetTime() - startTime) > 2
 
             if not stillCollapsing or timedOut then
-                addon.groupCollapses[groupKey] = nil
+                addon.focus.collapse.groups[groupKey] = nil
 
                 -- Clean up any lingering collapsing entries for this group.
                 for i = 1, addon.POOL_SIZE do
@@ -327,20 +327,20 @@ local function UpdateGroupCollapseCompletion()
 end
 
 local function NeedsFocusUpdate()
-    if addon.targetHeight ~= addon.currentHeight then return true end
-    if addon.combatFadeState then return true end
-    if addon.groupCollapses and next(addon.groupCollapses) then return true end
+    if addon.focus.layout.targetHeight ~= addon.focus.layout.currentHeight then return true end
+    if addon.focus.combat.fadeState then return true end
+    if addon.focus.collapse.groups and next(addon.focus.collapse.groups) then return true end
     for i = 1, addon.POOL_SIZE do
         local s = pool[i].animState
         if s ~= "idle" and s ~= "active" then return true end
         if pool[i].flashTime > 0 then return true end
     end
-    if addon.collapseAnimating then return true end
+    if addon.focus.collapse.animating then return true end
     return false
 end
 
 local function FocusOnUpdate(_, dt)
-    if not addon.enabled then return end
+    if not addon.focus.enabled then return end
     local useAnim = addon.GetDB("animations", true)
     UpdatePanelHeight(dt)
     UpdateCombatFade(dt, useAnim)
@@ -353,11 +353,11 @@ local function FocusOnUpdate(_, dt)
         for i = 1, addon.POOL_SIZE do
             if pool[i].questID or pool[i].entryKey then hasActive = true; break end
         end
-        if not hasActive and not addon.collapsed then
+        if not hasActive and not addon.focus.collapsed then
             if not InCombatLockdown() then
                 HS:Hide()
             else
-                addon.pendingHideAfterCombat = true
+                addon.focus.pendingHideAfterCombat = true
             end
         end
     end
@@ -368,7 +368,7 @@ local function FocusOnUpdate(_, dt)
 end
 
 function addon.EnsureFocusUpdateRunning()
-    if not addon.enabled then return end
+    if not addon.focus.enabled then return end
     if HS:GetScript("OnUpdate") ~= FocusOnUpdate then
         HS:SetScript("OnUpdate", FocusOnUpdate)
     end

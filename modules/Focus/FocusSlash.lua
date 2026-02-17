@@ -30,7 +30,7 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
 
     elseif cmd == "collapse" then
         addon.ToggleCollapse()
-        if addon.collapsed then
+        if addon.focus.collapsed then
             print("|cFF00CCFFHorizon Suite - Focus:|r Panel collapsed.")
         else
             print("|cFF00CCFFHorizon Suite - Focus:|r Panel expanded.")
@@ -166,8 +166,8 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
 
         -- Inject test data into the quest pipeline and use the normal layout engine.
         addon.testQuests = testQuests
-        if addon.collapsed then
-            addon.collapsed = false
+        if addon.focus.collapsed then
+            addon.focus.collapsed = false
             addon.chevron:SetText("-")
             addon.scrollFrame:Show()
             if HorizonDB then HorizonDB.collapsed = false end
@@ -195,8 +195,8 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
             isTracked      = true,
             level          = nil,
         }
-        if addon.collapsed then
-            addon.collapsed = false
+        if addon.focus.collapsed then
+            addon.focus.collapsed = false
             addon.chevron:SetText("-")
             addon.scrollFrame:Show()
             if HorizonDB then HorizonDB.collapsed = false end

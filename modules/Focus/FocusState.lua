@@ -1,0 +1,60 @@
+--[[
+    Horizon Suite - Focus - State
+    Namespaced runtime state for the Focus module. Loaded first so all other files can reference addon.focus.*
+]]
+
+local addon = _G.HorizonSuite
+
+-- Merge into existing addon.focus if Core created layout early; otherwise create fresh.
+local existing = addon.focus
+addon.focus = {
+    enabled         = false,
+    collapsed       = false,
+    refreshPending  = false,
+    zoneJustChanged = false,
+    lastPlayerMapID = nil,
+    placeholderRefreshScheduled = false,
+    layoutPendingAfterCombat     = false,
+    pendingHideAfterCombat       = false,
+
+    rares = {
+        prevKeys     = {},
+        trackingInit = false,
+    },
+
+    collapse = {
+        animating = false,
+        animStart = 0,
+        groups    = {},  -- [groupKey] = startTime
+    },
+
+    combat = {
+        fadeState = nil,  -- "out" | "in" | nil
+        fadeTime  = 0,
+    },
+
+    layout = (existing and existing.layout) or {
+        targetHeight  = addon.MIN_HEIGHT,
+        currentHeight = addon.MIN_HEIGHT,
+        sectionIdx    = 0,
+        scrollOffset  = 0,
+    },
+
+    promotion = {
+        prevWorld  = {},
+        prevWeekly = {},
+        prevDaily  = {},
+        fadeOutCount = nil,
+        onFadeOutComplete = nil,
+    },
+
+    callbacks = {
+        onSlideOutComplete = nil,
+    },
+
+    -- Data tables for blacklist/tracking (used by providers)
+    recentlyUntrackedWorldQuests      = nil,
+    recentlyUntrackedWeekliesAndDailies = nil,
+    lastWorldQuestWatchSet            = nil,
+}
+

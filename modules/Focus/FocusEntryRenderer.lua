@@ -1,0 +1,580 @@
+--[[
+    Horizon Suite - Focus - Entry Renderer
+    PopulateEntry, ApplyHighlightStyle, ApplyObjectives, ApplyScenarioOrWQTimerBar, ApplyShadowColors.
+]]
+
+local addon = _G.HorizonSuite
+
+local function hideAllHighlight(entry)
+    entry.trackBar:Hide()
+    entry.highlightBg:Hide()
+    if entry.highlightTop then entry.highlightTop:Hide() end
+    entry.highlightBorderT:Hide()
+    entry.highlightBorderB:Hide()
+    entry.highlightBorderL:Hide()
+    entry.highlightBorderR:Hide()
+end
+
+local function ApplyHighlightStyle(entry, questData)
+    local highlightStyle = addon.NormalizeHighlightStyle(addon.GetDB("activeQuestHighlight", "bar-left")) or "bar-left"
+    local hc = addon.GetDB("highlightColor", nil)
+    if not hc or #hc < 3 then hc = { 0.40, 0.70, 1.00 } end
+    local ha = tonumber(addon.GetDB("highlightAlpha", 0.25)) or 0.25
+    local barW = math.max(2, math.min(6, tonumber(addon.GetDB("highlightBarWidth", 2)) or 2))
+    local topPadding = (questData.isSuperTracked and highlightStyle == "bar-top") and barW or 0
+    local bottomPadding = (questData.isSuperTracked and highlightStyle == "bar-bottom") and barW or 0
+
+    entry.titleText:ClearAllPoints()
+    entry.titleText:SetPoint("TOPLEFT", entry, "TOPLEFT", 0, -topPadding)
+    entry.titleShadow:ClearAllPoints()
+    entry.titleShadow:SetPoint("CENTER", entry.titleText, "CENTER", addon.SHADOW_OX, addon.SHADOW_OY)
+
+    hideAllHighlight(entry)
+    if questData.isSuperTracked then
+        local borderAlpha = math.min(1, (ha + 0.35))
+        if highlightStyle == "bar-left" or highlightStyle == "bar-right" or highlightStyle == "pill-left" then
+            entry.trackBar:SetColorTexture(hc[1], hc[2], hc[3], 0.70)
+            entry.trackBar:Show()
+        elseif highlightStyle == "bar-top" then
+            entry.highlightTop:SetColorTexture(hc[1], hc[2], hc[3], 0.70)
+            entry.highlightTop:SetHeight(barW)
+            entry.highlightTop:Show()
+        elseif highlightStyle == "bar-bottom" then
+            entry.highlightBorderB:SetColorTexture(hc[1], hc[2], hc[3], 0.70)
+            entry.highlightBorderB:SetHeight(barW)
+            entry.highlightBorderB:Show()
+        elseif highlightStyle == "outline" then
+            entry.highlightBorderB:SetHeight(1)
+            entry.highlightBorderL:SetWidth(1)
+            entry.highlightBorderR:SetWidth(1)
+            for _, tex in ipairs({ entry.highlightBorderT, entry.highlightBorderB, entry.highlightBorderL, entry.highlightBorderR }) do
+                tex:SetColorTexture(hc[1], hc[2], hc[3], borderAlpha)
+                tex:Show()
+            end
+        elseif highlightStyle == "bar-both" then
+            entry.highlightBorderL:SetColorTexture(hc[1], hc[2], hc[3], 0.70)
+            entry.highlightBorderL:SetWidth(2)
+            entry.highlightBorderL:Show()
+            entry.highlightBorderR:SetColorTexture(hc[1], hc[2], hc[3], 0.70)
+            entry.highlightBorderR:SetWidth(2)
+            entry.highlightBorderR:Show()
+        else
+            entry.highlightBg:SetColorTexture(hc[1], hc[2], hc[3], ha)
+            entry.highlightBg:Show()
+            entry.highlightTop:SetHeight(2)
+            entry.highlightTop:SetColorTexture(hc[1], hc[2], hc[3], math.min(1, ha + 0.2))
+            entry.highlightTop:Show()
+            for _, tex in ipairs({ entry.highlightBorderT, entry.highlightBorderB, entry.highlightBorderL, entry.highlightBorderR }) do
+                tex:SetColorTexture(hc[1], hc[2], hc[3], borderAlpha)
+                tex:Show()
+            end
+        end
+    end
+    return highlightStyle, hc, ha, barW, topPadding, bottomPadding
+end
+
+local function ApplyObjectives(entry, questData, textWidth, prevAnchor, totalH, c, effectiveCat)
+    local objIndent = addon.GetObjIndent()
+    local objTextWidth = textWidth - objIndent
+    if objTextWidth < 1 then objTextWidth = addon.GetPanelWidth() - addon.PADDING * 2 - objIndent - (addon.CONTENT_RIGHT_PADDING or 0) end
+
+    local objSpacing = ((questData.category == "DELVES" or questData.category == "DUNGEON") and addon.DELVE_OBJ_SPACING) or addon.GetObjSpacing()
+
+    local cat = (effectiveCat ~= nil and effectiveCat ~= "") and effectiveCat or questData.category
+    local objColor = (addon.GetObjectiveColor and addon.GetObjectiveColor(cat)) or addon.OBJ_COLOR or c
+    local doneColor = (addon.GetObjectiveColor and addon.GetObjectiveColor(cat)) or addon.OBJ_DONE_COLOR
+    if addon.GetDB("dimNonSuperTracked", false) and not questData.isSuperTracked then
+        objColor = { objColor[1] * 0.60, objColor[2] * 0.60, objColor[3] * 0.60 }
+        doneColor = { doneColor[1] * 0.60, doneColor[2] * 0.60, doneColor[3] * 0.60 }
+    end
+    local effectiveDoneColor = (questData.isAchievement and addon.OBJ_DONE_COLOR) or doneColor
+    if questData.isAchievement and addon.GetDB("dimNonSuperTracked", false) and not questData.isSuperTracked then
+        effectiveDoneColor = { effectiveDoneColor[1] * 0.60, effectiveDoneColor[2] * 0.60, effectiveDoneColor[3] * 0.60 }
+    end
+
+    local showEllipsis = (questData.isAchievement or questData.isEndeavor) and questData.objectives and #questData.objectives > 4
+    local shownObjs = 0
+    for j = 1, addon.MAX_OBJECTIVES do
+        local obj = entry.objectives[j]
+        local oData = questData.objectives[j]
+        if showEllipsis then
+            if j == 5 then
+                oData = { text = "...", finished = false }
+            elseif j > 4 then
+                oData = nil
+            end
+        end
+
+        obj.text:SetWidth(objTextWidth)
+        obj.shadow:SetWidth(objTextWidth)
+
+        if oData then
+            local objText = oData.text or ""
+            if addon.GetDB("showObjectiveNumbers", false) then
+                objText = ("%d. %s"):format(j, objText)
+            end
+            obj.text:SetText(objText)
+            obj.shadow:SetText(objText)
+
+            if oData.finished then
+                obj.text:SetTextColor(effectiveDoneColor[1], effectiveDoneColor[2], effectiveDoneColor[3], 1)
+            else
+                obj.text:SetTextColor(objColor[1], objColor[2], objColor[3], 1)
+            end
+
+            obj.text:ClearAllPoints()
+            local indent = (shownObjs == 0 and prevAnchor == entry.titleText) and objIndent or 0
+            obj.text:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", indent, -objSpacing)
+            obj.text:Show()
+            obj.shadow:Show()
+
+            local objH = obj.text:GetStringHeight()
+            if not objH or objH < 1 then objH = addon.OBJ_SIZE + 2 end
+            totalH = totalH + objSpacing + objH
+
+            prevAnchor = obj.text
+            shownObjs = shownObjs + 1
+        else
+            obj.text:Hide()
+            obj.shadow:Hide()
+        end
+    end
+
+    if questData.isComplete and shownObjs == 0 then
+        local obj = entry.objectives[1]
+        local turnInText = addon.GetDB("showObjectiveNumbers", false) and "1. Ready to turn in" or "Ready to turn in"
+        obj.text:SetText(turnInText)
+        obj.shadow:SetText(turnInText)
+        obj.text:SetTextColor(doneColor[1], doneColor[2], doneColor[3], 1)
+        obj.text:ClearAllPoints()
+        local turnInIndent = (prevAnchor == entry.titleText) and objIndent or 0
+        obj.text:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", turnInIndent, -objSpacing)
+        obj.text:Show()
+        obj.shadow:Show()
+        local objH = obj.text:GetStringHeight()
+        if not objH or objH < 1 then objH = addon.OBJ_SIZE + 2 end
+        totalH = totalH + objSpacing + objH
+        prevAnchor = obj.text
+    end
+
+    return totalH, prevAnchor
+end
+
+local function FormatTimeLeftSeconds(seconds)
+    if not seconds or seconds < 0 then return nil end
+    local m = math.floor(seconds / 60)
+    local s = math.floor(seconds % 60)
+    return ("%02d:%02d"):format(m, s)
+end
+
+local function FormatTimeLeftMinutes(minutes)
+    if not minutes or minutes < 0 then return nil end
+    local m = math.floor(minutes)
+    local s = math.floor((minutes - m) * 60)
+    return ("%02d:%02d"):format(m, s)
+end
+
+local function ApplyScenarioOrWQTimerBar(entry, questData, textWidth, prevAnchor, totalH)
+    if questData.category == "DELVES" then
+        entry.wqTimerText:Hide()
+        entry.wqProgressBg:Hide()
+        entry.wqProgressFill:Hide()
+        entry.wqProgressText:Hide()
+        if entry.scenarioTimerBars then
+            for _, bar in ipairs(entry.scenarioTimerBars) do bar:Hide() end
+        end
+        return totalH
+    end
+    local isWorld = questData.category == "WORLD" or questData.category == "CALLING"
+    local isScenario = questData.category == "SCENARIO"
+    if (not isWorld and not isScenario) or questData.isRare then
+        entry.wqTimerText:Hide()
+        entry.wqProgressBg:Hide()
+        entry.wqProgressFill:Hide()
+        entry.wqProgressText:Hide()
+        if entry.scenarioTimerBars then
+            for _, bar in ipairs(entry.scenarioTimerBars) do bar:Hide() end
+        end
+        return totalH
+    end
+
+    local objIndent = addon.GetObjIndent()
+    local barW = textWidth - objIndent
+    if barW < 40 then barW = addon.GetPanelWidth() - addon.PADDING * 2 - objIndent - (addon.CONTENT_RIGHT_PADDING or 0) end
+    local barH = addon.WQ_TIMER_BAR_HEIGHT or 6
+    local spacing = addon.GetObjSpacing()
+    local scenarioBarTopMargin = isScenario and 4 or 0
+    local scenarioFirstElementPlaced = false
+
+    local showBar
+    if isScenario and entry.scenarioTimerBars and addon.GetDB("cinematicScenarioBar", true) then
+        local timerSources = {}
+        for _, o in ipairs(questData.objectives or {}) do
+            if o.timerDuration and o.timerStartTime then
+                timerSources[#timerSources + 1] = { duration = o.timerDuration, startTime = o.timerStartTime }
+            end
+        end
+        if #timerSources == 0 and questData.timerDuration and questData.timerStartTime then
+            timerSources[#timerSources + 1] = { duration = questData.timerDuration, startTime = questData.timerStartTime }
+        end
+        local barHeight = math.max(4, math.min(8, tonumber(addon.GetDB("scenarioBarHeight", 6)) or 6))
+        for i, src in ipairs(timerSources) do
+            local bar = entry.scenarioTimerBars[i]
+            if bar then
+                local barSpacing = (i == 1) and (spacing + scenarioBarTopMargin) or spacing
+                bar.duration = src.duration
+                bar.startTime = src.startTime
+                bar:SetWidth(barW)
+                bar:SetHeight(barHeight)
+                bar:ClearAllPoints()
+                bar:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", objIndent, -barSpacing)
+                bar:Show()
+                totalH = totalH + barSpacing + barHeight
+                prevAnchor = bar
+                scenarioFirstElementPlaced = true
+            end
+        end
+        for i = #timerSources + 1, #(entry.scenarioTimerBars or {}) do
+            local bar = entry.scenarioTimerBars[i]
+            if bar then bar.duration = nil; bar.startTime = nil; bar:Hide() end
+        end
+        entry.wqTimerText:Hide()
+        showBar = addon.GetDB("cinematicScenarioBar", true)
+    else
+        if entry.scenarioTimerBars then
+            for _, bar in ipairs(entry.scenarioTimerBars) do
+                bar.duration = nil
+                bar.startTime = nil
+                bar:Hide()
+            end
+        end
+
+        local timerStr
+        if questData.timeLeftSeconds and questData.timeLeftSeconds > 0 then
+            timerStr = FormatTimeLeftSeconds(questData.timeLeftSeconds)
+        elseif questData.timeLeft and questData.timeLeft > 0 then
+            timerStr = FormatTimeLeftMinutes(questData.timeLeft)
+        end
+
+        local showTimer
+        if isScenario then
+            showTimer = (timerStr ~= nil)
+            showBar = addon.GetDB("cinematicScenarioBar", true)
+        else
+            showTimer = addon.GetDB("showWorldQuestTimer", true) and (timerStr ~= nil)
+            showBar = addon.GetDB("showWorldQuestProgressBar", true)
+        end
+
+        if showTimer and timerStr then
+            local timerSpacing = isScenario and (spacing + scenarioBarTopMargin) or spacing
+            entry.wqTimerText:SetText(timerStr)
+            entry.wqTimerText:SetWidth(barW)
+            entry.wqTimerText:ClearAllPoints()
+            entry.wqTimerText:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", objIndent, -timerSpacing)
+            if isScenario then
+                local sc = addon.GetQuestColor and addon.GetQuestColor(questData.category) or (addon.QUEST_COLORS and addon.QUEST_COLORS[questData.category]) or { 0.38, 0.52, 0.88 }
+                entry.wqTimerText:SetTextColor(sc[1], sc[2], sc[3], 1)
+            else
+                entry.wqTimerText:SetTextColor(1, 1, 1, 1)
+            end
+            entry.wqTimerText:Show()
+            local th = entry.wqTimerText:GetStringHeight()
+            if not th or th < 1 then th = addon.OBJ_SIZE + 2 end
+            totalH = totalH + timerSpacing + th
+            prevAnchor = entry.wqTimerText
+            if isScenario then scenarioFirstElementPlaced = true end
+        else
+            entry.wqTimerText:Hide()
+        end
+    end
+
+    local firstPercent
+    for _, o in ipairs(questData.objectives or {}) do
+        if o.percent ~= nil and not o.finished then
+            firstPercent = o.percent
+            break
+        end
+    end
+    if showBar and firstPercent ~= nil then
+        local barHeight = barH
+        if isScenario then
+            barHeight = math.max(4, math.min(8, tonumber(addon.GetDB("scenarioBarHeight", 6)) or 6))
+        end
+        local percentBarSpacing = spacing + (isScenario and not scenarioFirstElementPlaced and scenarioBarTopMargin or 0)
+        entry.wqProgressBg:SetHeight(barHeight)
+        entry.wqProgressBg:SetWidth(barW)
+        entry.wqProgressBg:ClearAllPoints()
+        entry.wqProgressBg:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", objIndent, -percentBarSpacing)
+        if isScenario then
+            local opacity = tonumber(addon.GetDB("scenarioBarOpacity", 0.85)) or 0.85
+            entry.wqProgressBg:SetColorTexture(0.08, 0.06, 0.12, math.max(0.35, opacity * 0.45))
+        else
+            entry.wqProgressBg:SetColorTexture(0.2, 0.2, 0.25, 0.8)
+        end
+        entry.wqProgressBg:Show()
+        local pct = firstPercent and math.min(100, math.max(0, firstPercent)) or 0
+        entry.wqProgressFill:SetHeight(barHeight)
+        entry.wqProgressFill:SetWidth(math.max(2, barW * pct / 100))
+        entry.wqProgressFill:ClearAllPoints()
+        entry.wqProgressFill:SetPoint("TOPLEFT", entry.wqProgressBg, "TOPLEFT", 0, 0)
+        if isScenario then
+            local sc = addon.GetQuestColor and addon.GetQuestColor(questData.category) or (addon.QUEST_COLORS and addon.QUEST_COLORS[questData.category]) or { 0.38, 0.52, 0.88 }
+            local fillOpacity = tonumber(addon.GetDB("scenarioBarOpacity", 0.85)) or 0.85
+            local r, g, b = sc[1] * 0.9, sc[2] * 0.9, sc[3] * 1.0
+            entry.wqProgressFill:SetColorTexture(r, g, b, math.min(0.92, fillOpacity))
+        else
+            entry.wqProgressFill:SetColorTexture(0.45, 0.35, 0.65, 0.9)
+        end
+        entry.wqProgressFill:Show()
+        entry.wqProgressText:SetText(firstPercent ~= nil and (tostring(firstPercent) .. "%") or "")
+        entry.wqProgressText:ClearAllPoints()
+        entry.wqProgressText:SetPoint("CENTER", entry.wqProgressBg, "CENTER", 0, 0)
+        if isScenario then
+            entry.wqProgressText:SetTextColor(1, 1, 1, 0.92)
+        else
+            entry.wqProgressText:SetTextColor(0.9, 0.9, 0.9, 1)
+        end
+        entry.wqProgressText:SetShown(firstPercent ~= nil)
+        totalH = totalH + percentBarSpacing + barHeight
+    else
+        entry.wqProgressBg:Hide()
+        entry.wqProgressFill:Hide()
+        entry.wqProgressText:Hide()
+    end
+
+    return totalH
+end
+
+local function ApplyShadowColors(entry, questData, highlightStyle, hc, ha)
+    local shadowA = addon.GetDB("showTextShadow", true) and (tonumber(addon.GetDB("shadowAlpha", 0.8)) or 0.8) or 0
+    local glowAlpha = math.min(1, ha + 0.4)
+    if questData.isSuperTracked and highlightStyle == "glow" then
+        entry.titleShadow:SetTextColor(hc[1], hc[2], hc[3], glowAlpha)
+        entry.zoneShadow:SetTextColor(hc[1], hc[2], hc[3], glowAlpha)
+        for j = 1, addon.MAX_OBJECTIVES do
+            entry.objectives[j].shadow:SetTextColor(hc[1], hc[2], hc[3], glowAlpha)
+        end
+    else
+        entry.titleShadow:SetTextColor(0, 0, 0, shadowA)
+        entry.zoneShadow:SetTextColor(0, 0, 0, shadowA)
+        for j = 1, addon.MAX_OBJECTIVES do
+            entry.objectives[j].shadow:SetTextColor(0, 0, 0, shadowA)
+        end
+    end
+end
+
+local function PopulateEntry(entry, questData, groupKey)
+    local hasItem = (questData.itemTexture and questData.itemLink) and true or false
+    local showItemBtn = hasItem and addon.GetDB("showQuestItemButtons", false)
+    local showQuestIcons = addon.GetDB("showQuestTypeIcons", false)
+    local showAchievementIcons = addon.GetDB("showAchievementIcons", true)
+    local showDecorIcons = addon.GetDB("showDecorIcons", true)
+    local hasIcon = (questData.questTypeAtlas and showQuestIcons) or (questData.isAchievement and questData.achievementIcon and showQuestIcons and showAchievementIcons) or (questData.isDecor and questData.decorIcon and showQuestIcons and showDecorIcons)
+    local isOffMapWorld = (questData.category == "WORLD") and questData.isTracked and not questData.isNearby
+
+    local leftOffset = addon.GetContentLeftOffset and addon.GetContentLeftOffset() or (addon.PADDING + addon.ICON_COLUMN_WIDTH)
+    local textWidth = addon.GetPanelWidth() - addon.PADDING - leftOffset - (addon.CONTENT_RIGHT_PADDING or 0)
+    local titleLeftOffset = 0
+
+    if questData.category == "DELVES" then
+        entry.questTypeIcon:SetAtlas(addon.DELVE_TIER_ATLAS)
+        entry.questTypeIcon:Show()
+    elseif questData.isAchievement and questData.achievementIcon and showQuestIcons and showAchievementIcons then
+        entry.questTypeIcon:SetTexture(questData.achievementIcon)
+        entry.questTypeIcon:Show()
+    elseif questData.isDecor and questData.decorIcon and showQuestIcons and showDecorIcons then
+        entry.questTypeIcon:SetTexture(questData.decorIcon)
+        entry.questTypeIcon:Show()
+    elseif hasIcon then
+        entry.questTypeIcon:SetAtlas(questData.questTypeAtlas)
+        entry.questTypeIcon:Show()
+    else
+        entry.questTypeIcon:Hide()
+    end
+    if entry.trackedFromOtherZoneIcon then
+        entry.trackedFromOtherZoneIcon:Hide()
+    end
+
+    entry.titleText:SetWidth(textWidth)
+    entry.titleShadow:SetWidth(textWidth)
+
+    local displayTitle = questData.title
+    if (addon.GetDB("showCompletedCount", false) or questData.isAchievement or questData.isEndeavor) then
+        local done, total
+        if questData.criteriaDone and questData.criteriaTotal and type(questData.criteriaDone) == "number" and type(questData.criteriaTotal) == "number" and questData.criteriaTotal > 0 then
+            done, total = questData.criteriaDone, questData.criteriaTotal
+        elseif questData.objectives and #questData.objectives > 0 then
+            done, total = 0, #questData.objectives
+            for _, o in ipairs(questData.objectives) do if o.finished then done = done + 1 end end
+        end
+        if done and total then
+            displayTitle = ("%s (%d/%d)"):format(questData.title, done, total)
+        end
+    end
+    if addon.GetDB("showQuestLevel", false) and questData.level then
+        displayTitle = ("%s [L%d]"):format(displayTitle, questData.level)
+    end
+    if questData.category == "DELVES" and type(questData.delveTier) == "number" then
+        displayTitle = displayTitle .. (" (Tier %d)"):format(questData.delveTier)
+    end
+    local showInZoneSuffix = addon.GetDB("showInZoneSuffix", true)
+    if showInZoneSuffix then
+        local needSuffix = false
+        if questData.category == "WORLD" then
+            needSuffix = (questData.isAccepted == false and questData.isTracked == false)
+        elseif questData.category == "WEEKLY" or questData.category == "DAILY" then
+            needSuffix = (questData.isAccepted == false)
+        end
+        if needSuffix then displayTitle = displayTitle .. " **" end
+    end
+    displayTitle = addon.ApplyTextCase(displayTitle, "questTitleCase", "proper")
+    entry.titleText:SetText(displayTitle)
+    entry.titleShadow:SetText(displayTitle)
+    local effectiveCat = (addon.GetEffectiveColorCategory and addon.GetEffectiveColorCategory(questData.category, groupKey, questData.baseCategory)) or questData.category
+    local c = (addon.GetTitleColor and addon.GetTitleColor(effectiveCat)) or questData.color
+    if questData.isDungeonQuest and not questData.isTracked then
+        c = { c[1] * 0.65, c[2] * 0.65, c[3] * 0.65 }
+    elseif addon.GetDB("dimNonSuperTracked", false) and not questData.isSuperTracked then
+        c = { c[1] * 0.60, c[2] * 0.60, c[3] * 0.60 }
+    end
+    entry.titleText:SetTextColor(c[1], c[2], c[3], 1)
+    entry._savedColor = nil
+
+    local highlightStyle, hc, ha, barW, topPadding, bottomPadding = ApplyHighlightStyle(entry, questData)
+
+    if showItemBtn then
+        entry.itemLink = questData.itemLink
+        entry.itemBtn.icon:SetTexture(questData.itemTexture)
+        if not InCombatLockdown() then
+            entry.itemBtn:SetAttribute("type", "item")
+            entry.itemBtn:SetAttribute("item", questData.itemLink)
+        end
+        entry.itemBtn:Show()
+        addon.ApplyItemCooldown(entry.itemBtn.cooldown, questData.itemLink)
+        local leftExtend = (addon.BAR_LEFT_OFFSET or 12) + 2 + addon.QUEST_TYPE_ICON_SIZE + 10 + addon.ITEM_BTN_SIZE
+        entry:SetHitRectInsets(-leftExtend, 0, 0, 0)
+    else
+        entry.itemLink = nil
+        entry.itemBtn:Hide()
+        if not InCombatLockdown() then
+            entry.itemBtn:SetAttribute("item", nil)
+        end
+        entry:SetHitRectInsets(0, 0, 0, 0)
+    end
+
+    local titleH = entry.titleText:GetStringHeight()
+    if not titleH or titleH < 1 then titleH = addon.TITLE_SIZE + 4 end
+    local totalH = titleH
+
+    local prevAnchor = entry.titleText
+    local titleToContentSpacing = ((questData.category == "DELVES" or questData.category == "DUNGEON") and addon.DELVE_OBJ_SPACING) or addon.GetObjSpacing()
+    local showZoneLabels = addon.GetDB("showZoneLabels", true)
+    local playerZone = addon.GetPlayerCurrentZoneName and addon.GetPlayerCurrentZoneName() or nil
+    local inCurrentZone = questData.isNearby or (questData.zoneName and playerZone and questData.zoneName:lower() == playerZone:lower())
+    local shouldShowZone = showZoneLabels and questData.zoneName and not inCurrentZone
+    if shouldShowZone then
+        local zoneLabel = questData.zoneName
+        if isOffMapWorld then
+            zoneLabel = ("[Off-map] %s"):format(zoneLabel)
+        end
+        entry.zoneText:SetText(zoneLabel)
+        entry.zoneShadow:SetText(zoneLabel)
+        local zoneColor = (addon.GetZoneColor and addon.GetZoneColor(effectiveCat)) or addon.ZONE_COLOR
+        if addon.GetDB("dimNonSuperTracked", false) and not questData.isSuperTracked then
+            zoneColor = { zoneColor[1] * 0.60, zoneColor[2] * 0.60, zoneColor[3] * 0.60 }
+        end
+        entry.zoneText:SetTextColor(zoneColor[1], zoneColor[2], zoneColor[3], 1)
+        entry.zoneText:ClearAllPoints()
+        entry.zoneText:SetPoint("TOPLEFT", entry.titleText, "BOTTOMLEFT", addon.GetObjIndent(), -titleToContentSpacing)
+        entry.zoneText:Show()
+        entry.zoneShadow:Show()
+        local zoneH = entry.zoneText:GetStringHeight()
+        if not zoneH or zoneH < 1 then zoneH = addon.ZONE_SIZE + 2 end
+        totalH = totalH + titleToContentSpacing + zoneH
+        prevAnchor = entry.zoneText
+    else
+        entry.zoneText:Hide()
+        entry.zoneShadow:Hide()
+    end
+
+    totalH, prevAnchor = ApplyObjectives(entry, questData, textWidth, prevAnchor, totalH, c, effectiveCat)
+    totalH = ApplyScenarioOrWQTimerBar(entry, questData, textWidth, prevAnchor or entry.titleText, totalH)
+
+    entry.entryHeight = totalH + topPadding + bottomPadding
+    entry:SetHeight(totalH + topPadding + bottomPadding)
+
+    ApplyShadowColors(entry, questData, highlightStyle, hc, ha)
+
+    local trackBarW = (highlightStyle == "pill-left") and barW or 2
+    if (highlightStyle == "bar-left" or highlightStyle == "bar-right" or highlightStyle == "pill-left") and entry.trackBar:IsShown() then
+        entry.trackBar:ClearAllPoints()
+        if highlightStyle == "bar-left" or highlightStyle == "pill-left" then
+            local barLeft = addon.BAR_LEFT_OFFSET or 12
+            entry.trackBar:SetPoint("TOPLEFT", entry, "TOPLEFT", -barLeft, 0)
+            entry.trackBar:SetPoint("BOTTOMRIGHT", entry, "BOTTOMLEFT", -barLeft + trackBarW, 0)
+        else
+            local barInsetRight = addon.ICON_COLUMN_WIDTH - addon.PADDING + 4
+            entry.trackBar:SetPoint("TOPRIGHT", entry, "TOPRIGHT", -barInsetRight, 0)
+            entry.trackBar:SetPoint("BOTTOMLEFT", entry, "BOTTOMRIGHT", -barInsetRight - trackBarW, 0)
+        end
+    end
+
+    if questData.isRare then
+        entry.questID    = nil
+        entry.entryKey   = questData.entryKey
+        entry.category   = nil
+        entry.creatureID = questData.creatureID
+        entry.achievementID = nil
+        entry.endeavorID = nil
+        entry.decorID    = nil
+        entry.itemLink   = nil
+        entry.isTracked  = nil
+    elseif questData.isAchievement or questData.category == "ACHIEVEMENT" then
+        entry.questID    = nil
+        entry.entryKey   = questData.entryKey
+        entry.category   = nil
+        entry.creatureID = nil
+        entry.achievementID = questData.achievementID
+        entry.endeavorID = nil
+        entry.isTracked  = true
+    elseif questData.isEndeavor or questData.category == "ENDEAVOR" then
+        entry.questID    = nil
+        entry.entryKey   = questData.entryKey
+        entry.category   = nil
+        entry.creatureID = nil
+        entry.achievementID = nil
+        entry.endeavorID = questData.endeavorID
+        entry.decorID    = nil
+        entry.isTracked  = true
+    elseif questData.isDecor or questData.category == "DECOR" then
+        entry.questID    = nil
+        entry.entryKey   = questData.entryKey
+        entry.category   = nil
+        entry.creatureID = nil
+        entry.achievementID = nil
+        entry.endeavorID = nil
+        entry.decorID    = questData.decorID
+        entry.isTracked  = true
+    elseif questData.isScenarioMain or questData.isScenarioBonus then
+        entry.questID    = questData.questID
+        entry.entryKey   = questData.entryKey
+        entry.category   = questData.category
+        entry.creatureID = nil
+        entry.achievementID = nil
+        entry.endeavorID = nil
+        entry.decorID    = nil
+        entry.isTracked  = questData.isTracked
+    else
+        entry.questID    = questData.questID
+        entry.entryKey   = nil
+        entry.category   = questData.category
+        entry.creatureID = nil
+        entry.achievementID = nil
+        entry.endeavorID = nil
+        entry.decorID    = nil
+        entry.isTracked  = questData.isTracked
+    end
+    return totalH
+end
+
+addon.PopulateEntry = PopulateEntry

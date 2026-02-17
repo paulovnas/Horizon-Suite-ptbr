@@ -304,15 +304,23 @@ scrollChild:SetWidth(addon.GetPanelWidth())
 scrollChild:SetHeight(1)
 scrollFrame:SetScrollChild(scrollChild)
 
-addon.scrollOffset = 0
+addon.focus = addon.focus or {}
+addon.focus.layout = addon.focus.layout or {
+    scrollOffset = 0,
+    targetHeight = addon.MIN_HEIGHT,
+    currentHeight = addon.MIN_HEIGHT,
+    sectionIdx = 0,
+}
+addon.focus.layout.scrollOffset = 0
 
 local function HandleScroll(delta)
     if InCombatLockdown() then return end
     local childH  = scrollChild:GetHeight() or 0
     local frameH  = scrollFrame:GetHeight() or 0
     local maxScr  = math.max(childH - frameH, 0)
-    addon.scrollOffset = math.max(0, math.min(addon.scrollOffset - delta * addon.SCROLL_STEP, maxScr))
-    scrollFrame:SetVerticalScroll(addon.scrollOffset)
+    local lo = addon.focus.layout
+    lo.scrollOffset = math.max(0, math.min(lo.scrollOffset - delta * addon.SCROLL_STEP, maxScr))
+    scrollFrame:SetVerticalScroll(lo.scrollOffset)
 end
 
 scrollFrame:EnableMouseWheel(true)
@@ -407,8 +415,8 @@ local function ResizeOnUpdate(self, elapsed)
     local newHeight = math.max(RESIZE_HEIGHT_MIN, math.min(RESIZE_HEIGHT_MAX, startHeight - deltaY))
     HS:SetWidth(newWidth)
     HS:SetHeight(newHeight)
-    addon.targetHeight = newHeight
-    addon.currentHeight = newHeight
+    addon.focus.layout.targetHeight = newHeight
+    addon.focus.layout.currentHeight = newHeight
     if addon.ApplyDimensions then addon.ApplyDimensions(newWidth) end
 end
 resizeHandle:SetScript("OnDragStart", function(self)

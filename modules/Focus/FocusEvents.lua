@@ -45,18 +45,18 @@ pcall(function() eventFrame:RegisterEvent("TRACKING_TARGET_INFO_UPDATE") end)
 pcall(function() eventFrame:RegisterEvent("TRACKABLE_INFO_UPDATE") end)
 
 local function ScheduleRefresh()
-    if not addon.enabled then return end
-    if addon.refreshPending then return end
-    addon.refreshPending = true
+    if not addon.focus.enabled then return end
+    if addon.focus.refreshPending then return end
+    addon.focus.refreshPending = true
     C_Timer.After(0.05, function()
-        addon.refreshPending = false
-        if not addon.enabled then return end
+        addon.focus.refreshPending = false
+        if not addon.focus.enabled then return end
         if InCombatLockdown() then
-            addon.layoutPendingAfterCombat = true
+            addon.focus.layoutPendingAfterCombat = true
             if addon.RefreshContentInCombat then addon.RefreshContentInCombat() end
             return
         end
-        addon.layoutPendingAfterCombat = false
+        addon.focus.layoutPendingAfterCombat = false
         if addon.FullLayout then addon.FullLayout() end
     end)
 end
@@ -94,34 +94,34 @@ local function OnAddonLoaded(addonName)
 end
 
 local function OnPlayerRegenDisabled()
-    if addon.GetDB("hideInCombat", false) and addon.enabled then
+    if addon.GetDB("hideInCombat", false) and addon.focus.enabled then
         local useAnim = addon.GetDB("animations", true)
         if useAnim and addon.HS:IsShown() then
-            addon.combatFadeState = "out"
-            addon.combatFadeTime  = 0
+            addon.focus.combat.fadeState = "out"
+            addon.focus.combat.fadeTime  = 0
             if addon.EnsureFocusUpdateRunning then addon.EnsureFocusUpdateRunning() end
         else
             -- Cannot call HS:Hide() here; we are entering combat (protected action blocked).
-            addon.combatFadeState = "out"
-            addon.combatFadeTime  = 0
-            addon.pendingHideAfterCombat = true
+            addon.focus.combat.fadeState = "out"
+            addon.focus.combat.fadeTime  = 0
+            addon.focus.pendingHideAfterCombat = true
             if addon.EnsureFocusUpdateRunning then addon.EnsureFocusUpdateRunning() end
         end
     end
 end
 
 local function OnPlayerRegenEnabled()
-    if addon.layoutPendingAfterCombat then
-        addon.layoutPendingAfterCombat = nil
-        if addon.GetDB("hideInCombat", false) and addon.enabled then
-            addon.combatFadeState = "in"
-            addon.combatFadeTime  = 0
+    if addon.focus.layoutPendingAfterCombat then
+        addon.focus.layoutPendingAfterCombat = nil
+        if addon.GetDB("hideInCombat", false) and addon.focus.enabled then
+            addon.focus.combat.fadeState = "in"
+            addon.focus.combat.fadeTime  = 0
             if addon.EnsureFocusUpdateRunning then addon.EnsureFocusUpdateRunning() end
         end
         addon.FullLayout()
-    elseif addon.GetDB("hideInCombat", false) and addon.enabled then
-        addon.combatFadeState = "in"
-        addon.combatFadeTime  = 0
+    elseif addon.GetDB("hideInCombat", false) and addon.focus.enabled then
+        addon.focus.combat.fadeState = "in"
+        addon.focus.combat.fadeTime  = 0
         if addon.EnsureFocusUpdateRunning then addon.EnsureFocusUpdateRunning() end
         ScheduleRefresh()
     end
@@ -130,11 +130,11 @@ end
 -- When entering a Delve/dungeon, APIs can lag. Poll until instance state is true, then run FullLayout directly
 -- (same as options toggle path) so "hide other categories in Delve/Dungeon" is applied even if ScheduleRefresh was no-op.
 local function StartInstanceStatePoll()
-    if not addon.enabled or not (addon.IsDelveActive or addon.IsInPartyDungeon) then return end
+    if not addon.focus.enabled or not (addon.IsDelveActive or addon.IsInPartyDungeon) then return end
     local attempts = 0
     local function poll()
         attempts = attempts + 1
-        if not addon.enabled then return end
+        if not addon.focus.enabled then return end
         local inDelve = addon.IsDelveActive and addon.IsDelveActive()
         local inDungeon = addon.IsInPartyDungeon and addon.IsInPartyDungeon()
         if inDelve or inDungeon then
@@ -151,16 +151,16 @@ local function StartInstanceStatePoll()
 end
 
 local function OnPlayerLoginOrEnteringWorld()
-    if addon.enabled then
-        addon.zoneJustChanged = true
+    if addon.focus.enabled then
+        addon.focus.zoneJustChanged = true
         addon.TrySuppressTracker()
         ScheduleRefresh()
-        C_Timer.After(0.4, function() if addon.enabled then addon.FullLayout() end end)
-        C_Timer.After(1.5, function() if addon.enabled then ScheduleRefresh() end end)
+        C_Timer.After(0.4, function() if addon.focus.enabled then addon.FullLayout() end end)
+        C_Timer.After(1.5, function() if addon.focus.enabled then ScheduleRefresh() end end)
         StartInstanceStatePoll()
         -- Prime endeavor cache so GetInitiativeTaskInfo returns objectives without user opening the panel (Blizz bug workaround)
         C_Timer.After(0.2, function()
-            if addon.enabled and addon.GetTrackedEndeavorIDs and addon.RequestEndeavorTaskInfo then
+            if addon.focus.enabled and addon.GetTrackedEndeavorIDs and addon.RequestEndeavorTaskInfo then
                 local idList = addon.GetTrackedEndeavorIDs()
                 if #idList > 0 and HousingFramesUtil and HousingFramesUtil.ToggleHousingDashboard then
                     pcall(HousingFramesUtil.ToggleHousingDashboard)
@@ -175,7 +175,7 @@ local function OnPlayerLoginOrEnteringWorld()
 end
 
 local function OnQuestTurnedIn(questID)
-    if not addon.enabled then ScheduleRefresh(); return end
+    if not addon.focus.enabled then ScheduleRefresh(); return end
     for i = 1, addon.POOL_SIZE do
         if addon.pool[i].questID == questID and addon.pool[i].animState ~= "fadeout" then
             local e = addon.pool[i]
@@ -189,7 +189,7 @@ local function OnQuestTurnedIn(questID)
 end
 
 local function OnQuestWatchUpdate(questID)
-    if not addon.enabled then ScheduleRefresh(); return end
+    if not addon.focus.enabled then ScheduleRefresh(); return end
     if questID and addon.GetDB("objectiveProgressFlash", true) then
         for i = 1, addon.POOL_SIZE do
             if addon.pool[i].questID == questID then
@@ -201,7 +201,7 @@ local function OnQuestWatchUpdate(questID)
 end
 
 local function OnQuestAccepted(questID)
-    if not addon.enabled then ScheduleRefresh(); return end
+    if not addon.focus.enabled then ScheduleRefresh(); return end
     if not questID or questID <= 0 then ScheduleRefresh(); return end
     
     if addon.GetDB("autoTrackOnAccept", true) then
@@ -215,13 +215,13 @@ local function OnQuestAccepted(questID)
 end
 
 local function OnQuestWatchListChanged(questID, added)
-    if not addon.enabled then ScheduleRefresh(); return end
+    if not addon.focus.enabled then ScheduleRefresh(); return end
     if questID and addon.IsQuestWorldQuest and addon.IsQuestWorldQuest(questID) then
-        if not addon.recentlyUntrackedWorldQuests then addon.recentlyUntrackedWorldQuests = {} end
+        if not addon.focus.recentlyUntrackedWorldQuests then addon.focus.recentlyUntrackedWorldQuests = {} end
         if added then
-            addon.recentlyUntrackedWorldQuests[questID] = nil
+            addon.focus.recentlyUntrackedWorldQuests[questID] = nil
         else
-            addon.recentlyUntrackedWorldQuests[questID] = true
+            addon.focus.recentlyUntrackedWorldQuests[questID] = true
             if addon.wqtTrackedQuests and addon.wqtTrackedQuests[questID] then
                 addon.wqtTrackedQuests[questID] = nil
                 if HorizonDB and HorizonDB.wqtTrackedQuests then
@@ -234,19 +234,19 @@ local function OnQuestWatchListChanged(questID, added)
 end
 
 local function OnZoneChanged(event)
-    addon.zoneJustChanged = true
-    addon.lastPlayerMapID = nil
+    addon.focus.zoneJustChanged = true
+    addon.focus.lastPlayerMapID = nil
     -- Only clear right-click suppression on major area change (return to main zone), not on subzone change—unless option is "suppress until reload".
     if event == "ZONE_CHANGED_NEW_AREA" then
         if not addon.GetDB("suppressUntrackedUntilReload", false) then
-            if addon.recentlyUntrackedWorldQuests then wipe(addon.recentlyUntrackedWorldQuests) end
+            if addon.focus.recentlyUntrackedWorldQuests then wipe(addon.focus.recentlyUntrackedWorldQuests) end
         end
-        C_Timer.After(2.5, function() if addon.enabled then ScheduleRefresh() end end)
+        C_Timer.After(2.5, function() if addon.focus.enabled then ScheduleRefresh() end end)
     end
     if addon.zoneTaskQuestCache then wipe(addon.zoneTaskQuestCache) end
     ScheduleRefresh()
-    C_Timer.After(0.4, function() if addon.enabled then addon.FullLayout() end end)
-    C_Timer.After(1.5, function() if addon.enabled then ScheduleRefresh() end end)
+    C_Timer.After(0.4, function() if addon.focus.enabled then addon.FullLayout() end end)
+    C_Timer.After(1.5, function() if addon.focus.enabled then ScheduleRefresh() end end)
     StartInstanceStatePoll()
 end
 
@@ -292,16 +292,16 @@ local eventHandlers = {
 -- @param event string WoW event name (e.g. QUEST_WATCH_LIST_CHANGED, ADDON_LOADED)
 -- @param ... any Event payload (varargs)
 eventFrame:SetScript("OnEvent", function(self, event, ...)
-    -- Process pending hide before addon.enabled check (handles module disabled in combat).
-    if event == "PLAYER_REGEN_ENABLED" and addon.pendingHideAfterCombat and addon.HS then
-        addon.pendingHideAfterCombat = nil
+    -- Process pending hide before addon.focus.enabled check (handles module disabled in combat).
+    if event == "PLAYER_REGEN_ENABLED" and addon.focus.pendingHideAfterCombat and addon.HS then
+        addon.focus.pendingHideAfterCombat = nil
         addon.HS:Hide()
         local floatingBtn = _G.HSFloatingQuestItem
         if floatingBtn then floatingBtn:Hide() end
         if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
         if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
     end
-    if event ~= "ADDON_LOADED" and not addon.enabled then
+    if event ~= "ADDON_LOADED" and not addon.focus.enabled then
         return
     end
     local fn = eventHandlers[event]

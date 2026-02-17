@@ -23,16 +23,16 @@ local function RunWorldMapVisibilityCheck()
     else
         if not addon.GetCurrentWorldQuestWatchSet then return end
         local currentSet = addon.GetCurrentWorldQuestWatchSet()
-        local lastSet = addon.lastWorldQuestWatchSet
+        local lastSet = addon.focus.lastWorldQuestWatchSet
         if lastSet and next(lastSet) then
-            if not addon.recentlyUntrackedWorldQuests then addon.recentlyUntrackedWorldQuests = {} end
+            if not addon.focus.recentlyUntrackedWorldQuests then addon.focus.recentlyUntrackedWorldQuests = {} end
             for questID, _ in pairs(lastSet) do
                 if not currentSet[questID] then
-                    addon.recentlyUntrackedWorldQuests[questID] = true
+                    addon.focus.recentlyUntrackedWorldQuests[questID] = true
                 end
             end
         end
-        addon.lastWorldQuestWatchSet = currentSet
+        addon.focus.lastWorldQuestWatchSet = currentSet
         if addon.ScheduleRefresh then addon.ScheduleRefresh() end
     end
 end
@@ -40,7 +40,7 @@ end
 local function StartScenarioTimerHeartbeat()
     if addon._scenarioTimerHeartbeat then return end
     addon._scenarioTimerHeartbeat = C_Timer.NewTicker(5, function()
-        if not addon.enabled or addon.collapsed then return end
+        if not addon.focus.enabled or addon.focus.collapsed then return end
         if addon.ShouldHideInCombat and addon.ShouldHideInCombat() then return end
         if not addon.GetDB("showScenarioEvents", true) then return end
         if addon.IsScenarioActive and addon.IsScenarioActive() then
@@ -105,7 +105,7 @@ addon:RegisterModule("focus", {
     end,
 
     OnEnable = function()
-        addon.enabled = true
+        addon.focus.enabled = true
         if HorizonDB and HorizonDB.wqtTrackedQuests then
             addon.wqtTrackedQuests = addon.wqtTrackedQuests or {}
             for questID, tracked in pairs(HorizonDB.wqtTrackedQuests) do
@@ -120,11 +120,11 @@ addon:RegisterModule("focus", {
         if addon.ApplyBackdropOpacity then addon.ApplyBackdropOpacity() end
         if addon.ApplyBorderVisibility then addon.ApplyBorderVisibility() end
         if HorizonDB and HorizonDB.collapsed then
-            addon.collapsed = true
+            addon.focus.collapsed = true
             addon.chevron:SetText("+")
             addon.scrollFrame:Hide()
-            addon.targetHeight  = addon.GetCollapsedHeight()
-            addon.currentHeight = addon.GetCollapsedHeight()
+            addon.focus.layout.targetHeight  = addon.GetCollapsedHeight()
+            addon.focus.layout.currentHeight = addon.GetCollapsedHeight()
         end
         StartScenarioTimerHeartbeat()
         StartScenarioBarTicker()
@@ -140,7 +140,7 @@ addon:RegisterModule("focus", {
     end,
 
     OnDisable = function()
-        addon.enabled = false
+        addon.focus.enabled = false
         StopScenarioTimerHeartbeat()
         StopScenarioBarTicker()
         StopMapCheckTicker()
@@ -149,7 +149,7 @@ addon:RegisterModule("focus", {
         if not InCombatLockdown() then
             addon.HS:Hide()
         else
-            addon.pendingHideAfterCombat = true
+            addon.focus.pendingHideAfterCombat = true
         end
         if addon.pool then
             for i = 1, addon.POOL_SIZE do
@@ -158,7 +158,7 @@ addon:RegisterModule("focus", {
         end
         if addon.activeMap then wipe(addon.activeMap) end
         if addon.HideAllSectionHeaders then addon.HideAllSectionHeaders() end
-        addon.sectionIdx = 0
+        addon.focus.layout.sectionIdx = 0
         if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
         if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
     end,
