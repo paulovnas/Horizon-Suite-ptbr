@@ -9,12 +9,13 @@ local addon = _G.HorizonSuite
 
 local TRACKING_TYPE_ACHIEVEMENT = (Enum and Enum.ContentTrackingType and Enum.ContentTrackingType.Achievement) or 2
 local DEFAULT_ACHIEVEMENT_COLOR = { 0.78, 0.48, 0.22 }
+local MAX_LEGACY_TRACKED_ACHIEVEMENTS = 10
 
 -- ============================================================================
 -- Private helpers
 -- ============================================================================
 
--- GetAchievementInfo can throw on invalid or stale achievement ID; pcall used for safety.
+-- Turns one achievement's criteria into objective rows; respects "only missing" option. Uses pcall for APIs that can throw on invalid ID.
 local function GetAchievementCriteria(achievementID)
     local objectives = {}
     local criteriaDone, criteriaTotal = 0, 0
@@ -65,7 +66,7 @@ local function ReadTrackedAchievements()
         end
     end
     elseif GetTrackedAchievements then
-        for i = 1, 10 do
+        for i = 1, MAX_LEGACY_TRACKED_ACHIEVEMENTS do
             local id = select(i, GetTrackedAchievements())
             if type(id) == "number" and id > 0 then
                 idList[#idList + 1] = id

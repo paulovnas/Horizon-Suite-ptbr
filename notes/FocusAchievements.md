@@ -30,7 +30,7 @@ This is the only function the rest of the Focus module calls for achievements. F
 
 1. **Setup** – We collect two things: `idList` = the achievement IDs the player is tracking, and `out` = the final array of entry tables we return.
 
-2. **Step 1 – Get tracked IDs** – WoW 10.1.5+ uses C_ContentTracking.GetTrackedIDs(type). Older clients use GetTrackedAchievements() which returns up to 10 IDs as multiple return values. We normalize both into a single array idList. Legacy path: loop 1..10 and use select(i, GetTrackedAchievements()) to pull each return value; only push valid numeric IDs.
+2. **Step 1 – Get tracked IDs** – WoW 10.1.5+ uses C_ContentTracking.GetTrackedIDs(type). Older clients use GetTrackedAchievements() which returns up to MAX_LEGACY_TRACKED_ACHIEVEMENTS (10) IDs as multiple return values. We normalize both into a single array idList.
 
 3. **Step 2 – Resolve color** – Decide what color to use for achievement rows. Check addon's color system first (user may have customized), then Config's QUEST_COLORS, then our DEFAULT_ACHIEVEMENT_COLOR.
 
@@ -40,6 +40,6 @@ This is the only function the rest of the Focus module calls for achievements. F
 
 6. **Guard: show completed** – Respect the "show completed achievements" option. If this achievement is complete and the user has that option off, we skip adding it (guard clause: only add when we're allowed to show it).
 
-7. **Build entry** – Resolve icon (number or string texture) and get the criteria list + counts from GetAchievementCriteria. Build one entry table in the shape the tracker expects: entryKey (unique), achievementID, title, objectives, color, category, and all the standard flags (isComplete, isTracked, etc.). FocusEntryRenderer and the layout use these fields to draw the row.
+7. **Build entry** – Resolve icon (number or string texture) and get the criteria list + counts from GetAchievementCriteria. Build one entry table in the shape the tracker expects: entryKey (unique), achievementID, title, objectives, color, category, and all the standard flags (isComplete, isTracked, etc.). zoneName and isNearby are always nil/false for achievements.
 
 8. **Return** – Return the full array. FullLayout will iterate this and call PopulateEntry for each.
