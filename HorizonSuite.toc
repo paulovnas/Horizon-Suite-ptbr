@@ -38,6 +38,7 @@ modules/Focus/FocusMplusBlock.lua
 modules/Focus/FocusInteractions.lua
 modules/Focus/FocusBlizzard.lua
 modules/Focus/FocusEvents.lua
+modules/Focus/FocusUnacceptedPopup.lua
 modules/Focus/FocusSlash.lua
 modules/Focus/FocusModule.lua
 

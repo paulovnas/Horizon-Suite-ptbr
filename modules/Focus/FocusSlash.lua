@@ -336,6 +336,14 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
             end
         end
 
+    elseif cmd == "unaccepted" or cmd == "dwp" then
+        if addon.ShowUnacceptedPopup then
+            addon.ShowUnacceptedPopup()
+            HSPrint("Opened unaccepted quests popup.")
+        else
+            HSPrint("ShowUnacceptedPopup not available.")
+        end
+
     elseif cmd == "delvedebug" then
         HSPrint("|cFF00CCFF--- Delve / Tier debug (run inside a Delve) ---|r")
         if C_PartyInfo and C_PartyInfo.IsDelveInProgress then
@@ -373,6 +381,7 @@ SlashCmdList["MODERNQUESTTRACKER"] = function(msg)
         HSPrint("  /horizon headercountdebug - Print header count (in-log) breakdown for debugging")
         HSPrint("  /horizon delvedebug      - Dump Delve/tier APIs (run inside a Delve to find tier number)")
         HSPrint("  /horizon endeavordebug   - Dump Endeavor APIs + GetInitiativeTaskInfo fields (for tooltip/rewards)")
+        HSPrint("  /horizon unaccepted      - Show popup of unaccepted quests in current zone with type labels (test)")
         HSPrint("")
         HSPrint("  Click the header row to collapse / expand.")
         HSPrint("  Scroll with mouse wheel when content overflows.")
