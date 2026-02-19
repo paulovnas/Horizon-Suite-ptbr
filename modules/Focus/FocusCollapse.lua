@@ -358,6 +358,13 @@ local function RefreshContentInCombat()
 
                     if oData and oData.text then
                         local objText = oData.text or ""
+                        local nf, nr = oData.numFulfilled, oData.numRequired
+                        if nf ~= nil and nr ~= nil and type(nf) == "number" and type(nr) == "number" and nr > 1 then
+                            local pattern = tostring(nf) .. "/" .. tostring(nr)
+                            if not objText:find(pattern, 1, true) then
+                                objText = objText .. (" (%d/%d)"):format(nf, nr)
+                            end
+                        end
                         if showObjectiveNumbers then objText = ("%d. %s"):format(j, objText) end
                         obj.text:SetText(objText)
                         obj.shadow:SetText(objText)

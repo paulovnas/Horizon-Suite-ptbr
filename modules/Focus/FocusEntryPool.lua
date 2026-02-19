@@ -378,6 +378,11 @@ local function ApplyTypography()
 end
 
 local function ApplyDimensions(widthOverride)
+    if InCombatLockdown() then
+        addon.focus.pendingDimensionsAfterCombat = true
+        return
+    end
+    addon.focus.pendingDimensionsAfterCombat = false
     local w = (widthOverride and type(widthOverride) == "number") and widthOverride or addon.GetPanelWidth()
     addon.HS:SetSize(w, addon.HS:GetHeight() or addon.MIN_HEIGHT)
     addon.divider:SetSize(w - addon.PADDING * 2, addon.DIVIDER_HEIGHT)

@@ -15,6 +15,7 @@ addon.focus = {
     lastPlayerMapID = nil,
     placeholderRefreshScheduled = false,
     layoutPendingAfterCombat     = false,
+    pendingDimensionsAfterCombat  = false,
     pendingHideAfterCombat       = false,
 
     rares = {

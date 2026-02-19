@@ -108,6 +108,13 @@ local function ApplyObjectives(entry, questData, textWidth, prevAnchor, totalH, 
 
         if oData then
             local objText = oData.text or ""
+            local nf, nr = oData.numFulfilled, oData.numRequired
+            if nf ~= nil and nr ~= nil and type(nf) == "number" and type(nr) == "number" and nr > 1 then
+                local pattern = tostring(nf) .. "/" .. tostring(nr)
+                if not objText:find(pattern, 1, true) then
+                    objText = objText .. (" (%d/%d)"):format(nf, nr)
+                end
+            end
             if addon.GetDB("showObjectiveNumbers", false) then
                 objText = ("%d. %s"):format(j, objText)
             end

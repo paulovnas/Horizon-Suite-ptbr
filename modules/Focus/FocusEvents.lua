@@ -111,6 +111,10 @@ local function OnPlayerRegenDisabled()
 end
 
 local function OnPlayerRegenEnabled()
+    if addon.focus.pendingDimensionsAfterCombat then
+        addon.focus.pendingDimensionsAfterCombat = nil
+        if addon.ApplyDimensions then addon.ApplyDimensions() end
+    end
     if addon.focus.layoutPendingAfterCombat then
         addon.focus.layoutPendingAfterCombat = nil
         if addon.GetDB("hideInCombat", false) and addon.focus.enabled then
