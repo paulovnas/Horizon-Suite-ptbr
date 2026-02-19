@@ -335,7 +335,9 @@ local function FullLayout()
                     local sec = addon.AcquireSectionHeader(grp.key, focusedGroupKey)
                     if sec then
                         sec:ClearAllPoints()
-                        sec:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", addon.GetContentLeftOffset(), yOff)
+                        local x = addon.GetContentLeftOffset()
+                        sec:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", x, yOff)
+                        sec.finalX, sec.finalY = x, yOff
                         yOff = yOff - (addon.SECTION_SIZE + 4) - addon.GetSectionToEntryGap()
                     end
                 end
@@ -398,8 +400,7 @@ local function FullLayout()
             if onlyDelveShown and addon.ClearEntry then
                 addon.ClearEntry(entry)
             elseif entry.animState ~= "completing" and entry.animState ~= "fadeout" then
-                entry.animState = "fadeout"
-                entry.animTime  = 0
+                addon.SetEntryFadeOut(entry)
             end
             activeMap[key] = nil
         end
@@ -423,15 +424,12 @@ local function FullLayout()
             if not entry then
                 entry = AcquireEntry()
                 if entry then
-                    entry.animState = "fadein"
-                    entry.animTime  = 0
+                    addon.SetEntryFadeIn(entry, 0)
                     activeMap[key] = entry
                 end
             elseif entry.animState == "idle" and not entry.questID and not entry.entryKey then
                 -- Zombie entry left over from a group collapse: reset it for fadein.
-                entry.animState = "fadein"
-                entry.animTime  = 0
-                entry:SetAlpha(0)
+                addon.SetEntryFadeIn(entry, 0)
             end
             if entry then
                 entry.groupKey = grp.key
@@ -481,8 +479,7 @@ local function FullLayout()
             for key in pairs(promotedKeys) do
                 local entry = activeMap[key]
                 if entry and (entry.animState == "active" or entry.animState == "fadein") and entry.finalX and entry.finalY then
-                    entry.animState = "fadeout"
-                    entry.animTime  = 0
+                    addon.SetEntryFadeOut(entry)
                     entry.promotionFadeOut = true
                     promotionFadeOutCount = promotionFadeOutCount + 1
                 end
@@ -525,7 +522,9 @@ local function FullLayout()
             local sec = addon.AcquireSectionHeader(grp.key, focusedGroupKey)
             if sec then
                 sec:ClearAllPoints()
-                sec:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", addon.GetContentLeftOffset(), yOff)
+                local x = addon.GetContentLeftOffset()
+                sec:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", x, yOff)
+                sec.finalX, sec.finalY = x, yOff
                 yOff = yOff - (addon.SECTION_SIZE + 4) - addon.GetSectionToEntryGap()
             end
         end
@@ -549,9 +548,12 @@ local function FullLayout()
                     entry.groupKey = grp.key
                     entry.finalX = addon.GetContentLeftOffset()
                     entry.finalY = yOff
-                    entry.staggerDelay = entryIndex * addon.ENTRY_STAGGER
+                    entry.staggerDelay = entryIndex * addon.FOCUS_ANIM.stagger
                     entryIndex = entryIndex + 1
 
+                    if not entry:IsShown() and (entry.animState == "active" or entry.animState == "idle") and addon.GetDB("animations", true) then
+                        addon.SetEntryFadeIn(entry, entryIndex - 1)
+                    end
                     entry:ClearAllPoints()
                     entry:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", addon.GetContentLeftOffset(), yOff)
                     entry:Show()

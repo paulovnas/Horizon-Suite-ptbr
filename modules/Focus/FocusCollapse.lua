@@ -29,9 +29,18 @@ local function ToggleCollapse()
     if addon.focus.collapse.animating then
         if (GetTime() - addon.focus.collapse.animStart) < 2 then return end
         addon.focus.collapse.animating = false
+        addon.focus.collapse.sectionHeadersFadingOut = false
+        addon.focus.collapse.sectionHeadersFadingIn = false
         for i = 1, addon.POOL_SIZE do
             if pool[i].animState == "collapsing" then
                 addon.ClearEntry(pool[i])
+            end
+        end
+        for i = 1, addon.SECTION_POOL_SIZE do
+            if sectionPool[i].active then
+                sectionPool[i]:SetAlpha(0)
+                sectionPool[i]:Hide()
+                sectionPool[i].active = false
             end
         end
         wipe(activeMap)
@@ -54,13 +63,15 @@ local function ToggleCollapse()
         table.sort(visibleEntries, function(a, b) return a.finalY < b.finalY end)
 
         for idx, e in ipairs(visibleEntries) do
-            e.animState     = "collapsing"
-            e.animTime      = 0
-            e.collapseDelay = 0
+            addon.SetEntryCollapsing(e, 0)
         end
 
         local showHeadersWhenCollapsed = addon.GetDB("showSectionHeadersWhenCollapsed", false)
-        if not showHeadersWhenCollapsed then
+        local useAnim = addon.GetDB("animations", true)
+        if useAnim then
+            addon.focus.collapse.sectionHeadersFadingOut = true
+            addon.focus.collapse.sectionHeaderFadeTime   = 0
+        else
             for i = 1, addon.SECTION_POOL_SIZE do
                 if sectionPool[i].active then
                     sectionPool[i]:SetAlpha(0)
@@ -70,7 +81,7 @@ local function ToggleCollapse()
             end
         end
 
-        addon.focus.collapse.animating = #visibleEntries > 0
+        addon.focus.collapse.animating = #visibleEntries > 0 or addon.focus.collapse.sectionHeadersFadingOut
         addon.focus.collapse.animStart = GetTime()
         if addon.focus.collapse.animating and addon.EnsureFocusUpdateRunning then
             addon.EnsureFocusUpdateRunning()
@@ -86,6 +97,10 @@ local function ToggleCollapse()
     else
         addon.chevron:SetText("-")
         scrollFrame:Show()
+        if addon.GetDB("animations", true) then
+            addon.focus.collapse.sectionHeadersFadingIn  = true
+            addon.focus.collapse.sectionHeaderFadeTime    = 0
+        end
         addon.FullLayout()
     end
     addon.EnsureDB()
@@ -116,9 +131,7 @@ function addon.StartGroupCollapse(groupKey)
     end)
 
     for i, e in ipairs(entries) do
-        e.animState     = "collapsing"
-        e.animTime      = 0
-        e.collapseDelay = (i - 1) * addon.ENTRY_STAGGER
+        addon.SetEntryCollapsing(e, i - 1)
     end
 
     addon.focus.collapse.groups[groupKey] = GetTime()
@@ -154,9 +167,7 @@ function addon.StartGroupCollapseVisual(groupKey)
     end)
 
     for i, e in ipairs(entries) do
-        e.animState     = "collapsing"
-        e.animTime      = 0
-        e.collapseDelay = (i - 1) * addon.ENTRY_STAGGER
+        addon.SetEntryCollapsing(e, i - 1)
     end
 
     addon.focus.collapse.groups[groupKey] = GetTime()
@@ -174,10 +185,7 @@ function addon.TriggerNearbyEntriesFadeIn()
         return (a.finalY or 0) > (b.finalY or 0)
     end)
     for i, e in ipairs(entries) do
-        e.animState     = "fadein"
-        e.animTime      = 0
-        e.staggerDelay  = (i - 1) * addon.ENTRY_STAGGER
-        e:SetAlpha(0)
+        addon.SetEntryFadeIn(e, i - 1)
     end
 end
 

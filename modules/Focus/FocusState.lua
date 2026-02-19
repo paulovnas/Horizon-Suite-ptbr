@@ -27,6 +27,11 @@ addon.focus = {
         animating = false,
         animStart = 0,
         groups    = {},  -- [groupKey] = startTime
+        sectionHeadersFadingOut = false,
+        sectionHeadersFadingIn  = false,
+        sectionHeaderFadeTime   = 0,
+        expandSlideDownStarts   = nil,  -- { [key] = startY } for expand slide-down
+        expandSlideDownStartsSec = nil, -- { [groupKey] = startY }
     },
 
     combat = {
