@@ -336,7 +336,14 @@ L["Require Ctrl for focus/add (Left) and unfocus/untrack (Right) to prevent misc
 L["Animations"]                                         = "애니메이션"
 L["Enable slide and fade for quests."]                  = "퀘스트에 슬라이드 및 페이드 효과를 활성화합니다."
 L["Objective progress flash"]                           = "목표 완료 효과"
-L["Show green flash when an objective completes."]      = "목표 완료 시 초록색 효과를 표시합니다."
+L["Show flash when an objective completes."]            = "목표 완료 시 효과를 표시합니다."
+L["Flash intensity"]                                   = "효과 강도"
+L["How noticeable the objective-complete flash is."]    = "목표 완료 시 표시되는 효과의 강도입니다."
+L["Flash color"]                                        = "효과 색상"
+L["Color of the objective-complete flash."]             = "목표 완료 시 표시되는 효과의 색상입니다."
+L["Subtle"]                                             = "은은함"
+L["Medium"]                                             = "보통"
+L["Strong"]                                             = "강함"
 
 -- =====================================================================
 -- OptionsData.lua Presence

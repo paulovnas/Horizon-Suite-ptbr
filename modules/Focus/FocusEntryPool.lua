@@ -217,7 +217,7 @@ local function CreateQuestEntry(parent, index)
         e.scenarioTimerBars[si] = bar
     end
 
-    e.flash = e:CreateTexture(nil, "HIGHLIGHT")
+    e.flash = e:CreateTexture(nil, "OVERLAY")
     e.flash:SetAllPoints(e)
     e.flash:SetColorTexture(1, 1, 1, 0)
 

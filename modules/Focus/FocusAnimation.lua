@@ -8,7 +8,7 @@ local addon = _G.HorizonSuite
 
 local HEIGHT_SNAP_THRESHOLD   = 0.5
 local DRIFT_THRESHOLD        = 0.1
-local FLASH_ALPHA_MAX        = 0.12
+local FLASH_ALPHA_BY_INTENSITY = { subtle = 0.12, medium = 0.22, strong = 0.35 }
 local GROUP_COLLAPSE_TIMEOUT = 2
 
 local anim = addon.FOCUS_ANIM or { dur = 0.4, stagger = 0.05, slideInX = 20, slideOutX = 20, driftOutY = 10 }
@@ -327,7 +327,20 @@ local function UpdateEntryAnimations(dt, useAnim)
         if e.flashTime > 0 then
             e.flashTime = e.flashTime - dt
             local fp = math.max(e.flashTime / addon.FLASH_DUR, 0)
-            e.flash:SetColorTexture(1, 1, 1, fp * FLASH_ALPHA_MAX)
+            local intensity = addon.GetDB("objectiveProgressFlashIntensity", "subtle")
+            local alphaMax = FLASH_ALPHA_BY_INTENSITY[intensity] or FLASH_ALPHA_BY_INTENSITY.subtle
+            -- Punch-then-settle: phase 1 (0-15%) rapid ease-in to full, phase 2 (15-100%) smooth ease-out to 0
+            local alpha
+            if fp > 0.85 then
+                local phase1Progress = (1 - fp) / 0.15
+                alpha = addon.easeIn(phase1Progress) * alphaMax
+            else
+                local phase2Progress = (0.85 - fp) / 0.85
+                alpha = (1 - addon.easeOut(phase2Progress)) * alphaMax
+            end
+            local fc = addon.GetDB("objectiveProgressFlashColor", nil)
+            if not fc or #fc < 3 then fc = { 1, 1, 1 } end
+            e.flash:SetColorTexture(fc[1], fc[2], fc[3], alpha)
             anyAnimating = true
         end
     end

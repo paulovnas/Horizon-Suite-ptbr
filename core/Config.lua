@@ -65,7 +65,7 @@ addon.FOCUS_ANIM = {
 }
 addon.COMPLETE_HOLD   = 0.50
 addon.HEIGHT_SPEED    = 8
-addon.FLASH_DUR       = 0.35
+addon.FLASH_DUR       = 0.55
 
 -- Backward-compatible aliases (derived from FOCUS_ANIM).
 addon.FOCUS_ANIM_DUR  = addon.FOCUS_ANIM.dur
