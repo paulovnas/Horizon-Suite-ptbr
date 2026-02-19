@@ -218,8 +218,8 @@ local function GetWorldAndCallingQuestIDsToShow(nearbySet, taskQuestOnlySet)
             end
         end
     end
-    if addon.wqtTrackedQuests then
-        for questID, _ in pairs(addon.wqtTrackedQuests) do
+    if addon.focus.wqtTrackedQuests then
+        for questID, _ in pairs(addon.focus.wqtTrackedQuests) do
             if not seen[questID] then
                 seen[questID] = true
                 out[#out + 1] = { questID = questID, isTracked = true }
