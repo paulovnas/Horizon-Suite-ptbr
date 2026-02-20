@@ -42,6 +42,63 @@ panel:EnableMouse(true)
 panel:RegisterForDrag("LeftButton")
 panel:Hide()
 
+-- ESC handling: first ESC closes any open dropdown, second ESC closes the panel.
+-- When a dropdown opens, we remove the panel from UISpecialFrames so ESC only closes the dropdown.
+-- When the dropdown closes, we add the panel back so the next ESC closes the panel.
+addon._OpenDropdowns = addon._OpenDropdowns or {}
+addon._CloseAnyOpenDropdown = function()
+    local toClose = {}
+    for closeFunc in next, addon._OpenDropdowns do
+        toClose[#toClose + 1] = closeFunc
+    end
+    addon._OpenDropdowns = {}
+    for _, f in ipairs(toClose) do f() end
+    return #toClose > 0
+end
+
+local panelName = nil
+addon._OnDropdownOpened = function(closeFunc)
+    addon._OpenDropdowns[closeFunc] = true
+    if _G.UISpecialFrames and panelName then
+        for i = #_G.UISpecialFrames, 1, -1 do
+            if _G.UISpecialFrames[i] == panelName then
+                table.remove(_G.UISpecialFrames, i)
+                break
+            end
+        end
+    end
+end
+addon._OnDropdownClosed = function(closeFunc)
+    addon._OpenDropdowns[closeFunc] = nil
+    if _G.UISpecialFrames and panelName then
+        local exists = false
+        for i = 1, #_G.UISpecialFrames do
+            if _G.UISpecialFrames[i] == panelName then exists = true break end
+        end
+        if not exists then
+            tinsert(_G.UISpecialFrames, 1, panelName)
+        end
+    end
+end
+
+panel:HookScript("OnHide", function()
+    if addon._CloseAnyOpenDropdown then addon._CloseAnyOpenDropdown() end
+end)
+
+do
+    -- Ensure panel is in UISpecialFrames exactly once.
+    if _G.UISpecialFrames then
+        panelName = panel:GetName()
+        local exists = false
+        for i = 1, #_G.UISpecialFrames do
+            if _G.UISpecialFrames[i] == panelName then exists = true break end
+        end
+        if not exists then
+            tinsert(_G.UISpecialFrames, 1, panelName)
+        end
+    end
+end
+
 local bg = panel:CreateTexture(nil, "BACKGROUND")
 bg:SetAllPoints(panel)
 local sb = Def.SectionCardBg or { 0.09, 0.09, 0.11, 0.96 }
@@ -301,15 +358,14 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             if optionFrames then optionFrames[oid] = { tabIndex = tabIndex, frame = w } end
             table.insert(refreshers, w)
         elseif opt.type == "dropdown" and currentCard then
-            local opts = (type(opt.options) == "function" and opt.options()) or opt.options or {}
-            local w = OptionsWidgets_CreateCustomDropdown(currentCard, opt.name, opt.desc or opt.tooltip, opts, opt.get, opt.set, opt.displayFn)
-            w:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -OptionGap)
-            w:SetPoint("RIGHT", currentCard, "RIGHT", -CardPadding, 0)
-            currentCard.contentAnchor = w
-            currentCard.contentHeight = currentCard.contentHeight + OptionGap + RowHeights.dropdown
-            local oid = opt.dbKey or (addon.OptionCategories[tabIndex].key .. "_" .. (opt.name or ""):gsub("%s+", "_"))
-            if optionFrames then optionFrames[oid] = { tabIndex = tabIndex, frame = w } end
-            table.insert(refreshers, w)
+             local w = OptionsWidgets_CreateCustomDropdown(currentCard, opt.name, opt.desc or opt.tooltip, opt.options or {}, opt.get, opt.set, opt.displayFn)
+             w:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -OptionGap)
+             w:SetPoint("RIGHT", currentCard, "RIGHT", -CardPadding, 0)
+             currentCard.contentAnchor = w
+             currentCard.contentHeight = currentCard.contentHeight + OptionGap + RowHeights.dropdown
+             local oid = opt.dbKey or (addon.OptionCategories[tabIndex].key .. "_" .. (opt.name or ""):gsub("%s+", "_"))
+             if optionFrames then optionFrames[oid] = { tabIndex = tabIndex, frame = w } end
+             table.insert(refreshers, w)
         elseif opt.type == "color" and currentCard then
             local def = (opt.default and type(opt.default) == "table" and #opt.default >= 3) and opt.default or addon.HEADER_COLOR
             local getTbl, setKeyVal
@@ -1636,7 +1692,8 @@ searchDropdownCatch:SetScript("OnClick", function() HideSearchDropdown() end)
 -- Update panel fonts (called when font option changes or on show)
 function updateOptionsPanelFonts()
     if not panel:IsShown() then return end
-    local path = addon.OptionsData_GetDB("fontPath", (addon.GetDefaultFontPath and addon.GetDefaultFontPath()) or "Fonts\\FRIZQT__.TTF")
+    local raw = addon.OptionsData_GetDB("fontPath", (addon.GetDefaultFontPath and addon.GetDefaultFontPath()) or "Fonts\\FRIZQT__.TTF")
+    local path = (addon.ResolveFontPath and addon.ResolveFontPath(raw)) or raw
     local size = addon.OptionsData_GetDB("headerFontSize", 16)
     if OptionsWidgets_SetDef then OptionsWidgets_SetDef({ FontPath = path, HeaderSize = size }) end
     titleText:SetFont(path, size, "OUTLINE")
