@@ -27,15 +27,16 @@ local MAIN_SIZE    = 48
 local SUB_SIZE     = 24
 local FRAME_WIDTH  = 800
 local FRAME_HEIGHT = 250
-local FRAME_Y      = -180
+local FRAME_Y_DEF  = -180
 local DIVIDER_W    = 400
 local DIVIDER_H    = 2
 local MAX_QUEUE    = 5
 
-local ENTRANCE_DUR  = 0.7
-local EXIT_DUR      = 0.8
+local ENTRANCE_DUR_DEF  = 0.7
+local EXIT_DUR_DEF      = 0.8
 local CROSSFADE_DUR = 0.4
 local ELEMENT_DUR   = 0.4
+local SUBTITLE_TRANSITION_DUR = 0.12
 
 local DISCOVERY_SIZE  = 16
 local QUEST_ICON_SIZE = 24  -- quest-type icon in toasts; larger than Focus (16) to match heading scale
@@ -61,19 +62,56 @@ local TYPES = {
     SCENARIO_UPDATE     = { pri = 1, category = "SCENARIO", subCategory = "DEFAULT", sz = 36, dur = 2.5 },  -- category overridden by opts.category (DELVES|DUNGEON|SCENARIO); sz=36 matches SCENARIO_START
 }
 
+local function getFrameY()
+    local v = addon.GetDB and tonumber(addon.GetDB("presenceFrameY", FRAME_Y_DEF)) or FRAME_Y_DEF
+    return math.max(-300, math.min(0, v))
+end
+
+local function getFrameScale()
+    local v = addon.GetDB and tonumber(addon.GetDB("presenceFrameScale", 1)) or 1
+    return math.max(0.5, math.min(1.5, v))
+end
+
+local function getEntranceDur()
+    if addon.GetDB and not addon.GetDB("presenceAnimations", true) then return 0 end
+    local v = addon.GetDB and tonumber(addon.GetDB("presenceEntranceDur", ENTRANCE_DUR_DEF)) or ENTRANCE_DUR_DEF
+    return math.max(0.2, math.min(1.5, v))
+end
+
+local function getExitDur()
+    if addon.GetDB and not addon.GetDB("presenceAnimations", true) then return 0 end
+    local v = addon.GetDB and tonumber(addon.GetDB("presenceExitDur", EXIT_DUR_DEF)) or EXIT_DUR_DEF
+    return math.max(0.2, math.min(1.5, v))
+end
+
+local function getHoldScale()
+    local v = addon.GetDB and tonumber(addon.GetDB("presenceHoldScale", 1)) or 1
+    return math.max(0.5, math.min(2, v))
+end
+
+local function getMainSize()
+    local v = addon.GetDB and tonumber(addon.GetDB("presenceMainSize", MAIN_SIZE)) or MAIN_SIZE
+    return math.max(24, math.min(72, v))
+end
+
+local function getSubSize()
+    local v = addon.GetDB and tonumber(addon.GetDB("presenceSubSize", SUB_SIZE)) or SUB_SIZE
+    return math.max(12, math.min(40, v))
+end
+
 local function getCategoryColor(cat, default)
     local c = (addon.GetQuestColor and addon.GetQuestColor(cat)) or (addon.QUEST_COLORS and addon.QUEST_COLORS[cat]) or (addon.QUEST_COLORS and addon.QUEST_COLORS.DEFAULT) or default
     return c
 end
 
 local function getDiscoveryColor()
-    return addon.PRESENCE_DISCOVERY_COLOR or getCategoryColor("COMPLETE", { 0.4, 1, 0.5 })
+    return (addon.GetPresenceDiscoveryColor and addon.GetPresenceDiscoveryColor()) or addon.PRESENCE_DISCOVERY_COLOR or getCategoryColor("COMPLETE", { 0.4, 1, 0.5 })
 end
 
 local function resolveColors(typeName, cfg, opts)
     opts = opts or {}
     if cfg.specialColor and typeName == "BOSS_EMOTE" then
-        local c = addon.PRESENCE_BOSS_EMOTE_COLOR or { 1, 0.2, 0.2 }
+        local c = (addon.GetPresenceBossEmoteColor and addon.GetPresenceBossEmoteColor()) or addon.PRESENCE_BOSS_EMOTE_COLOR or { 1, 0.2, 0.2 }
         local sc = getCategoryColor("DEFAULT", { 1, 1, 1 })
         return c, sc
     end
@@ -163,6 +201,7 @@ local F, layerA, layerB, curLayer, oldLayer
 local anim
 local active, activeTitle, activeTypeName
 local queue, crossfadeStartAlpha
+local subtitleTransition  -- { phase = "fadeOut"|"fadeIn", elapsed = 0, newText = string }
 local PlayCinematic
 
 local QUEST_UPDATE_DEDUPE_TIME = 1.5
@@ -369,7 +408,9 @@ end
 
 local function updateExit()
     local L   = curLayer
-    local e   = easeIn(math.min(anim.elapsed / EXIT_DUR, 1))
+    -- Linear fade for smoother exit; easeIn (t^2) was abrupt in the final 20%
+    local exitDur = getExitDur()
+    local e   = (exitDur > 0) and math.min(anim.elapsed / exitDur, 1) or 1
     local inv = 1 - e
 
     L.titleText:SetAlpha(inv)
@@ -389,6 +430,35 @@ local function updateExit()
     if (L.discoveryText:GetText() or "") ~= "" then
         L.discoveryText:SetAlpha(inv)
         L.discoveryShadow:SetAlpha(inv * 0.8)
+    end
+end
+
+local function updateSubtitleTransition(dt)
+    if not subtitleTransition or not curLayer then return end
+    local st = subtitleTransition
+    st.elapsed = st.elapsed + dt
+    local L = curLayer
+    if st.phase == "fadeOut" then
+        local t = math.min(st.elapsed / SUBTITLE_TRANSITION_DUR, 1)
+        local alpha = 1 - t
+        L.subText:SetAlpha(alpha)
+        L.subShadow:SetAlpha(alpha * 0.8)
+        if st.elapsed >= SUBTITLE_TRANSITION_DUR then
+            L.subText:SetText(st.newText or "")
+            L.subShadow:SetText(st.newText or "")
+            st.phase = "fadeIn"
+            st.elapsed = 0
+        end
+    else
+        local t = math.min(st.elapsed / SUBTITLE_TRANSITION_DUR, 1)
+        local alpha = t
+        L.subText:SetAlpha(alpha)
+        L.subShadow:SetAlpha(alpha * 0.8)
+        if st.elapsed >= SUBTITLE_TRANSITION_DUR then
+            L.subText:SetAlpha(1)
+            L.subShadow:SetAlpha(0.8)
+            subtitleTransition = nil
+        end
     end
 end
 
@@ -417,16 +487,26 @@ local function PresenceOnUpdate(_, dt)
     if anim.phase == "idle" then return end
     anim.elapsed = anim.elapsed + dt
 
+    if subtitleTransition then
+        updateSubtitleTransition(dt)
+    end
+
     if anim.phase == "entrance" then
-        updateEntrance()
-        if anim.elapsed >= ENTRANCE_DUR then
+        local entDur = getEntranceDur()
+        if entDur > 0 then
+            updateEntrance()
+        else
+            finalizeEntrance()
+        end
+        if anim.elapsed >= entDur then
             finalizeEntrance()
             anim.phase   = "hold"
             anim.elapsed = 0
         end
     elseif anim.phase == "crossfade" then
         updateCrossfade()
-        if anim.elapsed >= ENTRANCE_DUR then
+        local entDur = getEntranceDur()
+        if anim.elapsed >= entDur then
             finalizeEntrance()
             resetLayer(oldLayer)
             anim.phase   = "hold"
@@ -439,7 +519,8 @@ local function PresenceOnUpdate(_, dt)
         end
     elseif anim.phase == "exit" then
         updateExit()
-        if anim.elapsed >= EXIT_DUR then
+        local exitDur = getExitDur()
+        if anim.elapsed >= exitDur then
             onComplete()
         end
     end
@@ -450,6 +531,7 @@ onComplete = function()
     local doneType = activeTypeName
     local doneSub = (curLayer and curLayer.subText and curLayer.subText:GetText()) or ""
 
+    subtitleTransition = nil
     F:SetScript("OnUpdate", nil)
     anim.phase      = "idle"
     active          = nil
@@ -469,7 +551,8 @@ onComplete = function()
             end
         end
         local nxt = table.remove(queue, best)
-        PlayCinematic(nxt[1], nxt[2], nxt[3], nxt[4])
+        -- Defer to next frame to avoid visible flicker when advancing queue (Hide then Show in same frame)
+        C_Timer.After(0, function() PlayCinematic(nxt[1], nxt[2], nxt[3], nxt[4]) end)
     end
 end
 
@@ -484,7 +567,8 @@ local function Init()
 
     F = CreateFrame("Frame", "HorizonSuitePresenceFrame", UIParent)
     F:SetSize(FRAME_WIDTH, FRAME_HEIGHT)
-    F:SetPoint("TOP", 0, FRAME_Y)
+    F:SetPoint("TOP", 0, getFrameY())
+    F:SetScale(getFrameScale())
     F:Hide()
 
     layerA   = CreateLayer(F)
@@ -498,6 +582,7 @@ local function Init()
     activeTypeName = nil
     queue = {}
     crossfadeStartAlpha = 1
+    subtitleTransition = nil
     addon.Presence.pendingDiscovery = nil
 
     addon.Presence.frame = F
@@ -519,8 +604,8 @@ PlayCinematic = function(typeName, title, subtitle, opts)
     end
     local L = curLayer
     local c, sc = resolveColors(typeName, cfg, opts)
-    local mainSz = cfg.sz
-    local subSz  = (cfg.sz >= SUB_SIZE) and SUB_SIZE or cfg.sz
+    local mainSz = math.max(12, math.min(72, math.floor(cfg.sz * (getMainSize() / MAIN_SIZE))))
+    local subSz  = math.max(12, math.min(40, math.floor(((cfg.sz >= SUB_SIZE) and SUB_SIZE or cfg.sz) * (getSubSize() / SUB_SIZE))))
 
     L.titleText:SetFont(FONT_PATH, mainSz, "OUTLINE")
     L.titleShadow:SetFont(FONT_PATH, mainSz, "OUTLINE")
@@ -544,7 +629,9 @@ PlayCinematic = function(typeName, title, subtitle, opts)
         local showIcon = false
         local atlas
         local questRelated = (typeName == "QUEST_ACCEPT" or typeName == "QUEST_COMPLETE" or typeName == "QUEST_UPDATE" or typeName == "WORLD_QUEST" or typeName == "WORLD_QUEST_ACCEPT")
-        if questRelated and opts.questID and addon.GetQuestTypeAtlas and addon.GetDB and addon.GetDB("showQuestTypeIcons", false) then
+        local presenceVal = addon.GetDB and addon.GetDB("showPresenceQuestTypeIcons", nil)
+        local showIcons = (presenceVal ~= nil) and presenceVal or (addon.GetDB and addon.GetDB("showQuestTypeIcons", false))
+        if questRelated and opts.questID and addon.GetQuestTypeAtlas and addon.GetDB and showIcons then
             local catForAtlas = "DEFAULT"
             if typeName == "QUEST_COMPLETE" then
                 catForAtlas = "COMPLETE"  -- turn-in icon
@@ -588,7 +675,7 @@ PlayCinematic = function(typeName, title, subtitle, opts)
     activeTitle   = title
     activeTypeName = typeName
     anim.elapsed = 0
-    anim.holdDur = cfg.dur
+    anim.holdDur = cfg.dur * getHoldScale()
 
     if oldLayer.titleText:GetAlpha() > 0 then
         anim.phase = "crossfade"
@@ -605,12 +692,18 @@ PlayCinematic = function(typeName, title, subtitle, opts)
 end
 
 --- Update the subtitle text of the currently displayed cinematic (e.g. subzone soft-update).
+--- Uses a quick fade-out/fade-in transition instead of instant swap.
 --- @param newSub string New subtitle text
 --- @return nil
 local function SoftUpdateSubtitle(newSub)
     if not curLayer then return end
-    curLayer.subText:SetText(newSub or "")
-    curLayer.subShadow:SetText(newSub or "")
+    local txt = newSub or ""
+    if (curLayer.subText:GetText() or "") == txt then return end
+    if subtitleTransition then
+        subtitleTransition.newText = txt
+    else
+        subtitleTransition = { phase = "fadeOut", elapsed = 0, newText = txt }
+    end
     if anim.phase == "hold" then
         anim.elapsed = 0
     end
@@ -668,27 +761,14 @@ local function QueueOrPlay(typeName, title, subtitle, opts)
     end
 
     if active then
-        local sameType = (typeName == activeTypeName)
-        local higherOrEqualPri = (cfg.pri >= active.pri)
-        -- Same-type notifications queue so the user sees each one; different-type or higher-priority interrupts.
-        local shouldInterrupt = higherOrEqualPri and not sameType
-
-        if shouldInterrupt then
-            local curSub = (curLayer and curLayer.subText and curLayer.subText:GetText()) or ""
-            local src = (opts.source and (" via %s"):format(opts.source)) or ""
-            PresenceDebugLog(("QueueOrPlay: interrupt %s \"%s\" | \"%s\" -> play %s \"%s\" | \"%s\"%s"):format(
-                activeTypeName or "?", tostring(activeTitle or ""), tostring(curSub):gsub('"', "'"),
-                typeName, tostring(title or ""), tostring(subtitle or ""):gsub('"', "'"), src))
-            interruptCurrent()
-            PlayCinematic(typeName, title, subtitle, opts)
-        else
-            if #queue < MAX_QUEUE then
-                -- Dedup: skip if same type and title already showing (e.g. duplicate zone change)
-                if not (activeTitle == title and activeTypeName == typeName) then
-                    queue[#queue + 1] = { typeName, title, subtitle, opts }
-                    local src = (opts.source and (" via %s"):format(opts.source)) or ""
-                    PresenceDebugLog(("Queued %s | \"%s\" | \"%s\" (q=%d)%s"):format(typeName, tostring(title):gsub('"', "'"), tostring(subtitle or ""):gsub('"', "'"), #queue, src))
-                end
+        -- Always queue when something is showing; no interrupting. Subzone-only changes
+        -- bypass QueueOrPlay and use SoftUpdateSubtitle (PresenceEvents).
+        if #queue < MAX_QUEUE then
+            -- Dedup: skip if same type and title already showing (e.g. duplicate zone change)
+            if not (activeTitle == title and activeTypeName == typeName) then
+                queue[#queue + 1] = { typeName, title, subtitle, opts }
+                local src = (opts.source and (" via %s"):format(opts.source)) or ""
+                PresenceDebugLog(("Queued %s | \"%s\" | \"%s\" (q=%d)%s"):format(typeName, tostring(title):gsub('"', "'"), tostring(subtitle or ""):gsub('"', "'"), #queue, src))
             end
         end
     else
@@ -708,6 +788,7 @@ local function HideAndClear()
     activeTitle     = nil
     activeTypeName  = nil
     queue = {}
+    subtitleTransition = nil
     addon.Presence.pendingDiscovery = nil
     resetLayer(curLayer)
     resetLayer(oldLayer)
@@ -746,7 +827,7 @@ local function DumpDebug()
     end
 
     if addon.GetDB then
-        p("Options: showPresenceDiscovery=" .. tostring(addon.GetDB("showPresenceDiscovery", true)) .. ", showQuestTypeIcons=" .. tostring(addon.GetDB("showQuestTypeIcons", false)) .. ", presenceIconSize=" .. tostring(addon.GetDB("presenceIconSize", 24)))
+        p("Options: showPresenceDiscovery=" .. tostring(addon.GetDB("showPresenceDiscovery", true)) .. ", showPresenceQuestTypeIcons=" .. tostring(addon.GetDB("showPresenceQuestTypeIcons", false)) .. ", presenceIconSize=" .. tostring(addon.GetDB("presenceIconSize", 24)))
     end
 
     if GetZoneText then
@@ -760,7 +841,17 @@ end
 -- Exports
 -- ============================================================================
 
+--- Re-apply frame position and scale from DB. Call when presence options change.
+--- @return nil
+local function ApplyPresenceOptions()
+    if not F then return end
+    F:ClearAllPoints()
+    F:SetPoint("TOP", 0, getFrameY())
+    F:SetScale(getFrameScale())
+end
+
 addon.Presence.Init               = Init
+addon.Presence.ApplyPresenceOptions = ApplyPresenceOptions
 addon.Presence.QueueOrPlay        = QueueOrPlay
 addon.Presence.SoftUpdateSubtitle = SoftUpdateSubtitle
 addon.Presence.ShowDiscoveryLine  = ShowDiscoveryLine
