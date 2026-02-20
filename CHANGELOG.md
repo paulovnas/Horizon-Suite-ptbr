@@ -10,6 +10,14 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [1.2.3] – 2026-02-20
+
+### Fixes
+
+- **(Core)** En Dash character now renders correctly in the Korean WoW client for collapsible color groups in options.
+
+---
+
 ## [1.2.2] – 2026-02-20
 
 ### New Features
