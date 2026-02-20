@@ -10,6 +10,14 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [1.2.2] – 2026-02-20
+
+### New Features
+
+- **(Focus) Show season affix names in Delves on quest list entries** — Delve entries now display season affixes and tier (e.g. Tier 5) in the tracker, with an option to toggle and tooltips for tier and affix details.
+
+---
+
 ## [1.2.1] – 2026-02-20
 
 ### Improvements
