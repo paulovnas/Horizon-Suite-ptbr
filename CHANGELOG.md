@@ -10,6 +10,20 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [2.1.0] – 2026-02-21
+
+### New Features
+
+- **(Core) Search bar in font dropdown** — Filter fonts by typing in the Typography section when many fonts are available.
+
+- **(Focus) Tracker fades by default and appears on mouseover** — Tracker is hidden by default and shows when you hover over it.
+
+### Improvements
+
+- **(Core) French localization for options panel** — Options panel displays all labels, descriptions, and section headers in French when the player's client is set to French.
+
+---
+
 ## [2.0.4] – 2026-02-21
 
 ### Fixes
