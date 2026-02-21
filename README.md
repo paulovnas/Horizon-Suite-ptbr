@@ -1,8 +1,8 @@
 # 🌌 Horizon Suite
 
-[Release](https://github.com/Crystilac93/Horizon-Suite/releases) [Release Date](https://github.com/Crystilac93/Horizon-Suite/releases) [Beta](https://github.com/Crystilac93/Horizon-Suite/releases/tag/beta)
+[![Release](https://img.shields.io/github/v/release/Crystilac93/Horizon-Suite?display_name=release)](https://github.com/Crystilac93/Horizon-Suite/releases) [![Release Date](https://img.shields.io/github/release-date-pre/Crystilac93/Horizon-Suite)](https://github.com/Crystilac93/Horizon-Suite/releases) [![Beta](https://img.shields.io/github/release-date-pre/Crystilac93/Horizon-Suite?label=beta&color=orange)](https://github.com/Crystilac93/Horizon-Suite/releases/tag/beta)
 
-[Discord](https://discord.gg/MndCSYQ2ra) [Patreon](https://www.patreon.com/c/HorizonSuite) [Ko-fi](https://ko-fi.com/horizonsuite) 
+[![Discord](https://img.shields.io/discord/1471477531805749412?label=Discord&labelColor=%237289da)](https://discord.gg/MndCSYQ2ra) [![Patreon](https://img.shields.io/badge/build-donate-orange?label=patreon)](https://www.patreon.com/c/HorizonSuite) [![Ko-fi](https://img.shields.io/badge/build-tip-purple?label=Ko-fi)](https://ko-fi.com/horizonsuite) 
 
 **Horizon Suite** is a core addon with pluggable modules: **Focus** (objective tracker), **Presence** (zone text & notifications), and **Yield** (loot toasts). Designed for the Midnight era—clean, cinematic, player-in-control. It replaces static, cluttered lists with a fluid interface that grants you total agency over your goals. Additional suites will appear as modules in the same options panel.
 
@@ -78,7 +78,7 @@
 3. Enable **Horizon Suite** in your AddOn list.
 4. Type `/horizon options` to customize.
 
-[ko-fi](https://ko-fi.com/T6T71TX1Y1) **[Patreon](https://patreon.com/HorizonSuite?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink)** | **[Discord](https://discord.gg/RkkYJgB3PA)** — Bug reports, feature requests, and community.
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/T6T71TX1Y1) **[Patreon](https://patreon.com/HorizonSuite?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink)** | **[Discord](https://discord.gg/RkkYJgB3PA)** — Bug reports, feature requests, and community.
 
 ---
 
