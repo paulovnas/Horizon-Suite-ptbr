@@ -10,6 +10,14 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [2.0.4] – 2026-02-21
+
+### Fixes
+
+- **(Focus)** Font selection in Typography section now updates the displayed font immediately.
+
+---
+
 ## [2.0.3] – 2026-02-21
 
 ### Fixes
