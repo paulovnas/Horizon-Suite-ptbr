@@ -10,7 +10,7 @@
 
 ## 🎯 Focus (Objective Tracker)
 
-Focus - Objective Tracker
+![Focus - Objective Tracker](https://raw.githubusercontent.com/Crystilac93/Horizon-Suite/main/docs/Focus.png)
 
 - **Smart zone tracking** – Nearby quests float to the top; list updates as you move. Delves, scenarios, and world events get their own sections with progress bars and timers.
 - **Track what matters** – Achievements, Endeavors (housing), and Decor appear in the tracker. One-click to open achievement panel, housing dashboard, or decor catalog.
@@ -23,7 +23,7 @@ Focus - Objective Tracker
 
 ## 🎬 Presence (Zone Text & Notifications) - BETA
 
-Presence - Zone Text & Notifications
+![Presence - Zone Text & Notifications](https://raw.githubusercontent.com/Crystilac93/Horizon-Suite/main/docs/Presence.png)
 
 - **Cinematic notifications** – Zone text, subzone changes, "Discovered" lines. Level-up, boss emotes, achievements, quest accept/complete, scenario start, and objective progress in delves/scenarios appear as styled toasts with smooth animations.
 
