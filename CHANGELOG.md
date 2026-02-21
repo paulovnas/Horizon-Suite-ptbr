@@ -10,6 +10,14 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [2.0.3] – 2026-02-21
+
+### Fixes
+
+- **(Focus)** M+ block no longer triggers protected frame errors during Mythic+ runs.
+
+---
+
 ## [2.0.2] – 2026-02-21
 
 ### New Features
