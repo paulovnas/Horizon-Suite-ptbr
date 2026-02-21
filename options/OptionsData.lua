@@ -619,6 +619,9 @@ local OptionCategories = {
             if _G.HorizonSuiteDevOverride and _G.HorizonSuiteDevOverride.showYieldToggle then
                 opts[#opts + 1] = { type = "toggle", name = L["Enable Yield module"], desc = L["Cinematic loot notifications (items, money, currency, reputation)."], dbKey = "_module_yield", get = function() return addon:IsModuleEnabled("yield") end, set = function(v) addon:SetModuleEnabled("yield", v) end }
             end
+            if _G.HorizonSuiteDevOverride and _G.HorizonSuiteDevOverride.showVistaToggle then
+                opts[#opts + 1] = { type = "toggle", name = L["Enable Vista module"], desc = L["Cinematic square minimap with zone text, coordinates, and button collector."], dbKey = "_module_vista", get = function() return addon:IsModuleEnabled("vista") end, set = function(v) addon:SetModuleEnabled("vista", v) end }
+            end
             return opts
         end)(),
     },

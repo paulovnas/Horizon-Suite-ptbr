@@ -58,6 +58,9 @@ modules/Yield/YieldEvents.lua
 modules/Yield/YieldSlash.lua
 modules/Yield/YieldModule.lua
 
+modules/Vista/VistaCore.lua
+modules/Vista/VistaModule.lua
+
 options/koKR.lua
 options/frFR.lua
 options/ptBR.lua

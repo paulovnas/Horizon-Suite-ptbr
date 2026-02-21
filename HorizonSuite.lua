@@ -117,13 +117,23 @@ function addon:EnsureModulesDB()
         HorizonDB.modules = {}
         -- Legacy install: default focus and Presence to enabled; Yield off unless dev override
         local yieldDefault = (_G.HorizonSuiteDevOverride and _G.HorizonSuiteDevOverride.yieldEnabled) == true
+        local vistaDefault = (_G.HorizonSuiteDevOverride and _G.HorizonSuiteDevOverride.vistaEnabled) == true
         HorizonDB.modules.focus = { enabled = true }
         HorizonDB.modules.presence = { enabled = true }
         HorizonDB.modules.yield = { enabled = yieldDefault }
+        HorizonDB.modules.vista = { enabled = vistaDefault }
     end
-    -- Migrate Vista module key to Presence
+    -- Migrate old Vista (Presence) module key to Presence; repurpose vista for minimap
     if HorizonDB.modules.vista and not HorizonDB.modules.presence then
         HorizonDB.modules.presence = { enabled = (HorizonDB.modules.vista.enabled ~= false) }
+        -- Reset vista for new minimap module (old vista was Presence)
+        local vistaDefault = (_G.HorizonSuiteDevOverride and _G.HorizonSuiteDevOverride.vistaEnabled) == true
+        HorizonDB.modules.vista = { enabled = vistaDefault }
+    end
+    -- Ensure vista exists for existing installs (default disabled unless dev override)
+    if not HorizonDB.modules.vista then
+        local vistaDefault = (_G.HorizonSuiteDevOverride and _G.HorizonSuiteDevOverride.vistaEnabled) == true
+        HorizonDB.modules.vista = { enabled = vistaDefault }
     end
 end
 
