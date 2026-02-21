@@ -10,6 +10,24 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [2.3.0] – 2026-02-21
+
+### ✨ New Features
+
+- **(Focus) Raid quest category in tracker** — Raid quests now appear in their own red section in the Focus tracker, distinct from dungeon quests.
+- **(Focus) Full profile support with import/export, per-spec and global account modes** — Create, switch, copy, and delete named profiles. Use per-character, per-specialization, or global (account-wide) modes. Import and export profiles as shareable text strings in the Profiles options section.
+
+### 🔧 Improvements
+
+- **(Focus) Auto-track icon choice for in-zone entries** — Choose which radar icon to display next to auto-tracked world quests and weeklies/dailies that are not yet in your quest log (in-zone only).
+- **(Core) Panel backdrop colour and opacity** — Customize the tracker panel background colour and opacity in the Visuals options.
+
+### 🐛 Fixes
+
+- **(Core)** Debug command no longer errors when counting quests by log index.
+
+---
+
 ## [2.2.0] – 2026-02-21
 
 ### ✨ New Features
