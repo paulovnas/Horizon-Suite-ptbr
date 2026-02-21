@@ -61,6 +61,9 @@ modules/Yield/YieldModule.lua
 modules/Vista/VistaCore.lua
 modules/Vista/VistaModule.lua
 
+modules/Insight/InsightCore.lua
+modules/Insight/InsightModule.lua
+
 options/koKR.lua
 options/frFR.lua
 options/ptBR.lua

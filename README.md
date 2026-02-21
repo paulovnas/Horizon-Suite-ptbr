@@ -4,7 +4,7 @@
 
 [![Discord](https://img.shields.io/discord/1471477531805749412?label=Discord&labelColor=%237289da)](https://discord.gg/MndCSYQ2ra) [![Patreon](https://img.shields.io/badge/build-donate-orange?label=patreon)](https://www.patreon.com/c/HorizonSuite) [![Ko-fi](https://img.shields.io/badge/build-tip-purple?label=Ko-fi)](https://ko-fi.com/horizonsuite) 
 
-**Horizon Suite** is a core addon with pluggable modules: **Focus** (objective tracker), **Presence** (zone text & notifications), and **Yield** (loot toasts). Designed for the Midnight era—clean, cinematic, player-in-control. It replaces static, cluttered lists with a fluid interface that grants you total agency over your goals. Additional suites will appear as modules in the same options panel.
+**Horizon Suite** is a core addon with pluggable modules: **Focus** (objective tracker), **Presence** (zone text & notifications), **Horizon Insight** (cinematic tooltips), and **Yield** (loot toasts). Designed for the Midnight era—clean, cinematic, player-in-control. It replaces static, cluttered lists with a fluid interface that grants you total agency over your goals. Additional suites will appear as modules in the same options panel.
 
 ---
 
@@ -33,6 +33,12 @@
 - **Cinematic loot notifications** – Items, money, currency, and reputation gains appear as styled toasts with quality-based colours and smooth slide-in animations.
 - **Epic and legendary flair** – Extra entrance time, shine effects, and optional sounds for high-value loot.
 
+## 🔍 Horizon Insight (Tooltips)
+
+- **Cinematic tooltips** – Dark backdrop, class-colored player names and borders, faction icons, spec/role display, and fade-in animation.
+- **Profile-backed settings** – Anchor mode (cursor or fixed) and position stored per profile.
+- **Quick options** – `/insight` or `/mtt` for anchor toggle, move, reset, and test.
+
 ## 🎨 Visuals & UI Design
 
 - **High-fidelity icons** – Distinct icons for Campaign, Legendary, and World Quests.
@@ -56,6 +62,7 @@
 | `/horizon resetpos`  | Reset the tracker position.                     |
 | `/horizon yield`     | Show Yield (loot toast) help and test commands. |
 | `/horizon yield all` | Demo reel of all loot toast types.              |
+| `/insight` or `/mtt` | Horizon Insight tooltip options (anchor, move, reset, test). |
 
 
 **Mouse:** Left-click to focus a quest (and complete auto-complete quests). Right-click to untrack. Shift+left-click for quest log and map. Shift+right-click to abandon. Drag the corner grip to resize.
@@ -64,7 +71,7 @@
 
 ## 📦 Modules & Roadmap
 
-**Focus** is the objective tracker. **Presence** adds cinematic zone text and notifications. **Yield** adds cinematic loot toasts (items, money, currency, reputation). Enable them in options. More modules are planned: Quest Log, Minimap, Combat Alerts, Unit Frames, Tooltips, Chat.
+**Focus** is the objective tracker. **Presence** adds cinematic zone text and notifications. **Horizon Insight** adds cinematic tooltips with class colors, spec display, and faction icons. **Yield** adds cinematic loot toasts (items, money, currency, reputation). Enable them in options. More modules are planned: Quest Log, Minimap, Combat Alerts, Unit Frames, Chat.
 
 ---
 

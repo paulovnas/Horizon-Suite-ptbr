@@ -120,6 +120,7 @@ function addon:EnsureModulesDB()
         local vistaDefault = (_G.HorizonSuiteDevOverride and _G.HorizonSuiteDevOverride.vistaEnabled) == true
         HorizonDB.modules.focus = { enabled = true }
         HorizonDB.modules.presence = { enabled = true }
+        HorizonDB.modules.insight = { enabled = true }
         HorizonDB.modules.yield = { enabled = yieldDefault }
         HorizonDB.modules.vista = { enabled = vistaDefault }
     end
@@ -134,6 +135,10 @@ function addon:EnsureModulesDB()
     if not HorizonDB.modules.vista then
         local vistaDefault = (_G.HorizonSuiteDevOverride and _G.HorizonSuiteDevOverride.vistaEnabled) == true
         HorizonDB.modules.vista = { enabled = vistaDefault }
+    end
+    -- Ensure insight exists for existing installs (default enabled)
+    if not HorizonDB.modules.insight then
+        HorizonDB.modules.insight = { enabled = true }
     end
 end
 

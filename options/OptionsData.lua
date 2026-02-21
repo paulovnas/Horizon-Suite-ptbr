@@ -23,6 +23,13 @@ local TYPOGRAPHY_KEYS = {
     fontOutline = true,
 }
 
+local INSIGHT_KEYS = {
+    insightAnchorMode = true,
+    insightFixedPoint = true,
+    insightFixedX = true,
+    insightFixedY = true,
+}
+
 local PRESENCE_KEYS = {
     presenceFrameY = true,
     presenceFrameScale = true,
@@ -111,6 +118,9 @@ function OptionsData_SetDB(key, value)
     end
     if PRESENCE_KEYS[key] and addon.Presence and addon.Presence.ApplyPresenceOptions then
         addon.Presence.ApplyPresenceOptions()
+    end
+    if INSIGHT_KEYS[key] and addon.Insight and addon.Insight.ApplyInsightOptions then
+        addon.Insight.ApplyInsightOptions()
     end
     if key == "lockPosition" and addon.UpdateResizeHandleVisibility then
         addon.UpdateResizeHandleVisibility()
@@ -615,6 +625,7 @@ local OptionCategories = {
                 { type = "section", name = "" },
                 { type = "toggle", name = L["Enable Focus module"], desc = L["Show the objective tracker for quests, world quests, rares, achievements, and scenarios."], dbKey = "_module_focus", get = function() return addon:IsModuleEnabled("focus") end, set = function(v) addon:SetModuleEnabled("focus", v) end },
                 { type = "toggle", name = L["Enable Presence module"], desc = L["Cinematic zone text and notifications (zone changes, level up, boss emotes, achievements, quest updates)."], dbKey = "_module_presence", get = function() return addon:IsModuleEnabled("presence") end, set = function(v) addon:SetModuleEnabled("presence", v) end },
+                { type = "toggle", name = L["Enable Horizon Insight module"], desc = L["Cinematic tooltips with class colors, spec display, and faction icons."], dbKey = "_module_insight", get = function() return addon:IsModuleEnabled("insight") end, set = function(v) addon:SetModuleEnabled("insight", v) end },
             }
             if _G.HorizonSuiteDevOverride and _G.HorizonSuiteDevOverride.showYieldToggle then
                 opts[#opts + 1] = { type = "toggle", name = L["Enable Yield module"], desc = L["Cinematic loot notifications (items, money, currency, reputation)."], dbKey = "_module_yield", get = function() return addon:IsModuleEnabled("yield") end, set = function(v) addon:SetModuleEnabled("yield", v) end }
@@ -913,6 +924,24 @@ local OptionCategories = {
         },
     },
     {
+        key = "Insight",
+        name = L["Horizon Insight"] or "Horizon Insight",
+        moduleKey = "insight",
+        options = {
+            { type = "section", name = L["Position"] or "Position" },
+            { type = "dropdown", name = L["Tooltip anchor mode"] or "Tooltip anchor mode", desc = L["Where tooltips appear: follow cursor or fixed position."] or "Where tooltips appear: follow cursor or fixed position.", dbKey = "insightAnchorMode", options = { { L["Cursor"] or "Cursor", "cursor" }, { L["Fixed"] or "Fixed", "fixed" } }, get = function() return getDB("insightAnchorMode", "cursor") end, set = function(v) setDB("insightAnchorMode", v) end },
+            { type = "button", name = L["Show anchor to move"] or "Show anchor to move", desc = L["Show draggable frame to set fixed tooltip position. Drag, then right-click to confirm."] or "Show draggable frame to set fixed tooltip position. Drag, then right-click to confirm.", onClick = function()
+                if addon.Insight and addon.Insight.ShowAnchorFrame then addon.Insight.ShowAnchorFrame() end
+            end },
+            { type = "button", name = L["Reset tooltip position"] or "Reset tooltip position", desc = L["Reset fixed position to default."] or "Reset fixed position to default.", onClick = function()
+                setDB("insightFixedPoint", "BOTTOMRIGHT")
+                setDB("insightFixedX", -40)
+                setDB("insightFixedY", 120)
+                if addon.Insight and addon.Insight.ApplyInsightOptions then addon.Insight.ApplyInsightOptions() end
+            end },
+        },
+    },
+    {
         key = "YieldGeneral",
         name = L["General"],
         moduleKey = "yield",
@@ -935,7 +964,7 @@ function OptionsData_BuildSearchIndex()
     for catIdx, cat in ipairs(OptionCategories) do
         local currentSection = ""
         local moduleKey = cat.moduleKey
-        local moduleLabel = (moduleKey == "focus" and L["Focus"]) or (moduleKey == "presence" and L["Presence"]) or (moduleKey == "yield" and L["Yield"]) or L["Modules"]
+        local moduleLabel = (moduleKey == "focus" and L["Focus"]) or (moduleKey == "presence" and L["Presence"]) or (moduleKey == "insight" and (L["Horizon Insight"] or "Horizon Insight")) or (moduleKey == "yield" and L["Yield"]) or L["Modules"]
         local catOpts = type(cat.options) == "function" and cat.options() or cat.options
         for _, opt in ipairs(catOpts) do
             if opt.type == "section" then

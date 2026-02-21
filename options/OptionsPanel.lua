@@ -1406,14 +1406,14 @@ end
 
 -- Build sidebar grouped by moduleKey (Modules, Focus, Presence)
 -- Use "modules" as sentinel for nil (WoW Lua disallows nil as table index)
-local MODULE_LABELS = { ["modules"] = L["Modules"], ["focus"] = L["Focus"], ["presence"] = L["Presence"] }
+local MODULE_LABELS = { ["modules"] = L["Modules"], ["focus"] = L["Focus"], ["presence"] = L["Presence"], ["insight"] = L["Horizon Insight"] or "Horizon Insight", ["yield"] = L["Yield"] }
 local groups = {}
 for i, cat in ipairs(addon.OptionCategories) do
     local mk = cat.moduleKey or "modules"
     if not groups[mk] then groups[mk] = { label = MODULE_LABELS[mk] or L["Other"], categories = {} } end
     table.insert(groups[mk].categories, i)
 end
-local groupOrder = { "modules", "focus", "presence" }
+local groupOrder = { "modules", "focus", "presence", "insight", "yield" }
 
 local function UpdateTabVisuals()
     for _, btn in ipairs(tabButtons) do
