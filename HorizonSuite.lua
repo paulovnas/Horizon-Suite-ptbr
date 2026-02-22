@@ -115,15 +115,25 @@ function addon:EnsureModulesDB()
     if not HorizonDB then HorizonDB = {} end
     if not HorizonDB.modules then
         HorizonDB.modules = {}
-        -- Legacy install: default focus and Presence to enabled; Yield off unless dev override
-        local yieldDefault = (_G.HorizonSuiteDevOverride and _G.HorizonSuiteDevOverride.yieldEnabled) == true
+        -- Legacy install: focus and Presence enabled; Insight, Yield, Vista off by default (beta modules)
         HorizonDB.modules.focus = { enabled = true }
         HorizonDB.modules.presence = { enabled = true }
-        HorizonDB.modules.yield = { enabled = yieldDefault }
+        HorizonDB.modules.insight = { enabled = false }
+        HorizonDB.modules.yield = { enabled = false }
+        HorizonDB.modules.vista = { enabled = false }
     end
-    -- Migrate Vista module key to Presence
+    -- Migrate old Vista (Presence) module key to Presence; repurpose vista for minimap
     if HorizonDB.modules.vista and not HorizonDB.modules.presence then
         HorizonDB.modules.presence = { enabled = (HorizonDB.modules.vista.enabled ~= false) }
+        HorizonDB.modules.vista = { enabled = false }
+    end
+    -- Ensure vista exists for existing installs (default disabled)
+    if not HorizonDB.modules.vista then
+        HorizonDB.modules.vista = { enabled = false }
+    end
+    -- Ensure insight exists for existing installs (default disabled, beta module)
+    if not HorizonDB.modules.insight then
+        HorizonDB.modules.insight = { enabled = false }
     end
 end
 

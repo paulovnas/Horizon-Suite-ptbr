@@ -18,6 +18,7 @@ local DIVIDER_HEIGHT = 1
 local OptionGap = Def.OptionGap or 14
 local SectionGap = Def.SectionGap or 24
 local CardPadding = Def.CardPadding or 18
+local CardBottomPadding = Def.CardBottomPadding or Def.CardPadding or 26
 local RowHeights = { sectionLabel = 14, toggle = 40, slider = 40, dropdown = 52, colorRow = 28, reorder = 24 }
 
 local SetTextColor = addon.SetTextColor or function(obj, color)
@@ -29,6 +30,14 @@ local function getDB(k, d) return addon.OptionsData_GetDB(k, d) end
 local function setDB(k, v) return addon.OptionsData_SetDB(k, v) end
 local function notifyMainAddon() return addon.OptionsData_NotifyMainAddon() end
 
+-- Card collapse state: default collapsed (true) when key not in table
+local cardCollapsed = (HorizonDB and HorizonDB.optionsCardCollapsed) or {}
+local function GetCardCollapsed(sectionKey) return cardCollapsed[sectionKey] ~= false end
+local function SetCardCollapsed(sectionKey, v)
+    cardCollapsed[sectionKey] = v
+    if HorizonDB then HorizonDB.optionsCardCollapsed = cardCollapsed end
+end
+
 -- ---------------------------------------------------------------------------
 -- Panel frame
 -- ---------------------------------------------------------------------------
@@ -39,7 +48,7 @@ panel:SetFrameStrata("DIALOG")
 panel:SetClampedToScreen(true)
 panel:SetMovable(true)
 panel:EnableMouse(true)
-panel:RegisterForDrag("LeftButton")
+-- Drag is owned by titleBar only; panel has no RegisterForDrag to avoid drag from body
 panel:Hide()
 
 -- ESC handling: first ESC closes any open dropdown, second ESC closes the panel.
@@ -81,7 +90,41 @@ addon._OnDropdownClosed = function(closeFunc)
     end
 end
 
+-- Title bar drag: stop helper defined before OnHide so closure can call it
+local isDraggingPanel = false
+local function StopPanelDrag()
+    if not isDraggingPanel then return end
+    isDraggingPanel = false
+    panel:SetScript("OnUpdate", nil)
+    if InCombatLockdown() then
+        local f = CreateFrame("Frame")
+        f:RegisterEvent("PLAYER_REGEN_ENABLED")
+        f:SetScript("OnEvent", function(self, event)
+            self:UnregisterEvent(event)
+            self:SetScript("OnEvent", nil)
+            if not InCombatLockdown() then
+                panel:StopMovingOrSizing()
+                if HorizonDB then
+                    local x, y = panel:GetCenter()
+                    local uix, uiy = UIParent:GetCenter()
+                    HorizonDB.optionsLeft = x - uix
+                    HorizonDB.optionsTop = y - uiy
+                end
+            end
+        end)
+        return
+    end
+    panel:StopMovingOrSizing()
+    if HorizonDB then
+        local x, y = panel:GetCenter()
+        local uix, uiy = UIParent:GetCenter()
+        HorizonDB.optionsLeft = x - uix
+        HorizonDB.optionsTop = y - uiy
+    end
+end
+
 panel:HookScript("OnHide", function()
+    StopPanelDrag()
     if addon._CloseAnyOpenDropdown then addon._CloseAnyOpenDropdown() end
 end)
 
@@ -106,22 +149,28 @@ bg:SetColorTexture(sb[1], sb[2], sb[3], sb[4] or 0.97)
 local bc = Def.BorderColor or Def.SectionCardBorder
 addon.CreateBorder(panel, bc)
 
--- Title bar
+-- Title bar drag: owned by titleBar only. Defensive stop when mouse released elsewhere.
+local function DragStopOnUpdate(self)
+    if not isDraggingPanel then self:SetScript("OnUpdate", nil) return end
+    if not IsMouseButtonDown("LeftButton") then
+        StopPanelDrag()
+    end
+end
+
 local titleBar = CreateFrame("Frame", nil, panel)
 titleBar:SetPoint("TOPLEFT", 0, 0)
 titleBar:SetPoint("TOPRIGHT", 0, 0)
 titleBar:SetHeight(HEADER_HEIGHT)
 titleBar:EnableMouse(true)
 titleBar:RegisterForDrag("LeftButton")
-titleBar:SetScript("OnDragStart", function() panel:StartMoving() end)
+titleBar:SetScript("OnDragStart", function()
+    if InCombatLockdown() then return end
+    isDraggingPanel = true
+    panel:StartMoving()
+    panel:SetScript("OnUpdate", DragStopOnUpdate)
+end)
 titleBar:SetScript("OnDragStop", function()
-    panel:StopMovingOrSizing()
-    if HorizonDB then
-        local x, y = panel:GetCenter()
-        local uix, uiy = UIParent:GetCenter()
-        HorizonDB.optionsLeft = x - uix
-        HorizonDB.optionsTop = y - uiy
-    end
+    StopPanelDrag()
 end)
 local titleBg = titleBar:CreateTexture(nil, "BACKGROUND")
 titleBg:SetAllPoints(titleBar)
@@ -254,6 +303,40 @@ end)
 local isResizing = false
 local startWidth, startHeight, startMouseX, startMouseY
 resizeHandle:RegisterForDrag("LeftButton")
+local function ApplyPanelDimensions()
+    local width = panel:GetWidth() or PAGE_WIDTH
+    local height = panel:GetHeight() or PAGE_HEIGHT
+    PAGE_WIDTH = width
+    PAGE_HEIGHT = height
+
+    -- Keep tab/card content flush with current panel width.
+    local newContentWidth = width - PADDING * 2 - SIDEBAR_WIDTH - 12
+    for _, tabFrame in ipairs(tabFrames) do
+        if tabFrame then
+            tabFrame:SetWidth(newContentWidth)
+        end
+    end
+
+    -- Update blacklist grid height dynamically when the window size changes.
+    if addon.blacklistGridCard then
+        local card = addon.blacklistGridCard
+        local minHeight = 450
+        local dynamicHeight = math.max(minHeight, PAGE_HEIGHT - 300)
+        local headerPart = card.headerHeight or (CardPadding + 24)
+        card.contentHeight = headerPart + OptionGap + dynamicHeight
+        local fullH = card.contentHeight + CardBottomPadding
+        card.fullHeight = fullH
+        if card.contentContainer then
+            local contentH = math.max(1, card.contentHeight - card.headerHeight)
+            card.contentContainer:SetHeight(contentH)
+        end
+        local collapsed = card.sectionKey and GetCardCollapsed and GetCardCollapsed(card.sectionKey)
+        card:SetHeight(collapsed and card.headerHeight or fullH)
+        if card.updateScrollBars then
+            card.updateScrollBars()
+        end
+    end
+end
 local function ResizeOnUpdate(self, elapsed)
     if not isResizing then return end
     local scale = UIParent and UIParent:GetEffectiveScale() or 1
@@ -264,26 +347,7 @@ local function ResizeOnUpdate(self, elapsed)
     local newWidth = math.max(600, math.min(1400, startWidth + deltaX))
     local newHeight = math.max(500, math.min(1200, startHeight - deltaY))
     panel:SetSize(newWidth, newHeight)
-    PAGE_WIDTH = newWidth
-    PAGE_HEIGHT = newHeight
-    -- Update content width for tab frames
-    local newContentWidth = newWidth - PADDING * 2 - SIDEBAR_WIDTH - 12
-    for _, tabFrame in ipairs(tabFrames) do
-        if tabFrame then
-            tabFrame:SetWidth(newContentWidth)
-        end
-    end
-    -- Update blacklist grid height dynamically when window resizes
-    if addon.blacklistGridCard then
-        local minHeight = 450
-        local dynamicHeight = math.max(minHeight, PAGE_HEIGHT - 300)
-        addon.blacklistGridCard.contentHeight = dynamicHeight
-        -- Actually resize the card frame
-        addon.blacklistGridCard:SetHeight(dynamicHeight + CardPadding)
-        if addon.blacklistGridCard.updateScrollBars then
-            addon.blacklistGridCard.updateScrollBars()
-        end
-    end
+    ApplyPanelDimensions()
 end
 resizeHandle:SetScript("OnDragStart", function(self)
     isResizing = true
@@ -332,10 +396,22 @@ end
 -- Build one category's content
 -- ---------------------------------------------------------------------------
 local allRefreshers = {}
+local allCollapsibleCards = {}
 
 local function FinalizeCard(card)
     if not card or not card.contentHeight then return end
-    card:SetHeight(card.contentHeight + CardPadding)
+    local fullH = card.contentHeight + CardBottomPadding
+    card.fullHeight = fullH
+    if card.contentContainer and card.sectionKey then
+        allCollapsibleCards[#allCollapsibleCards + 1] = card
+        local collapsed = GetCardCollapsed(card.sectionKey)
+        local contentH = math.max(1, card.contentHeight - card.headerHeight)
+        card.contentContainer:SetHeight(contentH)
+        card.contentContainer:SetShown(not collapsed)
+        card:SetHeight(collapsed and card.headerHeight or fullH)
+    else
+        card:SetHeight(fullH)
+    end
 end
 
 --- Build one options category: section cards, toggles, sliders, dropdowns, color matrix, reorder list; wires get/set and refreshers.
@@ -352,11 +428,11 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
         if opt.type == "section" then
             currentSection = opt.name or ""
             if currentCard then FinalizeCard(currentCard) end
-            currentCard = OptionsWidgets_CreateSectionCard(tab, anchor)
             local hasHeader = opt.name and opt.name ~= ""
+            local sectionKey = hasHeader and (addon.OptionCategories[tabIndex].key .. "_" .. (opt.name or ""):gsub("%s+", "_")) or nil
+            currentCard = OptionsWidgets_CreateSectionCard(tab, anchor, sectionKey, GetCardCollapsed, SetCardCollapsed)
             if hasHeader then
-                local lbl = OptionsWidgets_CreateSectionHeader(currentCard, opt.name)
-                lbl:SetPoint("TOPLEFT", currentCard, "TOPLEFT", CardPadding, -CardPadding)
+                local lbl = OptionsWidgets_CreateSectionHeader(currentCard, opt.name, sectionKey, GetCardCollapsed, SetCardCollapsed)
                 currentCard.contentAnchor = lbl
                 currentCard.contentHeight = CardPadding + RowHeights.sectionLabel
             else
@@ -369,7 +445,8 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             end
             anchor = currentCard
         elseif opt.type == "toggle" and currentCard then
-            local w = OptionsWidgets_CreateToggleSwitch(currentCard, opt.name, opt.desc or opt.tooltip, opt.get, opt.set, opt.disabled)
+            local cardContent = currentCard.contentContainer or currentCard
+            local w = OptionsWidgets_CreateToggleSwitch(cardContent, opt.name, opt.desc or opt.tooltip, opt.get, opt.set, opt.disabled)
             w:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -OptionGap)
             w:SetPoint("RIGHT", currentCard, "RIGHT", -CardPadding, 0)
             currentCard.contentAnchor = w
@@ -378,7 +455,8 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             if optionFrames then optionFrames[oid] = { tabIndex = tabIndex, frame = w } end
             table.insert(refreshers, w)
         elseif opt.type == "slider" and currentCard then
-            local w = OptionsWidgets_CreateSlider(currentCard, opt.name, opt.desc or opt.tooltip, opt.get, opt.set, opt.min, opt.max)
+            local cardContent = currentCard.contentContainer or currentCard
+            local w = OptionsWidgets_CreateSlider(cardContent, opt.name, opt.desc or opt.tooltip, opt.get, opt.set, opt.min, opt.max)
             w:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -OptionGap)
             w:SetPoint("RIGHT", currentCard, "RIGHT", -CardPadding, 0)
             currentCard.contentAnchor = w
@@ -387,8 +465,9 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             if optionFrames then optionFrames[oid] = { tabIndex = tabIndex, frame = w } end
             table.insert(refreshers, w)
         elseif opt.type == "dropdown" and currentCard then
+             local cardContent = currentCard.contentContainer or currentCard
              local searchable = (opt.dbKey == "fontPath") or (opt.searchable == true)
-             local w = OptionsWidgets_CreateCustomDropdown(currentCard, opt.name, opt.desc or opt.tooltip, opt.options or {}, opt.get, opt.set, opt.displayFn, searchable, opt.disabled)
+             local w = OptionsWidgets_CreateCustomDropdown(cardContent, opt.name, opt.desc or opt.tooltip, opt.options or {}, opt.get, opt.set, opt.displayFn, searchable, opt.disabled)
              w:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -OptionGap)
              w:SetPoint("RIGHT", currentCard, "RIGHT", -CardPadding, 0)
              currentCard.contentAnchor = w
@@ -419,23 +498,16 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                 getTbl = function() return getDB(opt.dbKey, nil) end
                 setKeyVal = function(v) setDB(opt.dbKey, v) end
             end
-            local row = OptionsWidgets_CreateColorSwatchRow(currentCard, currentCard.contentAnchor, opt.name or "Color", def, getTbl, setKeyVal, notifyMainAddon)
+            local cardContent = currentCard.contentContainer or currentCard
+            local row = OptionsWidgets_CreateColorSwatchRow(cardContent, currentCard.contentAnchor, opt.name or "Color", def, getTbl, setKeyVal, notifyMainAddon)
             currentCard.contentAnchor = row
             currentCard.contentHeight = currentCard.contentHeight + OptionGap + RowHeights.colorRow
             local oid = opt.dbKey or (addon.OptionCategories[tabIndex].key .. "_" .. (opt.name or ""):gsub("%s+", "_"))
             if optionFrames then optionFrames[oid] = { tabIndex = tabIndex, frame = row } end
             table.insert(refreshers, row)
         elseif opt.type == "button" and currentCard then
-            local btn = CreateFrame("Button", nil, currentCard)
-            btn:SetHeight(22)
-            btn:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -OptionGap)
-            btn:SetPoint("RIGHT", currentCard, "RIGHT", -CardPadding, 0)
-            local lbl = btn:CreateFontString(nil, "OVERLAY")
-            lbl:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.LabelSize or 13, "OUTLINE")
-            SetTextColor(lbl, Def.TextColorLabel)
-            lbl:SetText(opt.name or L["Reset"])
-            lbl:SetPoint("LEFT", btn, "LEFT", 0, 0)
-            btn:SetScript("OnClick", function()
+            local cardContent = currentCard.contentContainer or currentCard
+            local btn = OptionsWidgets_CreateButton(cardContent, opt.name or L["Reset"], function()
                 if opt.onClick then opt.onClick() end
                 if opt.refreshIds and optionFrames then
                     for _, k in ipairs(opt.refreshIds) do
@@ -444,14 +516,15 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                     end
                 end
                 notifyMainAddon()
-            end)
-            btn:SetScript("OnEnter", function() SetTextColor(lbl, Def.TextColorHighlight) end)
-            btn:SetScript("OnLeave", function() SetTextColor(lbl, Def.TextColorLabel) end)
+            end, { height = 22 })
+            btn:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -OptionGap)
+            btn:SetPoint("RIGHT", currentCard, "RIGHT", -CardPadding, 0)
             currentCard.contentAnchor = btn
             currentCard.contentHeight = currentCard.contentHeight + OptionGap + 22
         elseif opt.type == "editbox" and currentCard then
+            local cardContent = currentCard.contentContainer or currentCard
             local EDITBOX_HEIGHT = opt.height or 60
-            local wrapper = CreateFrame("Frame", nil, currentCard)
+            local wrapper = CreateFrame("Frame", nil, cardContent)
             wrapper:SetHeight(EDITBOX_HEIGHT + (opt.labelText and 16 or 0))
             wrapper:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -OptionGap)
             wrapper:SetPoint("RIGHT", currentCard, "RIGHT", -CardPadding, 0)
@@ -470,10 +543,12 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             local bg = scrollBg:CreateTexture(nil, "BACKGROUND")
             bg:SetAllPoints(scrollBg)
             bg:SetColorTexture(Def.InputBg[1], Def.InputBg[2], Def.InputBg[3], Def.InputBg[4])
-            local bTop = scrollBg:CreateTexture(nil, "BORDER"); bTop:SetHeight(1); bTop:SetPoint("TOPLEFT"); bTop:SetPoint("TOPRIGHT"); bTop:SetColorTexture(Def.InputBorder[1], Def.InputBorder[2], Def.InputBorder[3], Def.InputBorder[4])
-            local bBot = scrollBg:CreateTexture(nil, "BORDER"); bBot:SetHeight(1); bBot:SetPoint("BOTTOMLEFT"); bBot:SetPoint("BOTTOMRIGHT"); bBot:SetColorTexture(Def.InputBorder[1], Def.InputBorder[2], Def.InputBorder[3], Def.InputBorder[4])
-            local bL = scrollBg:CreateTexture(nil, "BORDER"); bL:SetWidth(1); bL:SetPoint("TOPLEFT"); bL:SetPoint("BOTTOMLEFT"); bL:SetColorTexture(Def.InputBorder[1], Def.InputBorder[2], Def.InputBorder[3], Def.InputBorder[4])
-            local bR = scrollBg:CreateTexture(nil, "BORDER"); bR:SetWidth(1); bR:SetPoint("TOPRIGHT"); bR:SetPoint("BOTTOMRIGHT"); bR:SetColorTexture(Def.InputBorder[1], Def.InputBorder[2], Def.InputBorder[3], Def.InputBorder[4])
+            local bt, bb, bl, br = addon.CreateBorder(scrollBg, Def.InputBorder)
+            local function setEditboxBorderColor(c)
+                for _, tex in ipairs({ bt, bb, bl, br }) do
+                    if tex then tex:SetColorTexture(c[1], c[2], c[3], c[4] or 1) end
+                end
+            end
             local sf = CreateFrame("ScrollFrame", nil, scrollBg, "UIPanelScrollFrameTemplate")
             sf:SetPoint("TOPLEFT", scrollBg, "TOPLEFT", 4, -4)
             sf:SetPoint("BOTTOMRIGHT", scrollBg, "BOTTOMRIGHT", -22, 4)
@@ -499,6 +574,12 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                 end
             end)
             if opt.storeRef then addon[opt.storeRef] = edit end
+            edit:SetScript("OnEditFocusGained", function()
+                setEditboxBorderColor(Def.AccentColor)
+            end)
+            edit:SetScript("OnEditFocusLost", function()
+                setEditboxBorderColor(Def.InputBorder)
+            end)
             if opt.readonly then
                 edit:EnableKeyboard(true)
                 edit:SetScript("OnChar", function(self) self:SetText(opt.get and opt.get() or "") end)
@@ -513,9 +594,11 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                     self:HighlightText()
                 end)
                 edit:SetScript("OnEditFocusGained", function(self)
+                    setEditboxBorderColor(Def.AccentColor)
                     self:HighlightText()
                 end)
                 edit:SetScript("OnEditFocusLost", function(self)
+                    setEditboxBorderColor(Def.InputBorder)
                     self:HighlightText(0, 0)
                 end)
             else
@@ -541,15 +624,16 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             table.insert(refreshers, wrapper)
         elseif opt.type == "colorMatrix" then
             if currentCard then FinalizeCard(currentCard) end
-            currentCard = OptionsWidgets_CreateSectionCard(tab, anchor)
-            local lbl = OptionsWidgets_CreateSectionHeader(currentCard, opt.name or L["Colors"])
-            lbl:SetPoint("TOPLEFT", currentCard, "TOPLEFT", CardPadding, -CardPadding)
+            local sectionKey = (addon.OptionCategories[tabIndex].key .. "_" .. (opt.name or "Colors"):gsub("%s+", "_"))
+            currentCard = OptionsWidgets_CreateSectionCard(tab, anchor, sectionKey, GetCardCollapsed, SetCardCollapsed)
+            local lbl = OptionsWidgets_CreateSectionHeader(currentCard, opt.name or L["Colors"], sectionKey, GetCardCollapsed, SetCardCollapsed)
             currentCard.contentAnchor = lbl
             currentCard.contentHeight = CardPadding + RowHeights.sectionLabel
             anchor = currentCard
+            local cardContent = currentCard.contentContainer or currentCard
             local keys = opt.keys or addon.COLOR_KEYS_ORDER
             local defaultMap = opt.defaultMap or addon.QUEST_COLORS
-            local sub = OptionsWidgets_CreateSectionHeader(currentCard, L["Quest types"])
+            local sub = OptionsWidgets_CreateSectionHeader(cardContent, L["Quest types"])
             sub:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -SectionGap)
             currentCard.contentAnchor = sub
             currentCard.contentHeight = currentCard.contentHeight + SectionGap + RowHeights.sectionLabel
@@ -557,30 +641,21 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             for _, key in ipairs(keys) do
                 local getTbl = function() local db = getDB(opt.dbKey, nil) return db and db[key] end
                 local setKeyVal = function(v) addon.EnsureDB() if not HorizonDB[opt.dbKey] then HorizonDB[opt.dbKey] = {} end HorizonDB[opt.dbKey][key] = v if not addon._colorPickerLive then notifyMainAddon() end end
-                local row = OptionsWidgets_CreateColorSwatchRow(currentCard, currentCard.contentAnchor, addon.L[(opt.labelMap and opt.labelMap[key]) or key:gsub("^%l", string.upper)], defaultMap[key], getTbl, setKeyVal, notifyMainAddon)
+                local row = OptionsWidgets_CreateColorSwatchRow(cardContent, currentCard.contentAnchor, addon.L[(opt.labelMap and opt.labelMap[key]) or key:gsub("^%l", string.upper)], defaultMap[key], getTbl, setKeyVal, notifyMainAddon)
                 currentCard.contentAnchor = row
                 currentCard.contentHeight = currentCard.contentHeight + 4 + 24
                 swatches[#swatches+1] = row
             end
-            local resetBtn = CreateFrame("Button", nil, currentCard)
-            resetBtn:SetSize(120, 22)
-            resetBtn:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -6)
-            local rl = resetBtn:CreateFontString(nil, "OVERLAY")
-            rl:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.LabelSize or 13, "OUTLINE")
-            SetTextColor(rl, Def.TextColorLabel)
-            rl:SetText(L["Reset quest types"])
-            rl:SetPoint("CENTER", resetBtn, "CENTER", 0, 0)
-            resetBtn:SetScript("OnClick", function()
+            local resetBtn = OptionsWidgets_CreateButton(cardContent, L["Reset quest types"], function()
                 setDB(opt.dbKey, nil)
                 setDB("sectionColors", nil)
                 for _, sw in ipairs(swatches) do if sw.Refresh then sw:Refresh() end end
                 notifyMainAddon()
-            end)
-            resetBtn:SetScript("OnEnter", function() SetTextColor(rl, Def.TextColorHighlight) end)
-            resetBtn:SetScript("OnLeave", function() SetTextColor(rl, Def.TextColorLabel) end)
+            end, { width = 120, height = 22 })
+            resetBtn:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -6)
             currentCard.contentAnchor = resetBtn
             currentCard.contentHeight = currentCard.contentHeight + 6 + 22
-            local overridesSub = OptionsWidgets_CreateSectionHeader(currentCard, L["Element overrides"])
+            local overridesSub = OptionsWidgets_CreateSectionHeader(cardContent, L["Element overrides"])
             overridesSub:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -SectionGap)
             currentCard.contentAnchor = overridesSub
             currentCard.contentHeight = currentCard.contentHeight + SectionGap + RowHeights.sectionLabel
@@ -588,26 +663,17 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             for _, ov in ipairs(opt.overrides or {}) do
                 local getTbl = function() return getDB(ov.dbKey, nil) end
                 local setKeyVal = function(v) setDB(ov.dbKey, v) if not addon._colorPickerLive then notifyMainAddon() end end
-                local row = OptionsWidgets_CreateColorSwatchRow(currentCard, currentCard.contentAnchor, ov.name, ov.default, getTbl, setKeyVal, notifyMainAddon)
+                local row = OptionsWidgets_CreateColorSwatchRow(cardContent, currentCard.contentAnchor, ov.name, ov.default, getTbl, setKeyVal, notifyMainAddon)
                 currentCard.contentAnchor = row
                 currentCard.contentHeight = currentCard.contentHeight + 4 + 24
                 overrideRows[#overrideRows+1] = row
             end
-            local resetOv = CreateFrame("Button", nil, currentCard)
-            resetOv:SetSize(120, 22)
-            resetOv:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -6)
-            local rol = resetOv:CreateFontString(nil, "OVERLAY")
-            rol:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.LabelSize or 13, "OUTLINE")
-            SetTextColor(rol, Def.TextColorLabel)
-            rol:SetText(L["Reset overrides"])
-            rol:SetPoint("CENTER", resetOv, "CENTER", 0, 0)
-            resetOv:SetScript("OnClick", function()
+            local resetOv = OptionsWidgets_CreateButton(cardContent, L["Reset overrides"], function()
                 for _, ov in ipairs(opt.overrides or {}) do setDB(ov.dbKey, nil) end
                 for _, r in ipairs(overrideRows) do if r.Refresh then r:Refresh() end end
                 notifyMainAddon()
-            end)
-            resetOv:SetScript("OnEnter", function() SetTextColor(rol, Def.TextColorHighlight) end)
-            resetOv:SetScript("OnLeave", function() SetTextColor(rol, Def.TextColorLabel) end)
+            end, { width = 120, height = 22 })
+            resetOv:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -6)
             currentCard.contentAnchor = resetOv
             currentCard.contentHeight = currentCard.contentHeight + 6 + 22
             local oid = opt.dbKey or (addon.OptionCategories[tabIndex].key .. "_" .. (opt.name or ""):gsub("%s+", "_"))
@@ -722,15 +788,7 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                 local titleDef = (key == "NEARBY") and baseSectionColor or baseTitleColor  -- Current Zone: title matches section
 
                 -- Reset button (child of container so click does not toggle expand)
-                local resetBtn = CreateFrame("Button", nil, container)
-                resetBtn:SetSize(50, 22)
-                resetBtn:SetPoint("RIGHT", container, "RIGHT", -8, 0)
-                local resetLabel = resetBtn:CreateFontString(nil, "OVERLAY")
-                resetLabel:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.LabelSize or 13, "OUTLINE")
-                SetTextColor(resetLabel, Def.TextColorLabel)
-                resetLabel:SetText(L["Reset"])
-                resetLabel:SetPoint("CENTER", resetBtn, "CENTER", 0, 0)
-                resetBtn:SetScript("OnClick", function()
+                local resetBtn = OptionsWidgets_CreateButton(container, L["Reset"], function()
                     local m = getMatrix()
                     if m.categories and m.categories[key] then
                         m.categories[key] = nil
@@ -738,11 +796,8 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                         notifyMainAddon()
                         container:Refresh()
                     end
-                end)
-                resetBtn:SetScript("OnEnter", function()
-                    SetTextColor(resetLabel, Def.TextColorHighlight)
-                end)
-                resetBtn:SetScript("OnLeave", function() SetTextColor(resetLabel, Def.TextColorLabel) end)
+                end, { width = 50, height = 22 })
+                resetBtn:SetPoint("RIGHT", container, "RIGHT", -8, 0)
 
                 local previewSwatch = hdr:CreateTexture(nil, "ARTWORK")
                 previewSwatch:SetSize(14, 14)
@@ -781,7 +836,7 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                         local setKeyVal = function(v)
                             local m = getMatrix()
                             m.categories[key] = m.categories[key] or {}
-                            m.categories[key][cd.subKey] = v
+                            m.categories[key][cd.subKey] = (type(v) == "table" and v[1] and v[2] and v[3]) and { v[1], v[2], v[3] } or v
                             setDB(opt.dbKey, m)
                             if not addon._colorPickerLive then notifyMainAddon() end
                         end
@@ -839,12 +894,13 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             -- ---------------------------------------------------------------
             -- Assemble the Colors card
             -- ---------------------------------------------------------------
-            currentCard = OptionsWidgets_CreateSectionCard(tab, anchor)
-            local lbl = OptionsWidgets_CreateSectionHeader(currentCard, opt.name or L["Colors"])
-            lbl:SetPoint("TOPLEFT", currentCard, "TOPLEFT", CardPadding, -CardPadding)
+            local sectionKey = (addon.OptionCategories[tabIndex].key .. "_" .. (opt.name or "Colors"):gsub("%s+", "_"))
+            currentCard = OptionsWidgets_CreateSectionCard(tab, anchor, sectionKey, GetCardCollapsed, SetCardCollapsed)
+            local lbl = OptionsWidgets_CreateSectionHeader(currentCard, opt.name or L["Colors"], sectionKey, GetCardCollapsed, SetCardCollapsed)
             currentCard.contentAnchor = lbl
             currentCard.contentHeight = CardPadding + RowHeights.sectionLabel
             anchor = currentCard
+            local cardContent = currentCard.contentContainer or currentCard
 
             local groupOrder = addon.GetGroupOrder and addon.GetGroupOrder() or {}
             if type(groupOrder) ~= "table" or #groupOrder == 0 then
@@ -863,18 +919,18 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             numPerCategoryGroups = #perCategoryOrder
 
             -- Per-category collapsible groups (excludes NEARBY and COMPLETE)
-            local catHdr = OptionsWidgets_CreateSectionHeader(currentCard, L["Per category"])
+            local catHdr = OptionsWidgets_CreateSectionHeader(cardContent, L["Per category"])
             catHdr:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -SectionGap)
             currentCard.contentAnchor = catHdr
             currentCard.contentHeight = currentCard.contentHeight + SectionGap + RowHeights.sectionLabel
 
             for _, key in ipairs(perCategoryOrder) do
-                local gf = BuildCollapsibleGroup(currentCard, currentCard.contentAnchor, key)
+                local gf = BuildCollapsibleGroup(cardContent, currentCard.contentAnchor, key)
                 currentCard.contentAnchor = gf
                 currentCard.contentHeight = currentCard.contentHeight + OptionGap + GROUP_HEADER_H
             end
 
-            local div1 = currentCard:CreateTexture(nil, "ARTWORK")
+            local div1 = cardContent:CreateTexture(nil, "ARTWORK")
             div1:SetHeight(1)
             div1:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -SectionGap/2)
             div1:SetPoint("TOPRIGHT", currentCard, "TOPRIGHT", -CardPadding, 0)
@@ -882,42 +938,42 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             div1:SetColorTexture(dc[1], dc[2], dc[3], dc[4] or 0.2)
 
             -- Grouping Overrides: toggles + NEARBY and COMPLETE collapsible groups
-            local goHdr = OptionsWidgets_CreateSectionHeader(currentCard, L["Grouping Overrides"])
+            local goHdr = OptionsWidgets_CreateSectionHeader(cardContent, L["Grouping Overrides"])
             goHdr:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -SectionGap)
             currentCard.contentAnchor = goHdr
             currentCard.contentHeight = currentCard.contentHeight + SectionGap + RowHeights.sectionLabel
 
-            local ovCompleted = OptionsWidgets_CreateToggleSwitch(currentCard, L["Ready to Turn In overrides base colours"], L["Ready to Turn In uses its colours for quests in that section."], function() return getOverride("useCompletedOverride") end, function(v) setOverride("useCompletedOverride", v) end)
+            local ovCompleted = OptionsWidgets_CreateToggleSwitch(cardContent, L["Ready to Turn In overrides base colours"], L["Ready to Turn In uses its colours for quests in that section."], function() return getOverride("useCompletedOverride") end, function(v) setOverride("useCompletedOverride", v) end)
             ovCompleted:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -OptionGap)
             ovCompleted:SetPoint("RIGHT", currentCard, "RIGHT", -CardPadding, 0)
             currentCard.contentAnchor = ovCompleted
             currentCard.contentHeight = currentCard.contentHeight + OptionGap + 38
 
-            local ovCurrentZone = OptionsWidgets_CreateToggleSwitch(currentCard, L["Current Zone overrides base colours"], L["Current Zone uses its colours for quests in that section."], function() return getOverride("useCurrentZoneOverride") end, function(v) setOverride("useCurrentZoneOverride", v) end)
+            local ovCurrentZone = OptionsWidgets_CreateToggleSwitch(cardContent, L["Current Zone overrides base colours"], L["Current Zone uses its colours for quests in that section."], function() return getOverride("useCurrentZoneOverride") end, function(v) setOverride("useCurrentZoneOverride", v) end)
             ovCurrentZone:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -OptionGap)
             ovCurrentZone:SetPoint("RIGHT", currentCard, "RIGHT", -CardPadding, 0)
             currentCard.contentAnchor = ovCurrentZone
             currentCard.contentHeight = currentCard.contentHeight + OptionGap + 38
 
             for _, key in ipairs(groupingOverrideOrder) do
-                local gf = BuildCollapsibleGroup(currentCard, currentCard.contentAnchor, key)
+                local gf = BuildCollapsibleGroup(cardContent, currentCard.contentAnchor, key)
                 currentCard.contentAnchor = gf
                 currentCard.contentHeight = currentCard.contentHeight + OptionGap + GROUP_HEADER_H
             end
 
-            local div2 = currentCard:CreateTexture(nil, "ARTWORK")
+            local div2 = cardContent:CreateTexture(nil, "ARTWORK")
             div2:SetHeight(1)
             div2:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -SectionGap/2)
             div2:SetPoint("TOPRIGHT", currentCard, "TOPRIGHT", -CardPadding, 0)
             div2:SetColorTexture(dc[1], dc[2], dc[3], dc[4] or 0.2)
 
             -- Other global colours (always visible)
-            local otherHdr = OptionsWidgets_CreateSectionHeader(currentCard, L["Other colors"])
+            local otherHdr = OptionsWidgets_CreateSectionHeader(cardContent, L["Other colors"])
             otherHdr:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -SectionGap)
             currentCard.contentAnchor = otherHdr
             currentCard.contentHeight = currentCard.contentHeight + SectionGap + RowHeights.sectionLabel
 
-            local ovCompletedObj = OptionsWidgets_CreateToggleSwitch(currentCard, L["Use distinct color for completed objectives"], L["When on, completed objectives (e.g. 1/1) use the color below; when off, they use the same color as incomplete objectives."], function() return getDB("useCompletedObjectiveColor", true) end, function(v) setDB("useCompletedObjectiveColor", v) notifyMainAddon() end)
+            local ovCompletedObj = OptionsWidgets_CreateToggleSwitch(cardContent, L["Use distinct color for completed objectives"], L["When on, completed objectives (e.g. 1/1) use the color below; when off, they use the same color as incomplete objectives."], function() return getDB("useCompletedObjectiveColor", true) end, function(v) setDB("useCompletedObjectiveColor", v) notifyMainAddon() end)
             ovCompletedObj:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -OptionGap)
             ovCompletedObj:SetPoint("RIGHT", currentCard, "RIGHT", -CardPadding, 0)
             currentCard.contentAnchor = ovCompletedObj
@@ -931,7 +987,7 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             for _, od in ipairs(otherDefs) do
                 local getTbl = function() return getDB(od.dbKey, nil) end
                 local setKeyVal = function(v) setDB(od.dbKey, v) if not addon._colorPickerLive then notifyMainAddon() end end
-                local row = OptionsWidgets_CreateColorSwatchRow(currentCard, currentCard.contentAnchor, od.label, od.def, getTbl, setKeyVal, notifyMainAddon)
+                local row = OptionsWidgets_CreateColorSwatchRow(cardContent, currentCard.contentAnchor, od.label, od.def, getTbl, setKeyVal, notifyMainAddon)
                 currentCard.contentAnchor = row
                 currentCard.contentHeight = currentCard.contentHeight + GROUP_ROW_GAP + GROUP_ROW_H
                 otherRows[#otherRows + 1] = row
@@ -950,13 +1006,31 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             })
         elseif opt.type == "blacklistGrid" then
             if currentCard then FinalizeCard(currentCard) end
-            currentCard = OptionsWidgets_CreateSectionCard(tab, anchor)
+            local sectionKey = (addon.OptionCategories[tabIndex].key .. "_" .. (opt.name or "Blacklist"):gsub("%s+", "_"))
+            currentCard = OptionsWidgets_CreateSectionCard(tab, anchor, sectionKey, GetCardCollapsed, SetCardCollapsed)
+            local lbl = OptionsWidgets_CreateSectionHeader(currentCard, opt.name or L["Blacklist"], sectionKey, GetCardCollapsed, SetCardCollapsed)
+            currentCard.contentAnchor = lbl
+            currentCard.contentHeight = CardPadding + RowHeights.sectionLabel
             anchor = currentCard
-            
+            local cardContent = currentCard.contentContainer or currentCard
+
+            if opt.desc and opt.desc ~= "" then
+                local descText = cardContent:CreateFontString(nil, "OVERLAY")
+                descText:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.SectionSize or 11, "OUTLINE")
+                descText:SetTextColor(Def.TextColorSection and Def.TextColorSection[1] or 0.58, Def.TextColorSection and Def.TextColorSection[2] or 0.64, Def.TextColorSection and Def.TextColorSection[3] or 0.74)
+                descText:SetJustifyH("LEFT")
+                descText:SetWordWrap(true)
+                descText:SetPoint("TOPLEFT", lbl, "BOTTOMLEFT", 0, -4)
+                descText:SetPoint("RIGHT", currentCard, "RIGHT", -CardPadding, 0)
+                descText:SetText(opt.desc)
+                currentCard.contentAnchor = descText
+                currentCard.contentHeight = currentCard.contentHeight + 4 + (descText:GetStringHeight() or 12)
+            end
+
             -- Scrollable container for the grid (dynamically sized, scrollbars outside content)
-            local gridWrapper = CreateFrame("Frame", nil, currentCard)
-            gridWrapper:SetPoint("TOPLEFT", currentCard, "TOPLEFT", CardPadding, -CardPadding)
-            gridWrapper:SetPoint("BOTTOMRIGHT", currentCard, "BOTTOMRIGHT", -CardPadding, CardPadding)
+            local gridWrapper = CreateFrame("Frame", nil, cardContent)
+            gridWrapper:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -OptionGap)
+            gridWrapper:SetPoint("BOTTOMRIGHT", currentCard, "BOTTOMRIGHT", -CardPadding, CardBottomPadding)
             
             local scrollFrame = CreateFrame("ScrollFrame", nil, gridWrapper)
             scrollFrame:SetPoint("TOPLEFT", gridWrapper, "TOPLEFT", 0, 0)
@@ -1039,8 +1113,9 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             
             local gridContainer = scrollChild
             currentCard.contentAnchor = gridWrapper
-            -- Dynamic height: wrapper fills card, card height grows with window
-            currentCard.contentHeight = math.max(450, PAGE_HEIGHT - 300)
+            -- Dynamic height: header + gap + grid; card height grows with window
+            local gridH = math.max(450, PAGE_HEIGHT - 300)
+            currentCard.contentHeight = currentCard.contentHeight + OptionGap + gridH
             currentCard.updateScrollBars = UpdateScrollBars
             -- Store reference so resize handler can update this card's height
             addon.blacklistGridCard = currentCard
@@ -1347,12 +1422,13 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             table.insert(refreshers, { Refresh = BuildBlacklistGrid })
         elseif opt.type == "colorGroup" then
             if currentCard then FinalizeCard(currentCard) end
-            currentCard = OptionsWidgets_CreateSectionCard(tab, anchor)
-            local lbl = OptionsWidgets_CreateSectionHeader(currentCard, opt.name)
-            lbl:SetPoint("TOPLEFT", currentCard, "TOPLEFT", CardPadding, -CardPadding)
+            local sectionKey = (addon.OptionCategories[tabIndex].key .. "_" .. (opt.name or ""):gsub("%s+", "_"))
+            currentCard = OptionsWidgets_CreateSectionCard(tab, anchor, sectionKey, GetCardCollapsed, SetCardCollapsed)
+            local lbl = OptionsWidgets_CreateSectionHeader(currentCard, opt.name, sectionKey, GetCardCollapsed, SetCardCollapsed)
             currentCard.contentAnchor = lbl
             currentCard.contentHeight = CardPadding + RowHeights.sectionLabel
             anchor = currentCard
+            local cardContent = currentCard.contentContainer or currentCard
             local keys = type(opt.keys) == "function" and opt.keys() or opt.keys or {}
             local defaultMap = opt.defaultMap or {}
             local swatches = {}
@@ -1360,38 +1436,36 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
                 local getTbl = function() local db = getDB(opt.dbKey, nil) return db and db[key] end
                 local setKeyVal = function(v) addon.EnsureDB() if not HorizonDB[opt.dbKey] then HorizonDB[opt.dbKey] = {} end HorizonDB[opt.dbKey][key] = v if not addon._colorPickerLive then notifyMainAddon() end end
                 local def = defaultMap[key] or {0.5,0.5,0.5}
-                local row = OptionsWidgets_CreateColorSwatchRow(currentCard, currentCard.contentAnchor, addon.L[(opt.labelMap and opt.labelMap[key]) or key:gsub("^%l", string.upper)], def, getTbl, setKeyVal, notifyMainAddon)
+                local row = OptionsWidgets_CreateColorSwatchRow(cardContent, currentCard.contentAnchor, addon.L[(opt.labelMap and opt.labelMap[key]) or key:gsub("^%l", string.upper)], def, getTbl, setKeyVal, notifyMainAddon)
                 currentCard.contentAnchor = row
                 currentCard.contentHeight = currentCard.contentHeight + 4 + 24
                 swatches[#swatches+1] = row
             end
-            local resetBtn = CreateFrame("Button", nil, currentCard)
-            resetBtn:SetSize(120, 22)
-            resetBtn:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -6)
-            local rl = resetBtn:CreateFontString(nil, "OVERLAY")
-            rl:SetFont(Def.FontPath or "Fonts\\FRIZQT__.TTF", Def.LabelSize or 13, "OUTLINE")
-            SetTextColor(rl, Def.TextColorLabel)
-            rl:SetText(L["Reset to defaults"])
-            rl:SetPoint("CENTER", resetBtn, "CENTER", 0, 0)
-            resetBtn:SetScript("OnClick", function()
+            local resetBtn = OptionsWidgets_CreateButton(cardContent, L["Reset to defaults"], function()
                 setDB(opt.dbKey, nil)
                 setDB("sectionColors", nil)
                 for _, sw in ipairs(swatches) do if sw.Refresh then sw:Refresh() end end
                 notifyMainAddon()
-            end)
-            resetBtn:SetScript("OnEnter", function() SetTextColor(rl, Def.TextColorHighlight) end)
-            resetBtn:SetScript("OnLeave", function() SetTextColor(rl, Def.TextColorLabel) end)
+            end, { width = 120, height = 22 })
+            resetBtn:SetPoint("TOPLEFT", currentCard.contentAnchor, "BOTTOMLEFT", 0, -6)
             currentCard.contentAnchor = resetBtn
             currentCard.contentHeight = currentCard.contentHeight + 6 + 22
             local oid = opt.dbKey or (addon.OptionCategories[tabIndex].key .. "_" .. (opt.name or ""):gsub("%s+", "_"))
             if optionFrames then optionFrames[oid] = { tabIndex = tabIndex, frame = currentCard } end
             table.insert(refreshers, { Refresh = function() for _, sw in ipairs(swatches) do if sw.Refresh then sw:Refresh() end end end })
         elseif opt.type == "reorderList" then
-            if currentCard then FinalizeCard(currentCard) end
-            local reorderAnchor = anchor
-            local w = OptionsWidgets_CreateReorderList(tab, reorderAnchor, opt, scrollFrame, panel, notifyMainAddon)
-            anchor = w
-            currentCard = nil
+            local w
+            if currentCard then
+                local cardContent = currentCard.contentContainer or currentCard
+                w = OptionsWidgets_CreateReorderList(cardContent, currentCard.contentAnchor, opt, scrollFrame, panel, notifyMainAddon)
+                currentCard.contentAnchor = w
+                currentCard.contentHeight = currentCard.contentHeight + OptionGap + (w:GetHeight() or 0)
+            else
+                local reorderAnchor = anchor
+                w = OptionsWidgets_CreateReorderList(tab, reorderAnchor, opt, scrollFrame, panel, notifyMainAddon)
+                anchor = w
+                currentCard = nil
+            end
             local oid = opt.dbKey or (addon.OptionCategories[tabIndex].key .. "_" .. (opt.name or ""):gsub("%s+", "_"))
             if optionFrames then optionFrames[oid] = { tabIndex = tabIndex, frame = w } end
             table.insert(refreshers, w)
@@ -1402,14 +1476,14 @@ end
 
 -- Build sidebar grouped by moduleKey (Modules, Focus, Presence)
 -- Use "modules" as sentinel for nil (WoW Lua disallows nil as table index)
-local MODULE_LABELS = { ["modules"] = L["Modules"], ["focus"] = L["Focus"], ["presence"] = L["Presence"] }
+local MODULE_LABELS = { ["modules"] = L["Modules"], ["focus"] = L["Focus"], ["presence"] = L["Presence"], ["insight"] = L["Insight"] or "Insight", ["yield"] = L["Yield"] }
 local groups = {}
 for i, cat in ipairs(addon.OptionCategories) do
     local mk = cat.moduleKey or "modules"
     if not groups[mk] then groups[mk] = { label = MODULE_LABELS[mk] or L["Other"], categories = {} } end
     table.insert(groups[mk].categories, i)
 end
-local groupOrder = { "modules", "focus", "presence" }
+local groupOrder = { "modules", "focus", "presence", "insight", "yield" }
 
 local function UpdateTabVisuals()
     for _, btn in ipairs(tabButtons) do
@@ -1429,11 +1503,11 @@ local COLLAPSE_ANIM_DUR = 0.18
 local easeOut = addon.easeOut or function(t) return 1 - (1-t)*(1-t) end
 
 local lastSidebarRow = nil
-local groupCollapsed = (HorizonDB and HorizonDB.optionsGroupCollapsed) or {}
-local function GetGroupCollapsed(mk) return groupCollapsed[mk] == true end
+-- Groups always start collapsed on open; state is not persisted across sessions.
+local groupCollapsed = {}
+local function GetGroupCollapsed(mk) return groupCollapsed[mk] ~= false end
 local function SetGroupCollapsed(mk, v)
     groupCollapsed[mk] = v
-    if HorizonDB then HorizonDB.optionsGroupCollapsed = groupCollapsed end
 end
 
 for _, mk in ipairs(groupOrder) do
@@ -1522,6 +1596,8 @@ for _, mk in ipairs(groupOrder) do
             local fullHeight = TAB_ROW_HEIGHT * #g.categories
             tabsContainer:SetHeight(GetGroupCollapsed(mk) and 0 or fullHeight)
             g.tabsContainer = tabsContainer
+            g.header = header
+            g.fullHeight = fullHeight
             -- Spacer anchored to header (not tabsContainer) so layout stays valid when tabsContainer collapses to 0.
             -- WoW can mishandle anchors to zero-height frames; using header + offset avoids that.
             local spacer = CreateFrame("Frame", nil, sidebarContent)
@@ -1531,6 +1607,7 @@ for _, mk in ipairs(groupOrder) do
                 spacer:ClearAllPoints()
                 spacer:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -tabsContainer:GetHeight())
             end
+            header.updateSpacer = UpdateSpacerPosition
             UpdateSpacerPosition()
             lastSidebarRow = spacer
             header:SetScript("OnClick", function()
@@ -1647,6 +1724,22 @@ local function NavigateToOption(entry)
     for j = 1, #tabFrames do tabFrames[j]:SetShown(j == selectedTab) end
     scrollFrame:SetScrollChild(tabFrames[selectedTab])
     local frame = reg.frame
+    -- Find the section card (may be frame itself or an ancestor)
+    local card = frame
+    while card and not card.sectionKey do card = card:GetParent() end
+    -- Expand card if collapsed so the selected option is visible
+    if card and card.sectionKey and card.contentContainer and GetCardCollapsed(card.sectionKey) then
+        if card.header and card.header.Click then
+            -- Reuse the same expand path as manual header toggles to keep anchors/animation/state in sync.
+            card.header:Click()
+        else
+            SetCardCollapsed(card.sectionKey, false)
+            card.contentContainer:SetShown(true)
+            card:SetHeight(card.fullHeight or (card.contentHeight + CardBottomPadding))
+            if card.header and card.header.chevron then card.header.chevron:SetText("-") end
+            if card.header and card.header.UpdateCollapsedAnchors then card.header.UpdateCollapsedAnchors() end
+        end
+    end
     local child = scrollFrame:GetScrollChild()
     if child and frame then
         local frameTop = frame:GetTop()
@@ -1668,7 +1761,7 @@ local function NavigateToOption(entry)
     end
 end
 
-local searchDropdown = CreateFrame("Frame", nil, panel)
+local searchDropdown = CreateFrame("Frame", nil, panel, "BackdropTemplate")
 searchDropdown:SetFrameStrata("DIALOG")
 searchDropdown:SetFrameLevel(panel:GetFrameLevel() + 10)
 searchDropdown:SetPoint("TOPLEFT", searchRow, "BOTTOMLEFT", 0, -2)
@@ -1676,17 +1769,20 @@ searchDropdown:SetPoint("TOPRIGHT", searchRow, "BOTTOMRIGHT", 0, 0)
 searchDropdown:SetHeight(SEARCH_DROPDOWN_MAX_HEIGHT)
 searchDropdown:EnableMouse(true)
 searchDropdown:Hide()
-local searchDropdownBg = searchDropdown:CreateTexture(nil, "BACKGROUND")
-searchDropdownBg:SetAllPoints(searchDropdown)
-local sdb = Def.SectionCardBg or { 0.09, 0.09, 0.11, 0.96 }
-searchDropdownBg:SetColorTexture(sdb[1], sdb[2], sdb[3], 0.98)
-local dropdownTopLine = searchDropdown:CreateTexture(nil, "ARTWORK")
-dropdownTopLine:SetHeight(1)
-dropdownTopLine:SetPoint("TOPLEFT", searchDropdown, "TOPLEFT", 0, 0)
-dropdownTopLine:SetPoint("TOPRIGHT", searchDropdown, "TOPRIGHT", 0, 0)
-local ddc = Def.DividerColor or { 0.35, 0.4, 0.5, 0.3 }
-dropdownTopLine:SetColorTexture(ddc[1], ddc[2], ddc[3], ddc[4] or 0.3)
-addon.CreateBorder(searchDropdown, Def.SectionCardBorder or Def.BorderColor)
+local sectionCardBackdrop = addon.OptionsWidgetsSectionCardBackdrop
+if sectionCardBackdrop then
+    searchDropdown:SetBackdrop(sectionCardBackdrop)
+    local sdb = Def.SectionCardBg or { 0.09, 0.09, 0.11, 0.96 }
+    searchDropdown:SetBackdropColor(sdb[1], sdb[2], sdb[3], 0.98)
+    local bc = Def.SectionCardBorder or Def.BorderColor
+    searchDropdown:SetBackdropBorderColor(bc[1], bc[2], bc[3], bc[4] or 1)
+else
+    local searchDropdownBg = searchDropdown:CreateTexture(nil, "BACKGROUND")
+    searchDropdownBg:SetAllPoints(searchDropdown)
+    local sdb = Def.SectionCardBg or { 0.09, 0.09, 0.11, 0.96 }
+    searchDropdownBg:SetColorTexture(sdb[1], sdb[2], sdb[3], 0.98)
+    addon.CreateBorder(searchDropdown, Def.SectionCardBorder or Def.BorderColor)
+end
 local searchDropdownScroll = CreateFrame("ScrollFrame", nil, searchDropdown)
 searchDropdownScroll:SetPoint("TOPLEFT", searchDropdown, "TOPLEFT", 6, -6)
 searchDropdownScroll:SetPoint("BOTTOMRIGHT", searchDropdown, "BOTTOMRIGHT", -6, 6)
@@ -1768,7 +1864,7 @@ local function ShowSearchResults(matches)
         row.btn.entry = m
         row.btn:SetPoint("TOP", searchDropdownContent, "TOP", 0, -(i - 1) * SEARCH_DROPDOWN_ROW_HEIGHT)
         row.btn:SetScript("OnClick", function()
-            NavigateToOption(m)
+            NavigateToOption(row.btn.entry)
             HideSearchDropdown()
             if searchInput and searchInput.edit then searchInput.edit:ClearFocus() end
         end)
@@ -1868,18 +1964,41 @@ addon.OptionsData_SetUpdateFontsRef(updateOptionsPanelFonts)
 local ANIM_DUR = 0.2
 local easeOut = addon.easeOut or function(t) return 1 - (1-t)*(1-t) end
 panel:SetScript("OnShow", function()
+    -- Reset main content and sidebar scroll to top
+    if scrollFrame and scrollFrame.SetVerticalScroll then scrollFrame:SetVerticalScroll(0) end
+    if sidebarScrollFrame and sidebarScrollFrame.SetVerticalScroll then sidebarScrollFrame:SetVerticalScroll(0) end
+    -- Reset section cards to collapsed on each open
+    for k in pairs(cardCollapsed) do cardCollapsed[k] = nil end
+    if HorizonDB then HorizonDB.optionsCardCollapsed = cardCollapsed end
+    for _, card in ipairs(allCollapsibleCards) do
+        if card and card.sectionKey and card.contentContainer and card.headerHeight then
+            card.contentContainer:SetShown(false)
+            card:SetHeight(card.headerHeight)
+            if card.header and card.header.chevron then card.header.chevron:SetText("+") end
+            if card.header and card.header.UpdateCollapsedAnchors then card.header.UpdateCollapsedAnchors() end
+        end
+    end
+    -- Reset sidebar groups to collapsed on each open
+    for _, mk in ipairs(groupOrder) do
+        local g = groups[mk]
+        if g and g.header and g.tabsContainer and g.fullHeight then
+            SetGroupCollapsed(mk, true)
+            g.header.chevron:SetText("+")
+            g.tabsContainer:SetHeight(0)
+            if g.header.updateSpacer then g.header.updateSpacer() end
+        end
+    end
     updateOptionsPanelFonts()
     -- Restore saved dimensions
     if HorizonDB then
         if HorizonDB.optionsPanelWidth then
             panel:SetWidth(math.max(600, math.min(1400, HorizonDB.optionsPanelWidth)))
-            PAGE_WIDTH = panel:GetWidth()
         end
         if HorizonDB.optionsPanelHeight then
             panel:SetHeight(math.max(500, math.min(1200, HorizonDB.optionsPanelHeight)))
-            PAGE_HEIGHT = panel:GetHeight()
         end
     end
+    ApplyPanelDimensions()
     -- Restore saved position
     if HorizonDB and HorizonDB.optionsLeft ~= nil and HorizonDB.optionsTop ~= nil then
         panel:ClearAllPoints()
@@ -1952,6 +2071,9 @@ function _G.HorizonSuite_ShowOptions()
             if addon.OptionsPanel_Refresh then addon.OptionsPanel_Refresh() end
             C_Timer.After(0.05, function()
                 if addon.OptionsPanel_Refresh then addon.OptionsPanel_Refresh() end
+                -- Reset scroll after layout; OnShow may run before content is sized
+                if scrollFrame and scrollFrame.SetVerticalScroll then scrollFrame:SetVerticalScroll(0) end
+                if sidebarScrollFrame and sidebarScrollFrame.SetVerticalScroll then sidebarScrollFrame:SetVerticalScroll(0) end
             end)
         end
     end

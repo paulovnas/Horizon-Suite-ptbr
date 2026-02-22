@@ -10,6 +10,19 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [2.4.0] – 2026-02-21
+
+### 🔧 Improvements
+
+- **(Presence)** Suppress zone changes in Mythic+ and combat lockdown guards — New option under Presence → Notification types. When enabled, zone, quest, and scenario notifications are hidden during M+ runs. Frame Hide/Show and drag handlers are guarded during combat across Focus, Yield, and Options.
+
+### 🐛 Fixes
+
+- **(Focus)** Tracker collapse/expand no longer causes errors during combat.
+- **(Presence)** Zone name and completion percentage no longer spam during Mythic+ runs.
+
+---
+
 ## [2.3.0] – 2026-02-21
 
 ### ✨ New Features

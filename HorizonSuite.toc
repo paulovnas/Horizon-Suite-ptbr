@@ -2,7 +2,7 @@
 ## Title: Horizon Suite
 ## Notes: Core addon with pluggable modules. Focus (objective tracker) is the first module.
 ## Author: Crystilac
-## Version: 2.3.0
+## Version: 2.4.0
 ## SavedVariables: HorizonDB
 ## IconTexture: Interface\AddOns\HorizonSuite\icon
 ## X-Curse-Project-ID: 1457844
@@ -57,6 +57,12 @@ modules/Yield/YieldCore.lua
 modules/Yield/YieldEvents.lua
 modules/Yield/YieldSlash.lua
 modules/Yield/YieldModule.lua
+
+modules/Vista/VistaCore.lua
+modules/Vista/VistaModule.lua
+
+modules/Insight/InsightCore.lua
+modules/Insight/InsightModule.lua
 
 options/koKR.lua
 options/frFR.lua

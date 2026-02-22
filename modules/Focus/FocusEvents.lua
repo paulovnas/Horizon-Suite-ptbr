@@ -145,10 +145,31 @@ end
 local function OnAddonLoaded(addonName)
     if addonName == "HorizonSuite" then
         addon:EnsureModulesDB()
+        local dev = _G.HorizonSuiteDevOverride
         for key in pairs(addon.modules or {}) do
-            local modDb = HorizonDB and HorizonDB.modules and HorizonDB.modules[key]
-            if modDb and modDb.enabled ~= false then
-                addon:EnableModule(key)
+            -- Beta modules (Insight, Yield, Vista): only enable when dev addon shows their toggle
+            if key == "insight" or key == "yield" or key == "vista" then
+                local showToggle = (key == "insight" and dev and dev.showInsightToggle)
+                    or (key == "yield" and dev and dev.showYieldToggle)
+                    or (key == "vista" and dev and dev.showVistaToggle)
+                if not showToggle then
+                    if HorizonDB and HorizonDB.modules and HorizonDB.modules[key] then
+                        HorizonDB.modules[key].enabled = false
+                    end
+                    if addon.modules[key] and addon.modules[key].enabled then
+                        addon:DisableModule(key)
+                    end
+                else
+                    local modDb = HorizonDB and HorizonDB.modules and HorizonDB.modules[key]
+                    if modDb and modDb.enabled ~= false then
+                        addon:EnableModule(key)
+                    end
+                end
+            else
+                local modDb = HorizonDB and HorizonDB.modules and HorizonDB.modules[key]
+                if modDb and modDb.enabled ~= false then
+                    addon:EnableModule(key)
+                end
             end
         end
     elseif addonName == "Blizzard_WorldMap" then
@@ -441,13 +462,39 @@ local eventHandlers = {
 -- @param ... any Event payload (varargs)
 eventFrame:SetScript("OnEvent", function(self, event, ...)
     -- Process pending hide before addon.focus.enabled check (handles module disabled in combat).
-    if event == "PLAYER_REGEN_ENABLED" and addon.focus.pendingHideAfterCombat and addon.HS then
-        addon.focus.pendingHideAfterCombat = nil
-        addon.HS:Hide()
-        local floatingBtn = _G.HSFloatingQuestItem
-        if floatingBtn then floatingBtn:Hide() end
-        if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
-        if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
+    if event == "PLAYER_REGEN_ENABLED" then
+        if addon.focus.restoreTrackerPendingAfterCombat and addon.RestoreTracker then
+            addon.focus.restoreTrackerPendingAfterCombat = nil
+            addon.RestoreTracker()
+        end
+        if addon.focus.pendingHideAfterCombat and addon.HS then
+            addon.focus.pendingHideAfterCombat = nil
+            addon.HS:Hide()
+            local floatingBtn = _G.HSFloatingQuestItem
+            if floatingBtn then floatingBtn:Hide() end
+            if addon.UpdateFloatingQuestItem then addon.UpdateFloatingQuestItem(nil) end
+            if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
+        end
+        local pending = addon.focus.pendingEntryHideAfterCombat
+        if pending then
+            addon.focus.pendingEntryHideAfterCombat = nil
+            for entry in next, pending do
+                entry:Hide()
+                if entry.itemBtn then entry.itemBtn:Hide() end
+                if entry.trackBar then entry.trackBar:Hide() end
+                if entry.affixText then entry.affixText:Hide() end
+                if entry.affixShadow then entry.affixShadow:Hide() end
+                if entry.wqTimerText then entry.wqTimerText:Hide() end
+                if entry.wqProgressBg then entry.wqProgressBg:Hide() end
+                if entry.wqProgressFill then entry.wqProgressFill:Hide() end
+                if entry.wqProgressText then entry.wqProgressText:Hide() end
+                if entry.scenarioTimerBars then
+                    for _, bar in ipairs(entry.scenarioTimerBars) do
+                        bar:Hide()
+                    end
+                end
+            end
+        end
     end
     if event ~= "ADDON_LOADED" and not addon.focus.enabled then
         return
