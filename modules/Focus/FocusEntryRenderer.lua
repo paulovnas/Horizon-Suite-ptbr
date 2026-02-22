@@ -698,7 +698,8 @@ local function PopulateEntry(entry, questData, groupKey)
         entry.itemBtn.icon:SetTexture(questData.itemTexture)
         if not InCombatLockdown() then
             entry.itemBtn:SetAttribute("type", "item")
-            entry.itemBtn:SetAttribute("item", questData.itemLink)
+            local itemName = questData.itemLink and questData.itemLink:match("%[(.-)%]")
+            entry.itemBtn:SetAttribute("item", itemName or questData.itemLink)
         end
         entry.itemBtn:SetSize(itemBtnSize, itemBtnSize)
         entry.itemBtn:ClearAllPoints()

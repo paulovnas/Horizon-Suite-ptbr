@@ -13,7 +13,7 @@ local floatingQuestItemBtn = CreateFrame("Button", "HSFloatingQuestItem", UIPare
 floatingQuestItemBtn:SetSize(addon.GetDB("floatingQuestItemSize", 36) or 36, addon.GetDB("floatingQuestItemSize", 36) or 36)
 floatingQuestItemBtn:SetPoint("RIGHT", addon.HS, "LEFT", -12, 0)
 floatingQuestItemBtn:SetAttribute("type", "item")
-floatingQuestItemBtn:RegisterForClicks("AnyDown")
+floatingQuestItemBtn:RegisterForClicks("AnyDown", "AnyUp")
 floatingQuestItemBtn:SetMovable(true)
 floatingQuestItemBtn:RegisterForDrag("LeftButton")
 floatingQuestItemBtn:SetScript("OnDragStart", function(self)
@@ -37,11 +37,6 @@ floatingQuestItemBtn:SetScript("OnDragStop", function(self)
     end
 end)
 floatingQuestItemBtn:Hide()
-C_Timer.After(0, function()
-    if floatingQuestItemBtn and not floatingQuestItemBtn:IsForbidden() then
-        addon.ApplyBlizzardFloatingQuestItemStyle(floatingQuestItemBtn)
-    end
-end)
 local INSET = 0
 local floatingQuestItemIcon = floatingQuestItemBtn:CreateTexture(nil, "ARTWORK")
 floatingQuestItemIcon:SetPoint("TOPLEFT", floatingQuestItemBtn, "TOPLEFT", INSET, -INSET)
@@ -64,6 +59,63 @@ floatingQuestItemBtn:SetScript("OnLeave", function(self)
     if GameTooltip and GameTooltip:GetOwner() == self then GameTooltip:Hide() end
 end)
 floatingQuestItemBtn:SetAlpha(0.9)
+
+-- Keybind label: shows the bound key in the top-left corner of the button.
+local keybindLabel = floatingQuestItemBtn:CreateFontString(nil, "OVERLAY")
+keybindLabel:SetFontObject(NumberFontNormalSmallGray or NumberFontNormal or GameFontNormalSmall)
+keybindLabel:SetPoint("TOPLEFT", floatingQuestItemBtn, "TOPLEFT", 2, -2)
+keybindLabel:SetPoint("RIGHT", floatingQuestItemBtn, "RIGHT", -2, 0)
+keybindLabel:SetJustifyH("LEFT")
+keybindLabel:SetWordWrap(false)
+keybindLabel:SetTextColor(1, 1, 1, 1)
+keybindLabel:SetShadowOffset(1, -1)
+keybindLabel:SetShadowColor(0, 0, 0, 1)
+floatingQuestItemBtn.keybindLabel = keybindLabel
+
+--- Refresh the keybind label text. Hides if no key is bound.
+local function UpdateKeybindLabel()
+    if not GetBindingKey then
+        keybindLabel:Hide()
+        return
+    end
+    local key = GetBindingKey("CLICK HSFloatingQuestItem:LeftButton")
+    if key and key ~= "" then
+        -- Shorten common modifier names for display
+        local display = key
+        display = display:gsub("CTRL%-", "C-")
+        display = display:gsub("ALT%-", "A-")
+        display = display:gsub("SHIFT%-", "S-")
+        display = display:gsub("NUMPAD", "N")
+        keybindLabel:SetText(display)
+        keybindLabel:Show()
+    else
+        keybindLabel:SetText("")
+        keybindLabel:Hide()
+    end
+end
+
+-- Deferred style + initial keybind label update.
+C_Timer.After(0, function()
+    if floatingQuestItemBtn and not floatingQuestItemBtn:IsForbidden() then
+        addon.ApplyBlizzardFloatingQuestItemStyle(floatingQuestItemBtn)
+        UpdateKeybindLabel()
+    end
+end)
+
+-- Listen for keybind changes so the label stays current.
+local keybindWatcher = CreateFrame("Frame")
+keybindWatcher:RegisterEvent("UPDATE_BINDINGS")
+keybindWatcher:RegisterEvent("SPELL_UPDATE_COOLDOWN")
+keybindWatcher:SetScript("OnEvent", function(_, event)
+    if event == "UPDATE_BINDINGS" then
+        UpdateKeybindLabel()
+    elseif event == "SPELL_UPDATE_COOLDOWN" then
+        -- Re-apply cooldown sweep so the timer text stays current during combat.
+        if floatingQuestItemBtn:IsShown() and floatingQuestItemBtn._itemLink then
+            addon.ApplyItemCooldown(floatingQuestItemBtn.cooldown, floatingQuestItemBtn._itemLink)
+        end
+    end
+end)
 
 local function UpdateFloatingQuestItem(questsFlat)
     if addon.ShouldHideInCombat() or not addon.GetDB("showFloatingQuestItem", false) then
@@ -115,7 +167,10 @@ local function UpdateFloatingQuestItem(questsFlat)
     if chosenLink and chosenTex then
         floatingQuestItemBtn.icon:SetTexture(chosenTex)
         if not InCombatLockdown() then
-            floatingQuestItemBtn:SetAttribute("item", chosenLink)
+            -- Extract the item name from the hyperlink for the secure attribute.
+            -- SecureActionButtonTemplate type="item" works best with the plain item name.
+            local itemName = chosenLink:match("%[(.-)%]")
+            floatingQuestItemBtn:SetAttribute("item", itemName or chosenLink)
         end
         floatingQuestItemBtn._itemLink = chosenLink
         local sz = tonumber(addon.GetDB("floatingQuestItemSize", 36)) or 36
@@ -147,6 +202,7 @@ local function UpdateFloatingQuestItem(questsFlat)
             floatingQuestItemBtn:SetAlpha(addon.GetCombatFadeAlpha())
         end
         floatingQuestItemBtn:Show()
+        UpdateKeybindLabel()
         addon.ApplyItemCooldown(floatingQuestItemBtn.cooldown, chosenLink)
     else
         floatingQuestItemBtn:Hide()

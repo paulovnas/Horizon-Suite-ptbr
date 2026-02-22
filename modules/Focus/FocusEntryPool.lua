@@ -71,7 +71,7 @@ local function CreateQuestEntry(parent, index)
     e.itemBtn:SetSize(addon.ITEM_BTN_SIZE, addon.ITEM_BTN_SIZE)
     e.itemBtn:SetPoint("TOPRIGHT", e, "TOPRIGHT", 0, 2)
     e.itemBtn:SetAttribute("type", "item")
-    e.itemBtn:RegisterForClicks("AnyDown")
+    e.itemBtn:RegisterForClicks("AnyDown", "AnyUp")
 
     addon.StyleQuestItemButton(e.itemBtn)
 
