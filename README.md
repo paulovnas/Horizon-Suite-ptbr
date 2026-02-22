@@ -45,6 +45,7 @@
 - **Customizable colours** – Per-category colour control (title, objective, zone, section). Panel backdrop colour and opacity.
 - **Typography and spacing** – Fonts, sizes, outlines, and spacing sliders. Optional SharedMedia support for fonts from addon packs. Turn-in highlights and progress counts (e.g. 15/18) at a glance.
 - **Fluid motion** – Smooth entry/exit animations and a subtle pulse on objective completion.
+- **Scroll indicators** – Optional fade or arrow buttons when the list has more content than visible.
 
 ---
 
