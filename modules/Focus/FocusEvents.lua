@@ -39,6 +39,8 @@ eventFrame:RegisterEvent("SCENARIO_CRITERIA_UPDATE")
 eventFrame:RegisterEvent("SCENARIO_CRITERIA_SHOW_STATE_UPDATE")
 eventFrame:RegisterEvent("SCENARIO_COMPLETED")
 eventFrame:RegisterEvent("SCENARIO_SPELL_UPDATE")
+pcall(function() eventFrame:RegisterEvent("SCENARIO_BONUS_OBJECTIVE_COMPLETE") end)
+pcall(function() eventFrame:RegisterEvent("SCENARIO_BONUS_VISIBILITY_UPDATE") end)
 eventFrame:RegisterEvent("CRITERIA_COMPLETE")
 eventFrame:RegisterEvent("TRACKED_ACHIEVEMENT_UPDATE")
 eventFrame:RegisterEvent("CRITERIA_UPDATE")
@@ -466,6 +468,8 @@ local eventHandlers = {
     SCENARIO_CRITERIA_SHOW_STATE_UPDATE = function() ScheduleRefresh() end,
     SCENARIO_COMPLETED       = function() ScheduleRefresh() end,
     SCENARIO_SPELL_UPDATE    = function() ScheduleRefresh() end,
+    SCENARIO_BONUS_OBJECTIVE_COMPLETE = function() ScheduleRefresh() end,
+    SCENARIO_BONUS_VISIBILITY_UPDATE  = function() ScheduleRefresh() end,
     CRITERIA_COMPLETE        = function() ScheduleRefresh() end,
     TRACKED_ACHIEVEMENT_UPDATE = function() ScheduleRefresh() end,
     CRITERIA_UPDATE          = function() ScheduleRefresh() end,

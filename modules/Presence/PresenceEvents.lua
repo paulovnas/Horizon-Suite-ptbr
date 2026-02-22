@@ -106,12 +106,11 @@ local PRESENCE_EVENTS = {
 
 local function OnAddonLoaded(addonName)
     if addonName == "Blizzard_WorldQuestComplete" and addon.Presence.KillWorldQuestBanner then
-        C_Timer.After(0, function()
+        -- Single deferred call is enough: the addon has just loaded so its frames exist
+        -- by the time this fires. Unregister immediately — this only needs to run once.
+        eventFrame:UnregisterEvent("ADDON_LOADED")
+        C_Timer.After(0.1, function()
             addon.Presence.KillWorldQuestBanner()
-        end)
-        C_Timer.After(0.5, function()
-            addon.Presence.KillWorldQuestBanner()
-            eventFrame:UnregisterEvent("ADDON_LOADED")
         end)
     end
 end

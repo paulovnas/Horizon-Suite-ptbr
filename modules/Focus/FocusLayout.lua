@@ -17,22 +17,34 @@ local scrollFrame = addon.scrollFrame
 
 --- Player's current zone name from map API. Used to suppress redundant zone labels for in-zone quests.
 --- Schedule deferred refreshes when Endeavors or Decor have placeholder names (API data not yet loaded).
+--- Retries up to 3 times at 2s intervals; stops as soon as no placeholder is detected.
 local function SchedulePlaceholderRefreshes(quests)
     if addon.focus.placeholderRefreshScheduled then return end
+    local hasPlaceholder = false
     for _, q in ipairs(quests) do
         local isEndeavorPlaceholder = q.isEndeavor and q.endeavorID and q.title == ("Endeavor " .. tostring(q.endeavorID))
         local isDecorPlaceholder = q.isDecor and q.decorID and q.title == ("Decor " .. tostring(q.decorID))
         if isEndeavorPlaceholder or isDecorPlaceholder then
-            addon.focus.placeholderRefreshScheduled = true
-            C_Timer.After(2, function()
-                if addon.focus.enabled and addon.ScheduleRefresh then addon.ScheduleRefresh() end
-            end)
-            C_Timer.After(4, function()
-                if addon.focus.enabled and addon.ScheduleRefresh then addon.ScheduleRefresh() end
-            end)
+            hasPlaceholder = true
             break
         end
     end
+    if not hasPlaceholder then return end
+
+    addon.focus.placeholderRefreshScheduled = true
+    local retriesLeft = 3
+    local function retry()
+        retriesLeft = retriesLeft - 1
+        if not addon.focus.enabled then return end
+        if addon.ScheduleRefresh then addon.ScheduleRefresh() end
+        -- Only reschedule if we still have retries and placeholders might still exist.
+        if retriesLeft > 0 then
+            C_Timer.After(2, retry)
+        else
+            addon.focus.placeholderRefreshScheduled = false
+        end
+    end
+    C_Timer.After(2, retry)
 end
 
 --- Player's current zone name. Uses Zone tier (whole zone, e.g. K'aresh), not continent or micro.
@@ -60,6 +72,7 @@ local function GetPlayerCurrentZoneName()
     local UIMAPTYPE_ZONE = 3
     local current = mapID
     local info = C_Map.GetMapInfo(current)
+    local firstInfo = info  -- keep the original mapID's info for final fallback
     while info do
         if info.mapType == UIMAPTYPE_ZONE then
             return info.name
@@ -70,8 +83,8 @@ local function GetPlayerCurrentZoneName()
         current = info.parentMapID
         info = C_Map.GetMapInfo(current)
     end
-    info = C_Map.GetMapInfo(mapID)
-    return info and info.name or nil
+    -- Fall back to the name of the original mapID (firstInfo already fetched above).
+    return firstInfo and firstInfo.name or nil
 end
 
 local function AcquireEntry()
@@ -443,6 +456,10 @@ local function FullLayout()
     if addon.ReadTrackedAdventureGuide then
         for _, ag in ipairs(addon.ReadTrackedAdventureGuide()) do quests[#quests + 1] = ag end
     end
+    -- Allow SchedulePlaceholderRefreshes to re-evaluate on every FullLayout call.
+    -- The retry loop will have set this to false after its last attempt; clearing it here
+    -- ensures an event-driven layout (e.g. INITIATIVE_TASKS_TRACKED_UPDATED) re-checks.
+    addon.focus.placeholderRefreshScheduled = false
     SchedulePlaceholderRefreshes(quests)
     addon.UpdateFloatingQuestItem(quests)
     local grouped = addon.SortAndGroupQuests(quests)
