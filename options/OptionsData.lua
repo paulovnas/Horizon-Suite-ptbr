@@ -666,6 +666,17 @@ local OptionCategories = {
             if dev and dev.showVistaToggle then
                 opts[#opts + 1] = { type = "toggle", name = L["Enable Vista module"] .. betaSuffix, desc = L["Cinematic square minimap with zone text, coordinates, and button collector."], dbKey = "_module_vista", get = function() return addon:IsModuleEnabled("vista") end, set = function(v) addon:SetModuleEnabled("vista", v) end }
             end
+            opts[#opts + 1] = { type = "section", name = L["Scaling"] }
+            opts[#opts + 1] = { type = "slider", name = L["Global UI scale"], desc = L["Scale all sizes, spacings, and fonts by this factor (50–200%). Does not change your configured values."], dbKey = "globalUIScale_pct", min = 50, max = 200, get = function()
+                return math.floor((tonumber(getDB("globalUIScale", 1)) or 1) * 100 + 0.5)
+            end, set = function(v)
+                local scale = math.max(50, math.min(200, v)) / 100
+                setDB("globalUIScale", scale)
+                if addon.ApplyTypography then addon.ApplyTypography() end
+                if addon.ApplyDimensions then addon.ApplyDimensions() end
+                if addon.ApplyMplusTypography then addon.ApplyMplusTypography() end
+                if _G.HorizonSuite_FullLayout and not InCombatLockdown() then _G.HorizonSuite_FullLayout() end
+            end }
             return opts
         end)(),
     },
