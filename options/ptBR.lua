@@ -464,6 +464,10 @@ L["Suppress untracked until reload"]                     = "Ocultar não rastrea
 L["When on, right-click untrack on world quests and in-zone weeklies/dailies hides them until you reload or start a new session. When off, they reappear when you return to the zone."] = "Ativado: clicar com o botão direito para parar de rastrear missões mundiais e semanais/diárias na zona as oculta até você recarregar ou iniciar uma nova sessão. Desativado: elas reaparecem quando você volta à zona."
 L["Permanently suppress untracked quests"]               = "Ocultar permanentemente missões não rastreadas"
 L["When on, right-click untracked world quests and in-zone weeklies/dailies are hidden permanently (persists across reloads). Takes priority over 'Suppress until reload'. Accepting a suppressed quest removes it from the blacklist."] = "Ativado: missões mundiais e semanais/diárias na zona marcadas como não rastreadas ficam ocultas permanentemente (persiste entre recargas). Tem prioridade sobre \"Ocultar até recarregar\". Aceitar uma missão oculta a remove da lista negra."
+L["Keep campaign quests in category"]                    = "Manter missões de campanha na categoria"
+L["When on, campaign quests that are ready to turn in remain in the Campaign category instead of moving to Complete."] = "Ativado: missões de campanha prontas para entregar permanecem na categoria Campanha em vez de ir para Concluídas."
+L["Keep important quests in category"]                   = "Manter missões importantes na categoria"
+L["When on, important quests that are ready to turn in remain in the Important category instead of moving to Complete."] = "Ativado: missões importantes prontas para entregar permanecem na categoria Importante em vez de ir para Concluídas."
 
 -- =====================================================================
 -- OptionsData.lua Blacklist

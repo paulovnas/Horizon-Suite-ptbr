@@ -737,6 +737,13 @@ local function FullLayout()
                     entry:ClearAllPoints()
                     entry:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", entryX, yOff)
 
+                    local sfLeftInset = (blockFrame and blockPos == "top") and addon.PADDING or 0
+                    local sfVisibleW = addon.GetPanelWidth() - sfLeftInset
+                    local entryW = sfVisibleW - entryX - (addon.CONTENT_RIGHT_PADDING or 0)
+                    if entryW > 0 then
+                        entry:SetWidth(entryW)
+                    end
+
                     -- Keep questTypeIcon anchored to the entry frame so it scrolls/clips correctly.
                     if entry.questTypeIcon then
                         entry.questTypeIcon:ClearAllPoints()

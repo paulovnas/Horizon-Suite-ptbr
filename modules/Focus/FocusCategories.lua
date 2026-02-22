@@ -76,6 +76,15 @@ end
 local function GetQuestCategory(questID)
     if not questID or questID <= 0 then return "DEFAULT" end
     if C_QuestLog and C_QuestLog.IsComplete and C_QuestLog.IsComplete(questID) then
+        -- When the toggle is on, keep Campaign / Important quests in their
+        -- original category even when they are ready to turn in.
+        local base = GetQuestBaseCategory(questID)
+        if base == "CAMPAIGN" and addon.GetDB and addon.GetDB("keepCampaignInCategory", false) then
+            return "CAMPAIGN"
+        end
+        if base == "IMPORTANT" and addon.GetDB and addon.GetDB("keepImportantInCategory", false) then
+            return "IMPORTANT"
+        end
         return "COMPLETE"
     end
     return GetQuestBaseCategory(questID)

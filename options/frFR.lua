@@ -464,6 +464,10 @@ L["Suppress untracked until reload"]                     = "Masquer les quêtes 
 L["When on, right-click untrack on world quests and in-zone weeklies/dailies hides them until you reload or start a new session. When off, they reappear when you return to the zone."] = "Quand Activé : les quêtes non suivies restent masquées jusqu'au rechargement. Désactivé : elles réapparaissent à chaque retour en zone."
 L["Permanently suppress untracked quests"]               = "Masquer définitivement les quêtes non suivies"
 L["When on, right-click untracked world quests and in-zone weeklies/dailies are hidden permanently (persists across reloads). Takes priority over 'Suppress until reload'. Accepting a suppressed quest removes it from the blacklist."] = "Quand Activé : les quêtes non suivies restent masquées définitivement. Prioritaire sur « Masquer jusqu'au prochain rechargement ». Accepter une quête masquée la retire de la liste noire."
+L["Keep campaign quests in category"]                    = "Garder les quêtes de campagne dans leur catégorie"
+L["When on, campaign quests that are ready to turn in remain in the Campaign category instead of moving to Complete."] = "Quand Activé : les quêtes de campagne prêtes à être rendues restent dans la catégorie Campagne au lieu d'aller dans Terminées."
+L["Keep important quests in category"]                   = "Garder les quêtes importantes dans leur catégorie"
+L["When on, important quests that are ready to turn in remain in the Important category instead of moving to Complete."] = "Quand Activé : les quêtes importantes prêtes à être rendues restent dans la catégorie Important au lieu d'aller dans Terminées."
 
 -- =====================================================================
 -- OptionsData.lua Blacklist

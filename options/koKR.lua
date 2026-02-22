@@ -464,6 +464,10 @@ L["Suppress untracked until reload"]                     = "재접속 전까지 
 L["When on, right-click untrack on world quests and in-zone weeklies/dailies hides them until you reload or start a new session. When off, they reappear when you return to the zone."] = "활성화하면 월드 퀘스트와 지역 내 주간·일일 퀘스트에서 우클릭 추적 해제 시 재접속할 때까지 숨깁니다. 비활성화하면 해당 지역에 돌아오면 다시 표시됩니다."
 L["Permanently suppress untracked quests"]               = "추적 해제한 퀘스트 영구 숨기기"
 L["When on, right-click untracked world quests and in-zone weeklies/dailies are hidden permanently (persists across reloads). Takes priority over 'Suppress until reload'. Accepting a suppressed quest removes it from the blacklist."] = "활성화하면 우클릭 추적 해제한 월드 퀘스트와 지역 내 주간·일일 퀘스트가 영구적으로 숨겨집니다 (재접속 후에도 유지). '재접속 전까지 숨기기'보다 우선합니다. 숨긴 퀘스트를 수락하면 차단 목록에서 제거됩니다."
+L["Keep campaign quests in category"]                    = "캠페인 퀘스트를 카테고리에 유지"
+L["When on, campaign quests that are ready to turn in remain in the Campaign category instead of moving to Complete."] = "활성화하면 완료 가능한 캠페인 퀘스트가 완료 카테고리로 이동하지 않고 캠페인 카테고리에 남습니다."
+L["Keep important quests in category"]                   = "중요 퀘스트를 카테고리에 유지"
+L["When on, important quests that are ready to turn in remain in the Important category instead of moving to Complete."] = "활성화하면 완료 가능한 중요 퀘스트가 완료 카테고리로 이동하지 않고 중요 카테고리에 남습니다."
 
 -- =====================================================================
 -- OptionsData.lua Blacklist
