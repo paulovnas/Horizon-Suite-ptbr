@@ -168,7 +168,7 @@ local function ReadTrackedAchievements()
                         if oText == "" or oText == progressStr or oText:lower() == achName:lower() then
                             -- Use the achievement description as the objective text if available
                             if description and type(description) == "string" and description ~= "" then
-                                objectives = { { text = description, finished = o.finished, percent = o.percent, numFulfilled = nil, numRequired = nil } }
+                                objectives = { { text = description, finished = o.finished, percent = o.percent, numFulfilled = o.numFulfilled, numRequired = o.numRequired } }
                             else
                                 objectives = {}
                             end

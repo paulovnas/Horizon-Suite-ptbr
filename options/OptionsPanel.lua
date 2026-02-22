@@ -982,6 +982,8 @@ local function BuildCategory(tab, tabIndex, options, refreshers, optionFrames)
             local otherDefs = {
                 { dbKey = "highlightColor", label = L["Highlight"], def = (addon.HIGHLIGHT_COLOR_DEFAULT or { 0.4, 0.7, 1 }) },
                 { dbKey = "completedObjectiveColor", label = L["Completed objective"], def = (addon.OBJ_DONE_COLOR or { 0.30, 0.80, 0.30 }) },
+                { dbKey = "progressBarFillColor", label = L["Progress bar fill"], def = { 0.40, 0.65, 0.90 } },
+                { dbKey = "progressBarTextColor", label = L["Progress bar text"], def = { 0.95, 0.95, 0.95 } },
             }
             local otherRows = {}
             for _, od in ipairs(otherDefs) do

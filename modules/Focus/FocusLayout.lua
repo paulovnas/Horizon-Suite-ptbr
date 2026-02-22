@@ -914,6 +914,18 @@ function addon.ApplyFocusColors()
                             targetColor = doneColor
                         end
                         obj.text:SetTextColor(targetColor[1], targetColor[2], targetColor[3], alpha)
+
+                        -- Live-update progress bar colors
+                        if obj.progressBarFill and obj.progressBarFill:IsShown() then
+                            local pfc = addon.GetDB("progressBarFillColor", nil)
+                            if not pfc or type(pfc) ~= "table" then pfc = { 0.40, 0.65, 0.90 } end
+                            obj.progressBarFill:SetColorTexture(pfc[1], pfc[2], pfc[3], 0.85)
+                        end
+                        if obj.progressBarLabel and obj.progressBarLabel:IsShown() then
+                            local ptc = addon.GetDB("progressBarTextColor", nil)
+                            if not ptc or type(ptc) ~= "table" then ptc = { 0.95, 0.95, 0.95 } end
+                            obj.progressBarLabel:SetTextColor(ptc[1], ptc[2], ptc[3], 1)
+                        end
                     end
                 end
             end

@@ -138,6 +138,8 @@ addon.ZoneFont    = CreateFont("HorizonSuiteZoneFont")
 addon.ZoneFont:SetFont(addon.FONT_PATH, addon.ZONE_SIZE, "OUTLINE")
 addon.SectionFont = CreateFont("HorizonSuiteSectionFont")
 addon.SectionFont:SetFont(addon.FONT_PATH, addon.SECTION_SIZE, "OUTLINE")
+addon.ProgressBarFont = CreateFont("HorizonSuiteProgressBarFont")
+addon.ProgressBarFont:SetFont(addon.FONT_PATH, addon.OBJ_SIZE, "OUTLINE")
 
 addon.SECTION_LABELS = {
     DUNGEON   = "DUNGEON",

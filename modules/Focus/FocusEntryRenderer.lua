@@ -100,6 +100,45 @@ local function ApplyObjectives(entry, questData, textWidth, prevAnchor, totalH, 
 
     local maxObjs = addon.MAX_OBJECTIVES
     local showEllipsis = (questData.isAchievement or questData.isEndeavor) and questData.objectives and #questData.objectives > maxObjs
+
+    -- Progress bar: determine if the entry has exactly 1 arithmetic objective with numRequired > 1
+    local showProgressBar = addon.GetDB("showObjectiveProgressBar", false)
+    local progressBarObjIdx = nil
+    local progressBarNf, progressBarNr = nil, nil
+    if showProgressBar and questData.objectives then
+        local arithmeticCount = 0
+        local arithmeticIdx = nil
+        local arithmeticNf, arithmeticNr = nil, nil
+        for idx, o in ipairs(questData.objectives) do
+            if o.numFulfilled ~= nil and o.numRequired ~= nil and type(o.numFulfilled) == "number" and type(o.numRequired) == "number" and o.numRequired > 1 then
+                arithmeticCount = arithmeticCount + 1
+                arithmeticIdx = idx
+                arithmeticNf = o.numFulfilled
+                arithmeticNr = o.numRequired
+            end
+        end
+        if arithmeticCount == 1 then
+            progressBarObjIdx = arithmeticIdx
+            progressBarNf = arithmeticNf
+            progressBarNr = arithmeticNr
+        end
+    end
+
+    -- When the progress bar is active, flag the questData so the title renderer
+    -- can suppress its own (X/Y) to avoid duplication.
+    questData._progressBarActive = (progressBarObjIdx ~= nil)
+
+    local PROGRESS_BAR_SPACING = 3
+    -- Bar height is dynamic: font size + padding so the label fits inside.
+    local progBarFontSz = tonumber(addon.GetDB("progressBarFontSize", 10)) or 10
+    local PROGRESS_BAR_HEIGHT = math.max(8, progBarFontSz + 4)
+
+    -- Progress bar colors from DB
+    local progFillColor = addon.GetDB("progressBarFillColor", nil)
+    if not progFillColor or type(progFillColor) ~= "table" then progFillColor = { 0.40, 0.65, 0.90 } end
+    local progTextColor = addon.GetDB("progressBarTextColor", nil)
+    if not progTextColor or type(progTextColor) ~= "table" then progTextColor = { 0.95, 0.95, 0.95 } end
+
     local shownObjs = 0
     for j = 1, addon.MAX_OBJECTIVES do
         local obj = entry.objectives[j]
@@ -118,10 +157,12 @@ local function ApplyObjectives(entry, questData, textWidth, prevAnchor, totalH, 
         if oData then
             local objText = oData.text or ""
             local nf, nr = oData.numFulfilled, oData.numRequired
+            local thisObjHasBar = (progressBarObjIdx == j)
             -- Skip appending (X/Y) to objectives when the title already shows it (single-criterion numeric achievement).
+            -- Also skip when a progress bar is shown for this objective.
             local titleShowsNumeric = questData.numericQuantity ~= nil and questData.numericRequired and type(questData.numericRequired) == "number" and questData.numericRequired > 1
             local singleObjective = questData.objectives and #questData.objectives == 1
-            if nf ~= nil and nr ~= nil and type(nf) == "number" and type(nr) == "number" and nr > 1 and not (titleShowsNumeric and singleObjective) then
+            if not thisObjHasBar and nf ~= nil and nr ~= nil and type(nf) == "number" and type(nr) == "number" and nr > 1 and not (titleShowsNumeric and singleObjective) then
                 local pattern = tostring(nf) .. "/" .. tostring(nr)
                 if not objText:find(pattern, 1, true) then
                     objText = objText .. (" (%d/%d)"):format(nf, nr)
@@ -172,6 +213,46 @@ local function ApplyObjectives(entry, questData, textWidth, prevAnchor, totalH, 
             totalH = totalH + objSpacing + objH
 
             prevAnchor = obj.text
+
+            -- Progress bar for this objective
+            if thisObjHasBar and nf and nr and type(nf) == "number" and type(nr) == "number" and nr > 0 then
+                -- Bar width: subtract the left pad applied to THIS objective so it doesn't overflow the panel.
+                local barW = objTextWidth - leftPad
+                if barW < 20 then barW = objTextWidth end
+                local fraction = math.min(nf / nr, 1)
+                local fillW = math.max(1, barW * fraction)
+
+                obj.progressBarBg:ClearAllPoints()
+                obj.progressBarBg:SetPoint("TOPLEFT", obj.text, "BOTTOMLEFT", 0, -PROGRESS_BAR_SPACING)
+                obj.progressBarBg:SetSize(barW, PROGRESS_BAR_HEIGHT)
+                obj.progressBarBg:SetColorTexture(0.15, 0.15, 0.18, 0.7)
+                obj.progressBarBg:Show()
+
+                obj.progressBarFill:ClearAllPoints()
+                obj.progressBarFill:SetPoint("TOPLEFT", obj.progressBarBg, "TOPLEFT", 0, 0)
+                obj.progressBarFill:SetPoint("BOTTOMLEFT", obj.progressBarBg, "BOTTOMLEFT", 0, 0)
+                obj.progressBarFill:SetWidth(fillW)
+                obj.progressBarFill:SetColorTexture(progFillColor[1], progFillColor[2], progFillColor[3], 0.85)
+                obj.progressBarFill:Show()
+
+                -- Label: "X/Y (Z%)" centered INSIDE the bar
+                if obj.progressBarLabel then
+                    local pct = math.floor(100 * fraction)
+                    obj.progressBarLabel:SetText(("%d/%d (%d%%)"):format(nf, nr, pct))
+                    obj.progressBarLabel:SetTextColor(progTextColor[1], progTextColor[2], progTextColor[3], 1)
+                    obj.progressBarLabel:ClearAllPoints()
+                    obj.progressBarLabel:SetPoint("CENTER", obj.progressBarBg, "CENTER", 0, 0)
+                    obj.progressBarLabel:Show()
+                end
+
+                totalH = totalH + PROGRESS_BAR_SPACING + PROGRESS_BAR_HEIGHT
+                prevAnchor = obj.progressBarBg
+            else
+                if obj.progressBarBg then obj.progressBarBg:Hide() end
+                if obj.progressBarFill then obj.progressBarFill:Hide() end
+                if obj.progressBarLabel then obj.progressBarLabel:Hide() end
+            end
+
             shownObjs = shownObjs + 1
         else
             obj._hsFinished = nil
@@ -179,6 +260,9 @@ local function ApplyObjectives(entry, questData, textWidth, prevAnchor, totalH, 
             obj.text:Hide()
             obj.shadow:Hide()
             if obj.tick then obj.tick:Hide() end
+            if obj.progressBarBg then obj.progressBarBg:Hide() end
+            if obj.progressBarFill then obj.progressBarFill:Hide() end
+            if obj.progressBarLabel then obj.progressBarLabel:Hide() end
         end
     end
 
@@ -430,6 +514,18 @@ local function ApplyShadowColors(entry, questData, highlightStyle, hc, ha)
 end
 
 local function PopulateEntry(entry, questData, groupKey)
+    -- Pre-compute progress bar eligibility so the title renderer can suppress (X/Y).
+    questData._progressBarActive = false
+    if addon.GetDB("showObjectiveProgressBar", false) and questData.objectives then
+        local ac = 0
+        for _, o in ipairs(questData.objectives) do
+            if o.numFulfilled ~= nil and o.numRequired ~= nil and type(o.numFulfilled) == "number" and type(o.numRequired) == "number" and o.numRequired > 1 then
+                ac = ac + 1
+            end
+        end
+        if ac == 1 then questData._progressBarActive = true end
+    end
+
     local hasItem = (questData.itemTexture and questData.itemLink) and true or false
     local showItemBtn = hasItem and addon.GetDB("showQuestItemButtons", false)
     local showQuestIcons = addon.GetDB("showQuestTypeIcons", false)
@@ -524,7 +620,7 @@ local function PopulateEntry(entry, questData, groupKey)
     entry.titleShadow:SetWidth(textWidth)
 
     local displayTitle = questData.title
-    if (addon.GetDB("showCompletedCount", false) or questData.isAchievement or questData.isEndeavor) then
+    if not questData._progressBarActive and (addon.GetDB("showCompletedCount", false) or questData.isAchievement or questData.isEndeavor) then
         local done, total
         if questData.numericQuantity ~= nil and questData.numericRequired and type(questData.numericRequired) == "number" and questData.numericRequired > 1 then
             done, total = questData.numericQuantity, questData.numericRequired

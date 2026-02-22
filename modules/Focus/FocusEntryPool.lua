@@ -226,7 +226,23 @@ local function CreateQuestEntry(parent, index)
         tickTex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
         tickTex:Hide()
 
-        e.objectives[j] = { text = objText, shadow = objShadow, tick = tickTex }
+        local progBg = e:CreateTexture(nil, "BACKGROUND", nil, 2)
+        progBg:SetHeight(4)
+        progBg:SetColorTexture(0.15, 0.15, 0.18, 0.7)
+        progBg:Hide()
+
+        local progFill = e:CreateTexture(nil, "ARTWORK", nil, 2)
+        progFill:SetHeight(4)
+        progFill:SetColorTexture(0.40, 0.65, 0.90, 0.85)
+        progFill:Hide()
+
+        local progLabel = e:CreateFontString(nil, "OVERLAY")
+        progLabel:SetFontObject(addon.ProgressBarFont or addon.ObjFont)
+        progLabel:SetTextColor(0.9, 0.9, 0.9, 1)
+        progLabel:SetJustifyH("CENTER")
+        progLabel:Hide()
+
+        e.objectives[j] = { text = objText, shadow = objShadow, tick = tickTex, progressBarBg = progBg, progressBarFill = progFill, progressBarLabel = progLabel }
         objText:Hide()
         objShadow:Hide()
     end
@@ -428,11 +444,14 @@ local function UpdateFontObjectsFromDB()
     local zoneFontRaw    = addon.GetDB("zoneFontPath", GLOBAL_SENTINEL)
     local objFontRaw     = addon.GetDB("objectiveFontPath", GLOBAL_SENTINEL)
     local sectionFontRaw = addon.GetDB("sectionFontPath", GLOBAL_SENTINEL)
+    local progBarFontRaw = addon.GetDB("progressBarFontPath", GLOBAL_SENTINEL)
 
     local titleFont   = (titleFontRaw and titleFontRaw ~= GLOBAL_SENTINEL) and (addon.ResolveFontPath and addon.ResolveFontPath(titleFontRaw) or titleFontRaw) or fontPath
     local zoneFont    = (zoneFontRaw and zoneFontRaw ~= GLOBAL_SENTINEL) and (addon.ResolveFontPath and addon.ResolveFontPath(zoneFontRaw) or zoneFontRaw) or fontPath
     local objFont     = (objFontRaw and objFontRaw ~= GLOBAL_SENTINEL) and (addon.ResolveFontPath and addon.ResolveFontPath(objFontRaw) or objFontRaw) or fontPath
     local sectionFont = (sectionFontRaw and sectionFontRaw ~= GLOBAL_SENTINEL) and (addon.ResolveFontPath and addon.ResolveFontPath(sectionFontRaw) or sectionFontRaw) or fontPath
+    local progBarFont = (progBarFontRaw and progBarFontRaw ~= GLOBAL_SENTINEL) and (addon.ResolveFontPath and addon.ResolveFontPath(progBarFontRaw) or progBarFontRaw) or fontPath
+    local progBarSz   = tonumber(addon.GetDB("progressBarFontSize", 10)) or 10
 
     addon.FONT_PATH = fontPath
     addon.HeaderFont:SetFont(fontPath, headerSz, outline)
@@ -440,6 +459,9 @@ local function UpdateFontObjectsFromDB()
     addon.ObjFont:SetFont(objFont, objSz, outline)
     addon.ZoneFont:SetFont(zoneFont, zoneSz, outline)
     addon.SectionFont:SetFont(sectionFont, sectionSz, outline)
+    if addon.ProgressBarFont then
+        addon.ProgressBarFont:SetFont(progBarFont, progBarSz, outline)
+    end
 end
 
 local function ApplyTypography()
@@ -569,6 +591,9 @@ local function ClearEntry(entry, full)
                     if obj then
                         obj._hsFinished = nil
                         obj._hsAlpha = nil
+                        if obj.progressBarBg then obj.progressBarBg:Hide() end
+                        if obj.progressBarFill then obj.progressBarFill:Hide() end
+                        if obj.progressBarLabel then obj.progressBarLabel:Hide() end
                     end
                 end
             end
