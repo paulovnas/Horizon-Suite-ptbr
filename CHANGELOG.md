@@ -10,6 +10,39 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [2.5.0] – 2026-02-22
+
+### ✨ New Features
+
+- **(Focus) Scroll indicators when quest list is truncated** — Arrows or fade at top and bottom show when more content is available above or below.
+- **(Focus) Dungeon journal objectives in tracker** — Objectives tracked via the dungeon journal (checkmarked in the journal UI) now appear in the Focus tracker.
+- **(Focus) Achievement progress tracking** — Tracked achievements with numeric goals (e.g. harvest 250 lumber) now show live progress (e.g. 1/250, 200/250) in the tracker.
+- **(Presence) Setting to disable quest update notifications** — Option to turn off quest objective progress toasts (e.g. "Boar Pelts: 7/10") so they no longer distract during dungeons.
+- **(Focus) Option to always show Campaign and Important quests in their own categories** — Keep purple triangle quests in dedicated sections even after completion instead of moving to Current Zone or Ready to Turn In.
+- **(Focus) Font selector options for header, sections, and quest titles** — Customize typography for each element in the Typography section.
+- **(Focus) Preview mode for the M+ block** — Configure and position the Mythic+ block without being inside an active key.
+- **(Focus) Find group button for group quests** — Quick access to Group Finder for group quests in the tracker.
+- **(Focus) Option to show quest objective progress as a bar** — Display progress (e.g. 3/10, 45%) as a visual bar instead of raw numbers.
+
+### 🔧 Improvements
+
+- **(Focus) Objective progress bar toggle animates like other options** — Panel refresh is deferred so the toggle animates consistently with other toggles.
+- **(Core) Localization for typography font options in French, Korean, and Portuguese (Brazil)** — Title font, zone font, objective font, and section font labels are now localized.
+- **(Focus) Tracker mouseover detection and options panel UI** — Reliable hover detection over child frames; title bar drag only from the bar; section cards reset on open; improved toggle and dropdown styling.
+- **(Focus) Restructured options into clearer categories** — Panel, Display, Typography, Behaviour, Mythic+, Delves, and Content Types as dedicated sections.
+- **(Focus) Separate fonts for quest title, quest text, and zone text** — Choose different fonts for each element in the Typography section.
+
+### 🐛 Fixes
+
+- **(Focus)** Floating quest item button and per-entry quest item buttons now appear when quests have usable items.
+- **(Focus)** Dungeon eye icon now shows for world boss group finder entries.
+- **(Focus)** Disable world quests option now works correctly when World Quest Tracker is enabled.
+- **(Focus)** Achievements with many objectives no longer get cut off in the tracker.
+- **(Focus)** Category prefix now renders as a dash instead of a square across fonts.
+- **(Focus)** Quest items with cooldowns now update correctly when used in combat.
+
+---
+
 ## [2.4.0] – 2026-02-21
 
 ### 🔧 Improvements
