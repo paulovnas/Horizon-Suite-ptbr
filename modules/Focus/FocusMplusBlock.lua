@@ -153,42 +153,47 @@ local function GetMplusData()
         if level and level > 0 then
             data.level = level
         end
-        
-        -- Try multiple methods to get affixes
+
+        local activeLevel = data.level
         local affixesFound = false
-        
-        -- Method 1: From GetActiveKeystoneInfo
+
         if affixes and type(affixes) == "table" and #affixes > 0 then
-            for i = 1, #affixes do
-                local affixID = affixes[i]
-                if affixID and type(affixID) == "number" then
-                    if C_ChallengeMode.GetAffixInfo then
-                        local name, desc, iconFileID = C_ChallengeMode.GetAffixInfo(affixID)
-                        if name and name ~= "" then
-                            data.affixes[#data.affixes + 1] = { name = name, desc = desc or "", iconFileID = iconFileID }
-                            affixesFound = true
-                        end
+            for _, affixID in ipairs(affixes) do
+                if affixID and type(affixID) == "number" and C_ChallengeMode.GetAffixInfo then
+                    local name, desc, iconFileID = C_ChallengeMode.GetAffixInfo(affixID)
+                    if name and name ~= "" then
+                        data.affixes[#data.affixes + 1] = { name = name, desc = desc or "", iconFileID = iconFileID }
+                        affixesFound = true
                     end
                 end
             end
         end
-        
-        -- Method 2: Try C_MythicPlus.GetCurrentAffixes() if available
+
         if not affixesFound and C_MythicPlus and C_MythicPlus.GetCurrentAffixes then
+            local AFFIX_LEVEL_THRESHOLDS = { 4, 7, 10, 12 }
             local currentAffixes = C_MythicPlus.GetCurrentAffixes()
-            if currentAffixes and type(currentAffixes) == "table" then
-                for _, affixInfo in ipairs(currentAffixes) do
+            if currentAffixes and type(currentAffixes) == "table" and #currentAffixes > 0 then
+                local hasReplacement = (#currentAffixes >= 4) and (activeLevel >= AFFIX_LEVEL_THRESHOLDS[4])
+                for idx, affixInfo in ipairs(currentAffixes) do
                     if affixInfo and affixInfo.id then
-                        local name, desc, iconFileID = C_ChallengeMode.GetAffixInfo(affixInfo.id)
-                        if name and name ~= "" then
-                            data.affixes[#data.affixes + 1] = { name = name, desc = desc or "", iconFileID = iconFileID }
-                            affixesFound = true
+                        local threshold = AFFIX_LEVEL_THRESHOLDS[idx]
+                        if threshold and activeLevel >= threshold then
+                            -- Position 1 is replaced by position 4 at level 12+
+                            if idx == 1 and hasReplacement then
+                                -- skip: position 4 takes its place
+                            else
+                                local name, desc, iconFileID = C_ChallengeMode.GetAffixInfo(affixInfo.id)
+                                if name and name ~= "" then
+                                    data.affixes[#data.affixes + 1] = { name = name, desc = desc or "", iconFileID = iconFileID }
+                                    affixesFound = true
+                                end
+                            end
                         end
                     end
                 end
             end
         end
-        
+
         -- Method 3: Affixes may not be available until key is inserted; leave empty if so.
     end
 
