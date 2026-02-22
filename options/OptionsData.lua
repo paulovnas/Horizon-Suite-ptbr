@@ -675,6 +675,9 @@ local OptionCategories = {
                 if addon.ApplyTypography then addon.ApplyTypography() end
                 if addon.ApplyDimensions then addon.ApplyDimensions() end
                 if addon.ApplyMplusTypography then addon.ApplyMplusTypography() end
+                if addon.Presence and addon.Presence.ApplyPresenceOptions then addon.Presence.ApplyPresenceOptions() end
+                if addon.Vista and addon.Vista.ApplyScale then addon.Vista.ApplyScale() end
+                if addon.Yield and addon.Yield.ApplyScale then addon.Yield.ApplyScale() end
                 if _G.HorizonSuite_FullLayout and not InCombatLockdown() then _G.HorizonSuite_FullLayout() end
             end }
             return opts

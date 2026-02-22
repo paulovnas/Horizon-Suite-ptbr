@@ -192,7 +192,8 @@ local function SetupMinimap()
         end)
     end
 
-    proxy.SetScale(Minimap, scale or 1.0)
+    local globalScale = (addon.GetUIScale and addon.GetUIScale()) or 1
+    proxy.SetScale(Minimap, (scale or 1.0) * globalScale)
 
     Minimap:Show()
     Minimap:SetAlpha(1)
@@ -790,7 +791,8 @@ SlashCmdList["HORIZONSUITEVISTA"] = function(msg)
         if val then
             val = math.max(0.5, math.min(2.0, val))
             addon.SetDB("vistaScale", val)
-            proxy.SetScale(Minimap, val)
+            local globalScale = (addon.GetUIScale and addon.GetUIScale()) or 1
+            proxy.SetScale(Minimap, val * globalScale)
             print("|cFF00CCFFHorizon Suite Vista:|r Scale set to " .. format("%.2f", val))
         else
             local cur = addon.GetDB("vistaScale", 1)
@@ -830,6 +832,14 @@ SlashCmdList["HORIZONSUITEVISTA"] = function(msg)
         print("  /mmm toggle       - Enable / disable minimap")
         print("  /mmm buttons      - Re-scan minimap buttons")
     end
+end
+
+--- Re-apply minimap scale (e.g. after global UI scale change).
+function Vista.ApplyScale()
+    if not Minimap then return end
+    local scale = (addon.GetDB and addon.GetDB("vistaScale", 1.0)) or 1.0
+    local globalScale = (addon.GetUIScale and addon.GetUIScale()) or 1
+    proxy.SetScale(Minimap, (scale or 1.0) * globalScale)
 end
 
 addon.Vista = Vista
