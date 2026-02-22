@@ -77,6 +77,9 @@ end
 local eventFrame = CreateFrame("Frame")
 local eventsRegistered = false
 
+--- Tracks the last zone name shown by Presence, used to detect same-zone subzone transitions.
+local lastKnownZone = nil
+
 --- True when we should suppress non-essential Presence notifications in Mythic+ (zone, quest, scenario).
 local function ShouldSuppressInMplus()
     return addon.GetDB and addon.GetDB("presenceSuppressZoneInMplus", true) and addon.IsInMythicDungeon and addon.IsInMythicDungeon()
@@ -584,6 +587,8 @@ local function TryShowScenarioStart()
 end
 
 local function OnPlayerEnteringWorld()
+    -- Seed zone name for subzone-only display feature
+    lastKnownZone = GetZoneText() or nil
     if not addon.Presence._scenarioInitDone then
         addon.Presence._scenarioInitDone = true
         -- Delve objective update disabled; don't treat delve as scenario for this flow
@@ -617,6 +622,7 @@ end
 local function OnZoneChangedNewArea()
     local zone = GetZoneText() or "Unknown Zone"
     local sub  = GetSubZoneText() or ""
+    lastKnownZone = zone
     local wait = addon.Presence.DISCOVERY_WAIT or 0.15
     C_Timer.After(wait, function()
         if not addon:IsModuleEnabled("presence") then return end
@@ -686,7 +692,16 @@ local function OnZoneChanged()
                     opts.category = "DUNGEON"
                 end
                 opts.source = "ZONE_CHANGED"
-                addon.Presence.QueueOrPlay("SUBZONE_CHANGE", StripPresenceMarkup(zone), StripPresenceMarkup(displaySub), opts)
+
+                -- When "Hide zone name for subzone changes" is on and we're still in the
+                -- same zone, promote the subzone to the title and leave subtitle empty.
+                local hideZoneForSubzone = addon.GetDB and addon.GetDB("presenceHideZoneForSubzone", false)
+                local sameZone = lastKnownZone and zone ~= "" and zone == lastKnownZone
+                if hideZoneForSubzone and sameZone then
+                    addon.Presence.QueueOrPlay("SUBZONE_CHANGE", StripPresenceMarkup(displaySub), "", opts)
+                else
+                    addon.Presence.QueueOrPlay("SUBZONE_CHANGE", StripPresenceMarkup(zone), StripPresenceMarkup(displaySub), opts)
+                end
             end
         end)
     end
