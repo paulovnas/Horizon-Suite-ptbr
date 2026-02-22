@@ -1098,6 +1098,7 @@ local function HandleScroll(delta)
     local lo = addon.focus.layout
     lo.scrollOffset = math.max(0, math.min(lo.scrollOffset - delta * addon.SCROLL_STEP, maxScr))
     scrollFrame:SetVerticalScroll(lo.scrollOffset)
+    if addon.UpdateScrollIndicators then addon.UpdateScrollIndicators() end
 end
 
 scrollFrame:EnableMouseWheel(true)
@@ -1105,6 +1106,212 @@ scrollFrame:SetScript("OnMouseWheel", function(_, delta) HandleScroll(delta) end
 
 HS:EnableMouseWheel(true)
 HS:SetScript("OnMouseWheel", function(_, delta) HandleScroll(delta) end)
+
+-- =========================================================================
+-- Scroll overflow indicators (entry fade + arrow)
+-- =========================================================================
+local SCROLL_FADE_ZONE   = 48   -- px from viewport edge where fade begins
+local SCROLL_FADE_MIN    = 0.08 -- minimum alpha at the very edge
+local SCROLL_ARROW_SIZE  = 20
+
+-- Arrow indicators using built-in WoW arrow textures (Buttons for click support)
+local arrowBottomFrame = CreateFrame("Button", nil, HS)
+arrowBottomFrame:SetSize(SCROLL_ARROW_SIZE, SCROLL_ARROW_SIZE)
+arrowBottomFrame:SetPoint("BOTTOMRIGHT", HS, "BOTTOMRIGHT", -4, addon.PADDING - 2)
+arrowBottomFrame:SetFrameStrata("HIGH")
+arrowBottomFrame:SetFrameLevel(HS:GetFrameLevel() + 20)
+arrowBottomFrame:Hide()
+local arrowBottomTex = arrowBottomFrame:CreateTexture(nil, "OVERLAY")
+arrowBottomTex:SetAllPoints()
+arrowBottomTex:SetTexture("Interface\\BUTTONS\\Arrow-Down-Up")
+arrowBottomTex:SetAlpha(0.60)
+arrowBottomTex:SetDesaturated(true)
+arrowBottomFrame:SetScript("OnClick", function()
+    if InCombatLockdown() then return end
+    local childH = scrollChild:GetHeight() or 0
+    local frameH = scrollFrame:GetHeight() or 0
+    local maxScr = math.max(childH - frameH, 0)
+    local lo = addon.focus.layout
+    lo.scrollOffset = maxScr
+    scrollFrame:SetVerticalScroll(lo.scrollOffset)
+    if addon.UpdateScrollIndicators then addon.UpdateScrollIndicators() end
+end)
+arrowBottomFrame:SetScript("OnEnter", function() arrowBottomTex:SetAlpha(1) end)
+arrowBottomFrame:SetScript("OnLeave", function() arrowBottomTex:SetAlpha(0.60) end)
+
+local arrowTopFrame = CreateFrame("Button", nil, HS)
+arrowTopFrame:SetSize(SCROLL_ARROW_SIZE, SCROLL_ARROW_SIZE)
+arrowTopFrame:SetPoint("TOPRIGHT", HS, "TOPRIGHT", -4, -(addon.PADDING + addon.GetHeaderHeight() + addon.DIVIDER_HEIGHT + addon.GetHeaderToContentGap() - 2))
+arrowTopFrame:SetFrameStrata("HIGH")
+arrowTopFrame:SetFrameLevel(HS:GetFrameLevel() + 20)
+arrowTopFrame:Hide()
+local arrowTopTex = arrowTopFrame:CreateTexture(nil, "OVERLAY")
+arrowTopTex:SetAllPoints()
+arrowTopTex:SetTexture("Interface\\BUTTONS\\Arrow-Up-Up")
+arrowTopTex:SetAlpha(0.60)
+arrowTopTex:SetDesaturated(true)
+arrowTopFrame:SetScript("OnClick", function()
+    if InCombatLockdown() then return end
+    local lo = addon.focus.layout
+    lo.scrollOffset = 0
+    scrollFrame:SetVerticalScroll(0)
+    if addon.UpdateScrollIndicators then addon.UpdateScrollIndicators() end
+end)
+arrowTopFrame:SetScript("OnEnter", function() arrowTopTex:SetAlpha(1) end)
+arrowTopFrame:SetScript("OnLeave", function() arrowTopTex:SetAlpha(0.60) end)
+
+--- Compute fade alpha for an entry based on how close it is to being clipped
+--- at a viewport edge. Only fades toward edges where there IS more content.
+---
+--- Coordinate system: Y=0 at scrollChild top, negative downward.
+---   entryTop (finalY) is e.g. -50 for an entry 50px below the top.
+---   viewTop = -scrollOffset (0 when not scrolled, more negative as you scroll down)
+---   viewBottom = -(scrollOffset + frameHeight)
+---
+--- "About to scroll off the top" means entryTop is approaching viewTop from below.
+--- "About to scroll off the bottom" means entryBottom is approaching viewBottom from above.
+local function ComputeEdgeFadeAlpha(entryTop, entryH, trailingSpace, leadingSpace, viewTop, viewBottom, fadeZone, fadeAtTop, fadeAtBottom)
+    local entryBottom = entryTop - entryH
+    local alpha = 1
+
+    -- Fade near the TOP viewport edge (entry scrolling upward out of view).
+    -- As the entry scrolls up, entryTop approaches and then exceeds viewTop.
+    -- We want to start fading when entryTop (plus its leading gap) enters the fade zone.
+    -- distToTopClip = how far the entry's top is below the viewport top.
+    --   Large positive = safely inside; small positive = near the edge; negative = already clipped.
+    if fadeAtTop then
+        local distToTopClip = viewTop - (entryTop + leadingSpace)
+        -- distToTopClip: negative when entry top is below viewTop (safe),
+        --                positive when entry top is above viewTop (clipped).
+        -- We want to fade when the entry is *near* being clipped, i.e. when
+        -- distToTopClip is close to 0 from the negative side, or positive.
+        -- Remap: how many px of entry remain below the viewport top?
+        local pxInsideFromTop = entryBottom - viewTop  -- negative means more inside
+        -- When pxInsideFromTop is close to 0, almost none of the entry is visible.
+        -- It's negative and large when the entry is fully visible.
+        -- We want: fade when |pxInsideFromTop| < fadeZone and it's negative (entry mostly gone)
+        local visibleFromTop = -(pxInsideFromTop)  -- positive = how much is visible below viewTop
+        if visibleFromTop >= 0 and visibleFromTop < fadeZone then
+            local t = visibleFromTop / fadeZone
+            -- Quadratic curve: fades more aggressively at the start of the zone
+            alpha = math.min(alpha, SCROLL_FADE_MIN + (1 - SCROLL_FADE_MIN) * (t * t))
+        elseif visibleFromTop < 0 then
+            -- Entry is fully above viewport top; shouldn't happen for shown entries, but clamp
+            alpha = SCROLL_FADE_MIN
+        end
+    end
+
+    -- Fade near the BOTTOM viewport edge (entry scrolling downward out of view).
+    -- As the entry scrolls down toward the bottom, entryBottom approaches viewBottom.
+    -- visibleFromBottom = how much of the entry (from its top) remains above the viewport bottom.
+    if fadeAtBottom then
+        local visibleFromBottom = (entryTop - trailingSpace) - viewBottom
+        -- Large positive = plenty visible; approaching 0 = almost clipped off.
+        if visibleFromBottom >= 0 and visibleFromBottom < fadeZone then
+            local t = visibleFromBottom / fadeZone
+            -- Quadratic curve: fades more aggressively at the start of the zone
+            alpha = math.min(alpha, SCROLL_FADE_MIN + (1 - SCROLL_FADE_MIN) * (t * t))
+        elseif visibleFromBottom < 0 then
+            alpha = SCROLL_FADE_MIN
+        end
+    end
+
+    return math.max(SCROLL_FADE_MIN, math.min(1, alpha))
+end
+
+local function ApplyScrollFade(entry, viewTop, viewBottom, fadeZone, fadeAtTop, fadeAtBottom)
+    if not entry or not entry.IsShown or not entry:IsShown() then return end
+    local entryTop = entry.finalY
+    if not entryTop then return end
+    local entryH = entry.entryHeight or entry:GetHeight() or 0
+    local trailingSpace = entry._scrollFadeSpacing or 0
+    local leadingSpace  = entry._scrollFadeLeadingGap or 0
+    local alpha = ComputeEdgeFadeAlpha(entryTop, entryH, trailingSpace, leadingSpace, viewTop, viewBottom, fadeZone, fadeAtTop, fadeAtBottom)
+    entry:SetAlpha(alpha)
+    entry._scrollFadeAlpha = alpha
+end
+
+local function ClearEdgeFade(entry)
+    if not entry then return end
+    if entry._scrollFadeAlpha then
+        entry:SetAlpha(1)
+        entry._scrollFadeAlpha = nil
+    end
+end
+
+local function ClearAllFades()
+    if addon.pool then
+        for i = 1, addon.POOL_SIZE do
+            if addon.pool[i] then ClearEdgeFade(addon.pool[i]) end
+        end
+    end
+    if addon.sectionPool then
+        for i = 1, addon.SECTION_POOL_SIZE do
+            if addon.sectionPool[i] then ClearEdgeFade(addon.sectionPool[i]) end
+        end
+    end
+end
+
+function addon.UpdateScrollIndicators()
+    local enabled = addon.GetDB("showScrollIndicator", false)
+
+    local childH = scrollChild:GetHeight() or 0
+    local frameH = scrollFrame:GetHeight() or 0
+    local maxScr = math.max(childH - frameH, 0)
+    local curScr = addon.focus.layout.scrollOffset or 0
+
+    local canScrollDown = maxScr > 0 and curScr < (maxScr - 1)
+    local canScrollUp   = curScr > 1
+
+    -- Nothing to scroll or feature disabled: clean up
+    if not enabled or maxScr <= 0 then
+        arrowBottomFrame:Hide()
+        arrowTopFrame:Hide()
+        ClearAllFades()
+        return
+    end
+
+    local mode = addon.GetDB("scrollIndicatorStyle", "fade")
+
+    if mode == "fade" then
+        arrowBottomFrame:Hide()
+        arrowTopFrame:Hide()
+
+        -- Viewport in scrollChild coordinates (Y is negative downward, 0 at top)
+        local viewTop    = -curScr
+        local viewBottom = -(curScr + frameH)
+
+        -- Only fade at edges where there's actually content to scroll to
+        local fadeAtTop    = canScrollUp
+        local fadeAtBottom = canScrollDown
+
+        if addon.pool then
+            for i = 1, addon.POOL_SIZE do
+                local e = addon.pool[i]
+                if e and e:IsShown() and (e.questID or e.entryKey) and e.finalY then
+                    ApplyScrollFade(e, viewTop, viewBottom, SCROLL_FADE_ZONE, fadeAtTop, fadeAtBottom)
+                else
+                    if e then ClearEdgeFade(e) end
+                end
+            end
+        end
+        if addon.sectionPool then
+            for i = 1, addon.SECTION_POOL_SIZE do
+                local s = addon.sectionPool[i]
+                if s and s:IsShown() and s.active and s.finalY then
+                    ApplyScrollFade(s, viewTop, viewBottom, SCROLL_FADE_ZONE, fadeAtTop, fadeAtBottom)
+                else
+                    if s then ClearEdgeFade(s) end
+                end
+            end
+        end
+    else
+        -- Arrow mode: clear any lingering fade, show arrows
+        ClearAllFades()
+        if canScrollDown then arrowBottomFrame:Show() else arrowBottomFrame:Hide() end
+        if canScrollUp   then arrowTopFrame:Show()    else arrowTopFrame:Hide()    end
+    end
+end
 
 HS:SetMovable(true)
 HS:EnableMouse(true)

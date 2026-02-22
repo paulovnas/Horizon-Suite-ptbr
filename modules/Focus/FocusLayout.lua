@@ -406,6 +406,7 @@ local function FullLayout()
                 scrollChild:SetHeight(totalContentH)
                 scrollFrame:SetVerticalScroll(0)
                 addon.focus.layout.scrollOffset = 0
+                if addon.UpdateScrollIndicators then addon.UpdateScrollIndicators() end
                 local headerArea = addon.PADDING + addon.GetHeaderHeight() + addon.DIVIDER_HEIGHT + addon.GetHeaderToContentGap()
                 local visibleH = math.min(totalContentH, addon.GetMaxContentHeight())
                 local blockHeight = (hasMplus and addon.GetMplusBlockHeight and (addon.GetMplusBlockHeight() + gap * 2)) or 0
@@ -687,8 +688,10 @@ local function FullLayout()
         end
 
         if showSections then
+            local sectionGap = 0
             if gi > 1 then
-                yOff = yOff - addon.GetSectionSpacing()
+                sectionGap = addon.GetSectionSpacing()
+                yOff = yOff - sectionGap
             end
             local sec = addon.AcquireSectionHeader(grp.key, focusedGroupKey)
             if sec then
@@ -696,6 +699,8 @@ local function FullLayout()
                 local x = addon.PADDING
                 sec:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", x, yOff)
                 sec.finalX, sec.finalY = x, yOff
+                sec._scrollFadeSpacing = addon.GetSectionToEntryGap()
+                sec._scrollFadeLeadingGap = sectionGap
                 yOff = yOff - addon.GetSectionHeaderHeight() - addon.GetSectionToEntryGap()
             end
         end
@@ -777,6 +782,7 @@ local function FullLayout()
                     end
 
                     entry:Show()
+                    entry._scrollFadeSpacing = entrySpacing
                     yOff = yOff - entry.entryHeight - entrySpacing
                 end
             end
@@ -821,6 +827,7 @@ local function FullLayout()
     local maxScr = math.max(totalContentH - frameH, 0)
     addon.focus.layout.scrollOffset = math.min(prevScroll, maxScr)
     scrollFrame:SetVerticalScroll(addon.focus.layout.scrollOffset)
+    if addon.UpdateScrollIndicators then addon.UpdateScrollIndicators() end
 
     local headerArea    = addon.PADDING + addon.GetHeaderHeight() + addon.DIVIDER_HEIGHT + addon.GetHeaderToContentGap()
     local visibleH      = math.min(totalContentH, addon.GetMaxContentHeight())
