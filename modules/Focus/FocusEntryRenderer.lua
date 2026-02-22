@@ -77,16 +77,17 @@ local function ApplyHighlightStyle(entry, questData)
 end
 
 local function ApplyObjectives(entry, questData, textWidth, prevAnchor, totalH, c, effectiveCat)
+    local S = addon.Scaled or function(v) return v end
     local objIndent = addon.GetObjIndent()
     -- Indentation now comes from the entry's padded title anchor; keep objective indent consistent.
 
     -- Additional left padding for objectives only (not zone line), matching bar->icon gap when icons are enabled.
-    local OBJ_EXTRA_LEFT_PAD = 14
+    local OBJ_EXTRA_LEFT_PAD = S(14)
 
     local objTextWidth = textWidth - objIndent
-    if objTextWidth < 1 then objTextWidth = addon.GetPanelWidth() - addon.PADDING * 2 - objIndent - (addon.CONTENT_RIGHT_PADDING or 0) end
+    if objTextWidth < 1 then objTextWidth = addon.GetPanelWidth() - S(addon.PADDING) * 2 - objIndent - S(addon.CONTENT_RIGHT_PADDING or 0) end
 
-    local objSpacing = ((questData.category == "DELVES" or questData.category == "DUNGEON") and addon.DELVE_OBJ_SPACING) or addon.GetObjSpacing()
+    local objSpacing = ((questData.category == "DELVES" or questData.category == "DUNGEON") and S(addon.DELVE_OBJ_SPACING)) or addon.GetObjSpacing()
 
     local cat = (effectiveCat ~= nil and effectiveCat ~= "") and effectiveCat or questData.category
     local objColor = (addon.GetObjectiveColor and addon.GetObjectiveColor(cat)) or addon.OBJ_COLOR or c
@@ -128,10 +129,10 @@ local function ApplyObjectives(entry, questData, textWidth, prevAnchor, totalH, 
     -- can suppress its own (X/Y) to avoid duplication.
     questData._progressBarActive = (progressBarObjIdx ~= nil)
 
-    local PROGRESS_BAR_SPACING = 3
+    local PROGRESS_BAR_SPACING = S(3)
     -- Bar height is dynamic: font size + padding so the label fits inside.
     local progBarFontSz = tonumber(addon.GetDB("progressBarFontSize", 10)) or 10
-    local PROGRESS_BAR_HEIGHT = math.max(8, progBarFontSz + 4)
+    local PROGRESS_BAR_HEIGHT = S(math.max(8, progBarFontSz + 4))
 
     -- Progress bar fill color: category color when option on, else custom from DB
     local progFillColor
@@ -351,12 +352,13 @@ local function ApplyScenarioOrWQTimerBar(entry, questData, textWidth, prevAnchor
         return totalH
     end
 
+    local S = addon.Scaled or function(v) return v end
     local objIndent = addon.GetObjIndent()
     local barW = textWidth - objIndent
-    if barW < 40 then barW = addon.GetPanelWidth() - addon.PADDING * 2 - objIndent - (addon.CONTENT_RIGHT_PADDING or 0) end
-    local barH = addon.WQ_TIMER_BAR_HEIGHT or 6
+    if barW < 40 then barW = addon.GetPanelWidth() - S(addon.PADDING) * 2 - objIndent - S(addon.CONTENT_RIGHT_PADDING or 0) end
+    local barH = S(addon.WQ_TIMER_BAR_HEIGHT or 6)
     local spacing = addon.GetObjSpacing()
-    local scenarioBarTopMargin = isScenario and 4 or 0
+    local scenarioBarTopMargin = isScenario and S(4) or 0
     local scenarioFirstElementPlaced = false
 
     local showBar
@@ -539,17 +541,19 @@ local function PopulateEntry(entry, questData, groupKey)
     local hasIcon = ((questData.questTypeAtlas ~= nil) and showQuestIcons) or (questData.isAchievement and questData.achievementIcon and showQuestIcons and showAchievementIcons) or (questData.isDecor and questData.decorIcon and showQuestIcons and showDecorIcons)
     local isOffMapWorld = (questData.category == "WORLD") and questData.isTracked and not questData.isNearby
 
-    local leftOffset = addon.GetContentLeftOffset and addon.GetContentLeftOffset() or (addon.PADDING + addon.ICON_COLUMN_WIDTH)
-    local textWidth = addon.GetPanelWidth() - addon.PADDING - leftOffset - (addon.CONTENT_RIGHT_PADDING or 0)
+    local S = addon.Scaled or function(v) return v end
+    local leftOffset = addon.GetContentLeftOffset and addon.GetContentLeftOffset() or S(addon.PADDING + addon.ICON_COLUMN_WIDTH)
+    local textWidth = addon.GetPanelWidth() - S(addon.PADDING) - leftOffset - S(addon.CONTENT_RIGHT_PADDING or 0)
     local titleLeftOffset = 0
 
     -- Right-side gutter: auto-adjusting column that holds the LFG group button
     -- and/or the quest item button.  The gutter width adapts to whichever
     -- combination is needed so everything is right-aligned.
+    local S = addon.Scaled or function(v) return v end
     local showLfgBtn  = questData.isGroupQuest and entry.lfgBtn and true or false
-    local lfgBtnSize  = addon.LFG_BTN_SIZE or 26
-    local itemBtnSize = addon.ITEM_BTN_SIZE or 26
-    local gutterGap   = addon.LFG_BTN_GAP or 4  -- gap between text and gutter, and between buttons
+    local lfgBtnSize  = S(addon.LFG_BTN_SIZE or 26)
+    local itemBtnSize = S(addon.ITEM_BTN_SIZE or 26)
+    local gutterGap   = S(addon.LFG_BTN_GAP or 4)  -- gap between text and gutter, and between buttons
     local gutterW     = 0
     if showItemBtn and showLfgBtn then
         gutterW = itemBtnSize + gutterGap + lfgBtnSize + gutterGap
@@ -570,10 +574,10 @@ local function PopulateEntry(entry, questData, groupKey)
         local extraTitlePad = 0
         if showQuestIcons then
             local highlightStyle = addon.NormalizeHighlightStyle(addon.GetDB("activeQuestHighlight", "bar-left")) or "bar-left"
-            local iconW = addon.QUEST_TYPE_ICON_SIZE or 14
-            local iconTitleGap = 6
+            local iconW = S(addon.QUEST_TYPE_ICON_SIZE or 14)
+            local iconTitleGap = S(6)
             if highlightStyle == "bar-left" or highlightStyle == "pill-left" then
-                local barLeft = addon.BAR_LEFT_OFFSET or 12
+                local barLeft = S(addon.BAR_LEFT_OFFSET or 12)
                 local barW = math.max(2, math.min(6, tonumber(addon.GetDB("highlightBarWidth", 2)) or 2))
                 local padAfterBar = 6
                 local iconLeft = -barLeft + barW + padAfterBar
@@ -739,7 +743,7 @@ local function PopulateEntry(entry, questData, groupKey)
     -- Cache the font-scaled "two spaces" width (measured from the title font) once per entry render.
     local twoSpacesPx = addon.focus and addon.focus.layout and addon.focus.layout.twoSpacesPx
     local titleIndentPx = addon.focus and addon.focus.layout and addon.focus.layout.titleIndentPx
-    local titleToContentSpacing = ((questData.category == "DELVES" or questData.category == "DUNGEON") and addon.DELVE_OBJ_SPACING) or addon.GetObjSpacing()
+    local titleToContentSpacing = ((questData.category == "DELVES" or questData.category == "DUNGEON") and S(addon.DELVE_OBJ_SPACING)) or addon.GetObjSpacing()
     local showZoneLabels = addon.GetDB("showZoneLabels", true)
     local playerZone = addon.GetPlayerCurrentZoneName and addon.GetPlayerCurrentZoneName() or nil
     local inCurrentZone = questData.isNearby or (questData.zoneName and playerZone and questData.zoneName:lower() == playerZone:lower())
@@ -793,7 +797,7 @@ local function PopulateEntry(entry, questData, groupKey)
         local rawFont = addon.GetDB("fontPath", (addon.GetDefaultFontPath and addon.GetDefaultFontPath()) or "Fonts\\FRIZQT__.TTF")
         local fontPath = (addon.ResolveFontPath and addon.ResolveFontPath(rawFont)) or rawFont
         local fontOutline = addon.GetDB("fontOutline", "OUTLINE")
-        local affixSize = math.max(10, math.min(16, tonumber(addon.GetDB("mplusAffixSize", 12)) or 12))
+        local affixSize = S(math.max(10, math.min(16, tonumber(addon.GetDB("mplusAffixSize", 12)) or 12)))
         entry.affixText:SetWidth(textWidth)
         entry.affixText:SetFont(fontPath, affixSize, fontOutline)
         entry.affixText:SetText(affixStr)
@@ -823,15 +827,15 @@ local function PopulateEntry(entry, questData, groupKey)
 
     ApplyShadowColors(entry, questData, highlightStyle, hc, ha)
 
-    local trackBarW = (highlightStyle == "pill-left") and barW or 2
+    local trackBarW = (highlightStyle == "pill-left") and barW or S(2)
     if (highlightStyle == "bar-left" or highlightStyle == "bar-right" or highlightStyle == "pill-left") and entry.trackBar:IsShown() then
         entry.trackBar:ClearAllPoints()
         if highlightStyle == "bar-left" or highlightStyle == "pill-left" then
-            local barLeft = addon.BAR_LEFT_OFFSET or 12
+            local barLeft = S(addon.BAR_LEFT_OFFSET or 12)
             entry.trackBar:SetPoint("TOPLEFT", entry, "TOPLEFT", -barLeft, 0)
             entry.trackBar:SetPoint("BOTTOMRIGHT", entry, "BOTTOMLEFT", -barLeft + trackBarW, 0)
         else
-            local barInsetRight = addon.ICON_COLUMN_WIDTH - addon.PADDING + 4
+            local barInsetRight = S(addon.ICON_COLUMN_WIDTH) - S(addon.PADDING) + S(4)
             entry.trackBar:SetPoint("TOPRIGHT", entry, "TOPRIGHT", -barInsetRight, 0)
             entry.trackBar:SetPoint("BOTTOMLEFT", entry, "BOTTOMRIGHT", -barInsetRight - trackBarW, 0)
         end

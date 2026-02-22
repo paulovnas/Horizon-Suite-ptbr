@@ -14,7 +14,8 @@ local activeMap = {}
 
 local function CreateQuestEntry(parent, index)
     local e = CreateFrame("Frame", nil, parent)
-    local w = addon.GetPanelWidth() - addon.PADDING * 2
+    local _S = addon.Scaled or function(v) return v end
+    local w = addon.GetPanelWidth() - _S(addon.PADDING) * 2
     local textW = w
     e:SetSize(w, 20)
 
@@ -68,7 +69,7 @@ local function CreateQuestEntry(parent, index)
     -- Anchor is set dynamically by the renderer; default to top-right of entry.
     local btnName = "HSItemBtn" .. index
     e.itemBtn = CreateFrame("Button", btnName, e, "SecureActionButtonTemplate")
-    e.itemBtn:SetSize(addon.ITEM_BTN_SIZE, addon.ITEM_BTN_SIZE)
+    e.itemBtn:SetSize(_S(addon.ITEM_BTN_SIZE), _S(addon.ITEM_BTN_SIZE))
     e.itemBtn:SetPoint("TOPRIGHT", e, "TOPRIGHT", 0, 2)
     e.itemBtn:SetAttribute("type", "item")
     e.itemBtn:RegisterForClicks("AnyDown", "AnyUp")
@@ -101,16 +102,17 @@ local function CreateQuestEntry(parent, index)
 
     e.itemBtn:Hide()
 
+    local _S = addon.Scaled or function(v) return v end
     e.questTypeIcon = e:CreateTexture(nil, "ARTWORK")
-    e.questTypeIcon:SetSize(addon.QUEST_TYPE_ICON_SIZE, addon.QUEST_TYPE_ICON_SIZE)
-    local iconRight = (addon.BAR_LEFT_OFFSET or 12) + 2
+    e.questTypeIcon:SetSize(_S(addon.QUEST_TYPE_ICON_SIZE), _S(addon.QUEST_TYPE_ICON_SIZE))
+    local iconRight = _S((addon.BAR_LEFT_OFFSET or 12) + 2)
     e.questTypeIcon:SetPoint("TOPRIGHT", e, "TOPLEFT", -iconRight, 0)
     e.questTypeIcon:Hide()
 
     -- Join Group (LFG) button: shown for group-type quests.
     -- Positioned on the RIGHT side of the entry in its own column so it never
     -- overlaps the supertrack bar or gets clipped by the scroll frame.
-    local lfgBtnSize = addon.LFG_BTN_SIZE or 26
+    local lfgBtnSize = _S(addon.LFG_BTN_SIZE or 26)
     e.lfgBtn = CreateFrame("Button", nil, e)
     e.lfgBtn:SetSize(lfgBtnSize, lfgBtnSize)
     -- Anchor is set dynamically by the renderer; default to top-right of entry.
@@ -377,7 +379,8 @@ local sectionPool = {}
 
 local function CreateSectionHeader(parent)
     local s = CreateFrame("Button", nil, parent)
-    s:SetSize(addon.GetPanelWidth() - addon.PADDING * 2, addon.GetSectionHeaderHeight())
+    local _S = addon.Scaled or function(v) return v end
+    s:SetSize(addon.GetPanelWidth() - _S(addon.PADDING) * 2, addon.GetSectionHeaderHeight())
 
     s:RegisterForClicks("LeftButtonUp")
 
@@ -454,13 +457,14 @@ local function UpdateFontObjectsFromDB()
     local progBarSz   = tonumber(addon.GetDB("progressBarFontSize", 10)) or 10
 
     addon.FONT_PATH = fontPath
-    addon.HeaderFont:SetFont(fontPath, headerSz, outline)
-    addon.TitleFont:SetFont(titleFont, titleSz, outline)
-    addon.ObjFont:SetFont(objFont, objSz, outline)
-    addon.ZoneFont:SetFont(zoneFont, zoneSz, outline)
-    addon.SectionFont:SetFont(sectionFont, sectionSz, outline)
+    local S = addon.Scaled or function(v) return v end
+    addon.HeaderFont:SetFont(fontPath, S(headerSz), outline)
+    addon.TitleFont:SetFont(titleFont, S(titleSz), outline)
+    addon.ObjFont:SetFont(objFont, S(objSz), outline)
+    addon.ZoneFont:SetFont(zoneFont, S(zoneSz), outline)
+    addon.SectionFont:SetFont(sectionFont, S(sectionSz), outline)
     if addon.ProgressBarFont then
-        addon.ProgressBarFont:SetFont(progBarFont, progBarSz, outline)
+        addon.ProgressBarFont:SetFont(progBarFont, S(progBarSz), outline)
     end
 end
 
@@ -508,30 +512,35 @@ local function ApplyDimensions(widthOverride)
         return
     end
     addon.focus.pendingDimensionsAfterCombat = false
+    local S = addon.Scaled or function(v) return v end
     local w = (widthOverride and type(widthOverride) == "number") and widthOverride or addon.GetPanelWidth()
-    addon.HS:SetSize(w, addon.HS:GetHeight() or addon.MIN_HEIGHT)
-    addon.divider:SetSize(w - addon.PADDING * 2, addon.DIVIDER_HEIGHT)
-    addon.divider:SetPoint("TOP", addon.HS, "TOPLEFT", w / 2, -(addon.PADDING + addon.GetHeaderHeight()))
+    addon.HS:SetSize(w, addon.HS:GetHeight() or S(addon.MIN_HEIGHT))
+    addon.divider:SetSize(w - S(addon.PADDING) * 2, S(addon.DIVIDER_HEIGHT))
+    addon.divider:SetPoint("TOP", addon.HS, "TOPLEFT", w / 2, -(S(addon.PADDING) + addon.GetHeaderHeight()))
     addon.scrollChild:SetWidth(w)
-    local leftOffset = addon.GetContentLeftOffset and addon.GetContentLeftOffset() or (addon.PADDING + addon.ICON_COLUMN_WIDTH)
+    local leftOffset = addon.GetContentLeftOffset and addon.GetContentLeftOffset() or S(addon.PADDING + addon.ICON_COLUMN_WIDTH)
     for i = 1, addon.POOL_SIZE do
         local e = pool[i]
-        local contentW = w - addon.PADDING - leftOffset - (addon.CONTENT_RIGHT_PADDING or 0)
+        local contentW = w - S(addon.PADDING) - leftOffset - S(addon.CONTENT_RIGHT_PADDING or 0)
         local textW = contentW
         e:SetSize(contentW, 20)
         e.titleShadow:SetWidth(textW)
         e.titleText:SetWidth(textW)
         e.affixShadow:SetWidth(textW)
         e.affixText:SetWidth(textW)
+        if e.questTypeIcon then
+            local qs = S(addon.QUEST_TYPE_ICON_SIZE)
+            e.questTypeIcon:SetSize(qs, qs)
+        end
         for j = 1, addon.MAX_OBJECTIVES do
             local obj = e.objectives[j]
-            local objIndent = addon.GetObjIndent and addon.GetObjIndent() or addon.OBJ_INDENT
+            local objIndent = addon.GetObjIndent and addon.GetObjIndent() or S(addon.OBJ_INDENT)
             obj.shadow:SetWidth(textW - objIndent)
             obj.text:SetWidth(textW - objIndent)
         end
     end
     for i = 1, addon.SECTION_POOL_SIZE do
-        sectionPool[i]:SetSize(w - addon.PADDING - leftOffset - (addon.CONTENT_RIGHT_PADDING or 0), addon.GetSectionHeaderHeight())
+        sectionPool[i]:SetSize(w - S(addon.PADDING) - leftOffset - S(addon.CONTENT_RIGHT_PADDING or 0), addon.GetSectionHeaderHeight())
     end
     if addon.UpdateMplusBlock then addon.UpdateMplusBlock() end
 end
