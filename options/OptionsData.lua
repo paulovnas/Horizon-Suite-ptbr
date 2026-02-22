@@ -115,6 +115,13 @@ function OptionsData_SetDB(key, value)
             addon.focus.collapse.pendingWQExpand = true
         end
     end
+    -- When the "Show in-zone world quests" toggle is flipped on, invalidate the nearby
+    -- WQ scan cache so the next FullLayout immediately re-scans for the current zone.
+    if key == "showWorldQuests" and value == true and addon.focus then
+        addon.focus.nearbyQuestCacheDirty = true
+        addon.focus.nearbyQuestCache = nil
+        addon.focus.nearbyTaskQuestCache = nil
+    end
     if (key == "fontPath" or key == "titleFontPath" or key == "zoneFontPath" or key == "objectiveFontPath" or key == "sectionFontPath" or key == "progressBarFontPath") and updateOptionsPanelFontsRef then
         updateOptionsPanelFontsRef()
     end
