@@ -10,6 +10,22 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [3.0.0] – 2026-02-23
+
+### ✨ New Features
+
+- **(Vista) Minimap sizing and free positioning.**
+- **(Vista) Minimap border thickness and visibility control.**
+- **(Vista) Replace MinimapButtonButton/Hiding bar with built-in opt-out list of addon buttons to show.**
+- **(Vista) Zone text control: position, background color and visibility, font size, font.**
+- **(Vista) Coordinates text: position and styling; optional format (decimal precision, X/Y prefixes).**
+- **(Vista) Time/clock text: same controls as coords; optional format options.**
+- **(Vista) Default map button visibility, position, size, and custom icons.**
+- **(Presence) Per-type toggles for Presence notifications.**
+- **(Core) Options panel localization for Russian (ruRU)** — Options panel is now fully translated into Russian.
+
+---
+
 ## [2.6.1] – 2026-02-23
 
 ---
