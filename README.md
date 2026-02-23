@@ -30,6 +30,8 @@
 
 ## 💎 Yield (Loot Toasts) - BETA
 
+![Yield - Loot Toasts](https://raw.githubusercontent.com/Crystilac93/Horizon-Suite/main/docs/Yield.gif)
+
 - **Cinematic loot notifications** – Items, money, currency, and reputation gains appear as styled toasts with quality-based colours and smooth slide-in animations.
 - **Epic and legendary flair** – Extra entrance time, shine effects, and optional sounds for high-value loot.
 
