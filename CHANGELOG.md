@@ -10,6 +10,14 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [3.0.1] – 2026-02-23
+
+### 🐛 Fixes
+
+- **Dev addon fix.**
+
+---
+
 ## [3.0.0] – 2026-02-23
 
 ### ✨ New Features
