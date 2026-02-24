@@ -10,6 +10,19 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [3.1.1] – 2026-02-24
+
+### 🔧 Improvements
+
+- **(Presence) Presence frame scale up to 2x** — Users can make notifications larger on high-DPI displays.
+- **(Focus) Tracker max height fix for grow-up mode** — Correct max height when the tracker grows upward from the bottom.
+
+### 🐛 Fixes
+
+- **(Vista)** Minimap can be dragged when unlocked, even with right-click panel mode overlay enabled.
+
+---
+
 ## [3.1.0] – 2026-02-24
 
 ### ✨ New Features
