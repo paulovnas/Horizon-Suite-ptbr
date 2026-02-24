@@ -10,6 +10,14 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [3.1.2] – 2026-02-24
+
+### 🔧 Improvements
+
+- **(Vista)** Allow minimap pin tooltips to show when hovering over pins.
+
+---
+
 ## [3.1.1] – 2026-02-24
 
 ### 🔧 Improvements
