@@ -10,6 +10,21 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [3.1.5] – 2026-02-25
+
+### 🔧 Improvements
+
+- **(Presence) Higher-priority notifications can interrupt current** — Level-up and achievements can preempt zone changes or quest accepts so important moments are never delayed by less important toasts.
+- **(Core) Profile export strips machine-specific Vista button keys** — Exported profiles can be shared or imported without carrying per-machine minimap button state.
+- **(Presence) Replace-in-queue for rapid same-type notifications** — Multiple quest or scenario updates replace the pending entry instead of stacking.
+- **(Presence) Live update for quest and scenario progress** — Rapid objective updates appear as subtitle changes on the current toast instead of stacking in the queue.
+
+### 🐛 Fixes
+
+- **(Focus) Text case "Proper" with special characters** — Umlauts and European accented characters (ä, ö, ü, etc.) no longer incorrectly capitalize the following letter in German and other languages.
+
+---
+
 ## [3.1.4] – 2026-02-25
 
 ### 🔧 Improvements
