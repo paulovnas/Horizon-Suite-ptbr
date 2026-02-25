@@ -10,6 +10,18 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [3.1.4] – 2026-02-25
+
+### 🔧 Improvements
+
+- **(Vista)** Removed duplicate variable declaration.
+
+### 🐛 Fixes
+
+- **(Vista)** Drawer button now opens panel when clicked in floating drawer mode.
+
+---
+
 ## [3.1.3] – 2026-02-25
 
 ### 🔧 Improvements
