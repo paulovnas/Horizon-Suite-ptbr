@@ -58,6 +58,7 @@ addon.DELVE_TIER_ATLAS = "delves-scenario-flag"  -- Blizzard atlas for Delve tie
 addon.SHADOW_OX       = 2
 addon.SHADOW_OY       = -2
 addon.SHADOW_A        = 0.8
+addon.DUNGEON_UNTRACKED_DIM = 0.65   -- dim factor for untracked dungeon quests (single source)
 
 -- Single source of truth for Focus fade/transition. All animation code reads from here.
 addon.FOCUS_ANIM = {
@@ -382,5 +383,28 @@ function addon.GetFontNameForPath(path)
 
     -- Otherwise, it's probably an unknown key; show it as-is.
     return path
+end
+
+-- ============================================================================
+-- SOUND LIST (for rare boss sound picker via LibSharedMedia)
+-- ============================================================================
+
+function addon.GetSoundDropdownOptions()
+    local list = { { "Default (Quest Complete)", "default" } }
+    local LSM = (LibStub and LibStub("LibSharedMedia-3.0", true)) or nil
+    if not (LSM and LSM.HashTable) then return list end
+    local hash = LSM:HashTable("sound")
+    if type(hash) ~= "table" then return list end
+    local names = {}
+    for name in pairs(hash) do
+        if type(name) == "string" and name ~= "" then
+            names[#names + 1] = name
+        end
+    end
+    table.sort(names)
+    for _, name in ipairs(names) do
+        list[#list + 1] = { name, name }
+    end
+    return list
 end
 

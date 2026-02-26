@@ -323,7 +323,7 @@ for i = 1, addon.POOL_SIZE do
     pool[i] = CreateQuestEntry(scrollChild, i)
 end
 
-local function UpdateScenarioBar(bar, now)
+local function UpdateScenarioBar(bar, now, category)
     local d, s = bar.duration, bar.startTime
     if not d or not s then return end
     local remaining = d - (now - s)
@@ -348,9 +348,10 @@ local function UpdateScenarioBar(bar, now)
     local sec = math.floor(remaining % 60)
     bar.Label:SetText(("%02d:%02d"):format(m, sec))
     -- Same format as quest progress bars: use progFillColor and progTextColor
+    local colorCat = category or "SCENARIO"
     local progFillColor
     if addon.GetDB("progressBarUseCategoryColor", true) then
-        progFillColor = (addon.GetQuestColor and addon.GetQuestColor("SCENARIO")) or (addon.QUEST_COLORS and addon.QUEST_COLORS.SCENARIO) or { 0.55, 0.35, 0.85 }
+        progFillColor = (addon.GetQuestColor and addon.GetQuestColor(colorCat)) or (addon.QUEST_COLORS and addon.QUEST_COLORS[colorCat]) or { 0.55, 0.35, 0.85 }
     else
         progFillColor = addon.GetDB("progressBarFillColor", nil)
         if not progFillColor or type(progFillColor) ~= "table" then progFillColor = { 0.40, 0.65, 0.90 } end
@@ -369,7 +370,7 @@ function addon.UpdateScenarioTimerBars()
         if entry.scenarioTimerBars then
             for _, bar in ipairs(entry.scenarioTimerBars) do
                 if bar.duration and bar.startTime then
-                    UpdateScenarioBar(bar, now)
+                    UpdateScenarioBar(bar, now, entry.category)
                 end
             end
         end
@@ -566,6 +567,11 @@ local function ClearEntry(entry, full)
     entry.affixData  = nil
     entry.tierSpellID = nil
     entry.itemLink   = nil
+    entry.vignetteGUID  = nil
+    entry.vignetteMapID = nil
+    entry.vignetteX     = nil
+    entry.vignetteY     = nil
+    entry.title         = nil
     entry.animState  = "idle"
     entry.groupKey   = nil
     entry.category   = nil

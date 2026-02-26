@@ -337,20 +337,22 @@ local function GetPlayerMountInfo(unit)
         local auraData = C_UnitAuras.GetAuraDataByIndex(unit, i, "HELPFUL")
         if not auraData then break end
         local spellID = auraData.spellId
-        if spellID then
-            local mountID = C_MountJournal.GetMountFromSpell(spellID)
-            if mountID then
-                local mName, _, mIcon, _, _, sourceType, _, _, _, _, isCollected =
-                    C_MountJournal.GetMountInfoByID(mountID)
-                local _, description, source = C_MountJournal.GetMountInfoExtraByID(mountID)
-                return {
-                    name        = mName,
-                    icon        = mIcon,
-                    source      = source,
-                    sourceType  = sourceType,
-                    isCollected = isCollected,
-                    description = description,
-                }
+        if spellID and type(spellID) == "number" and spellID > 0 then
+            local ok, mountID = pcall(C_MountJournal.GetMountFromSpell, spellID)
+            if ok and mountID and type(mountID) == "number" and mountID > 0 then
+                local mOk, mName, _, mIcon, _, _, sourceType, _, _, _, _, isCollected =
+                    pcall(C_MountJournal.GetMountInfoByID, mountID)
+                if mOk and mName then
+                    local eOk, _, description, source = pcall(C_MountJournal.GetMountInfoExtraByID, mountID)
+                    return {
+                        name        = mName,
+                        icon        = mIcon,
+                        source      = eOk and source or nil,
+                        sourceType  = sourceType,
+                        isCollected = isCollected,
+                        description = eOk and description or nil,
+                    }
+                end
             end
         end
         i = i + 1
@@ -613,8 +615,8 @@ local function ProcessUnitTooltip()
 
     -- 8. Mount block
     if ShowMount() then
-        local mount = GetPlayerMountInfo(unit)
-        if mount and mount.name then
+        local mountOk, mount = pcall(GetPlayerMountInfo, unit)
+        if mountOk and mount and mount.name then
             local iconStr = mount.icon and ("|T" .. mount.icon .. ":14:14:0:0|t ") or ""
             GameTooltip:AddLine(SEPARATOR, sepR, sepG, sepB)
             GameTooltip:AddLine(iconStr .. mount.name, MOUNT_COLOR[1], MOUNT_COLOR[2], MOUNT_COLOR[3])

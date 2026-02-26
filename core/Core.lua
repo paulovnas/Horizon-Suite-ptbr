@@ -98,6 +98,35 @@ function addon.GetSectionSpacing()
     local v = tonumber(addon.GetDB("sectionSpacing", addon.SECTION_SPACING)) or addon.SECTION_SPACING
     return addon.Scaled(math.max(0, math.min(24, v)))
 end
+
+--- Returns the color multiplier for non-focused entries (0–1 range). Default 0.60 (40% dim).
+function addon.GetDimFactor()
+    local strength = tonumber(addon.GetDB("dimStrength", 40)) or 40
+    return 1 - math.max(0, math.min(100, strength)) / 100
+end
+
+--- Returns the alpha for non-focused entries (0–1 range). Default 1.0 (no alpha change).
+function addon.GetDimAlpha()
+    local v = tonumber(addon.GetDB("dimAlpha", 100)) or 100
+    return math.max(0, math.min(100, v)) / 100
+end
+
+--- Applies dimming (color multiply) and optional desaturation to a color table.
+--- @param color table {r,g,b} input color
+--- @return table {r,g,b} dimmed color
+function addon.ApplyDimColor(color)
+    if not color or not color[1] then return color end
+    local factor = addon.GetDimFactor()
+    local r, g, b = color[1] * factor, color[2] * factor, color[3] * factor
+    if addon.GetDB("dimDesaturate", false) then
+        local lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+        -- Partial desaturation: blend 70% towards greyscale
+        r = r + (lum - r) * 0.7
+        g = g + (lum - g) * 0.7
+        b = b + (lum - b) * 0.7
+    end
+    return { r, g, b }
+end
 function addon.GetSectionToEntryGap()
     local v = tonumber(addon.GetDB("sectionToEntryGap", 6)) or 6
     return addon.Scaled(math.max(0, math.min(16, v)))
@@ -121,6 +150,7 @@ function addon.GetPanelWidth()
 end
 function addon.GetMaxContentHeight()
     local v = tonumber(addon.GetDB("maxContentHeight", addon.MAX_CONTENT_HEIGHT)) or addon.MAX_CONTENT_HEIGHT
+    if v < 200 then v = addon.MAX_CONTENT_HEIGHT end
     return addon.Scaled(v)
 end
 
@@ -1180,7 +1210,10 @@ function addon.GetHeaderToContentGap()
 end
 
 function addon.GetContentTop()
-    -- Super-minimal uses same offset as full header so categories/quests do not move up (no overlap with chevron/options)
+    -- Super-minimal: move content to start just below the minimal header row with small padding
+    if addon.GetDB("hideObjectivesHeader", false) then
+        return -(addon.GetScaledMinimalHeaderHeight() + addon.Scaled(4))
+    end
     return -(addon.Scaled(addon.PADDING) + addon.GetHeaderHeight() + addon.Scaled(addon.DIVIDER_HEIGHT) + addon.GetHeaderToContentGap())
 end
 function addon.GetCollapsedHeight()
@@ -1498,9 +1531,9 @@ end)
 local RESIZE_MIN, RESIZE_MAX = 180, 800
 local RESIZE_HEIGHT_MIN = addon.MIN_HEIGHT
 local function GetResizeHeightMax()
-    return addon.GetScaledPadding() + addon.GetHeaderHeight() + addon.GetScaledDividerHeight() + addon.Scaled(24) + 1000 + addon.GetScaledPadding()
+    return addon.GetScaledPadding() + addon.GetHeaderHeight() + addon.GetScaledDividerHeight() + addon.Scaled(24) + 1600 + addon.GetScaledPadding()
 end
-local RESIZE_CONTENT_HEIGHT_MIN, RESIZE_CONTENT_HEIGHT_MAX = 200, 1000
+local RESIZE_CONTENT_HEIGHT_MIN, RESIZE_CONTENT_HEIGHT_MAX = 200, 1500
 
 local resizeHandle = CreateFrame("Frame", nil, HS)
 resizeHandle:SetSize(20, 20)
@@ -1518,6 +1551,7 @@ resizeHandle:SetScript("OnLeave", function()
 end)
 local isResizing = false
 local startWidth, startHeight, startMouseX, startMouseY
+local lastResizeRefreshTime = 0
 resizeHandle:RegisterForDrag("LeftButton")
 local function ResizeOnUpdate(self, elapsed)
     if not isResizing then return end
@@ -1538,6 +1572,32 @@ local function ResizeOnUpdate(self, elapsed)
     addon.focus.layout.targetHeight = newHeight
     addon.focus.layout.currentHeight = newHeight
     if addon.ApplyDimensions then addon.ApplyDimensions(newWidth) end
+
+    -- Live-update DB values so sliders reflect the drag in real-time
+    local widthUnscaled = newWidth / (addon.Scaled and addon.Scaled(1) or 1)
+    addon.SetDB("panelWidth", widthUnscaled)
+
+    local headerArea = addon.GetScaledPadding() + addon.GetHeaderHeight() + addon.GetScaledDividerHeight() + addon.GetHeaderToContentGap()
+    local contentH = newHeight - headerArea - addon.GetScaledPadding()
+    local mplus = addon.mplusBlock
+    local hasMplus = mplus and mplus:IsShown()
+    if hasMplus and addon.GetMplusBlockHeight then
+        local gapPx = 4
+        contentH = contentH - (addon.GetMplusBlockHeight() + gapPx * 2)
+    end
+    local contentUnscaled = contentH / (addon.Scaled and addon.Scaled(1) or 1)
+    contentUnscaled = math.max(RESIZE_CONTENT_HEIGHT_MIN, math.min(RESIZE_CONTENT_HEIGHT_MAX, contentUnscaled))
+    addon.SetDB("maxContentHeight", contentUnscaled)
+    if not (addon.IsInMythicDungeon and addon.IsInMythicDungeon()) then
+        addon.SetDB("maxContentHeightOverworld", contentUnscaled)
+    end
+
+    -- Refresh options sliders if the panel is open (throttled)
+    local now = GetTime()
+    if addon.OptionsPanel_Refresh and (now - lastResizeRefreshTime) > 0.15 then
+        lastResizeRefreshTime = now
+        addon.OptionsPanel_Refresh()
+    end
 end
 resizeHandle:SetScript("OnDragStart", function(self)
     if addon.GetDB("lockPosition", false) then return end
@@ -1555,24 +1615,10 @@ resizeHandle:SetScript("OnDragStop", function(self)
     isResizing = false
     self:SetScript("OnUpdate", nil)
     addon.EnsureDB()
-    local newWidth = HS:GetWidth()
-    addon.SetDB("panelWidth", newWidth)
-    local h = HS:GetHeight()
-    local headerArea = addon.GetScaledPadding() + addon.GetHeaderHeight() + addon.GetScaledDividerHeight() + addon.GetHeaderToContentGap()
-    local contentH = h - headerArea - addon.GetScaledPadding()
-    local mplus = addon.mplusBlock
-    local hasMplus = mplus and mplus:IsShown()
-    if hasMplus and addon.GetMplusBlockHeight then
-        local gap = 4
-        contentH = contentH - (addon.GetMplusBlockHeight() + gap * 2)
-    end
-    contentH = math.max(RESIZE_CONTENT_HEIGHT_MIN, math.min(RESIZE_CONTENT_HEIGHT_MAX, contentH))
-    addon.SetDB("maxContentHeight", contentH)
-    if not (addon.IsInMythicDungeon and addon.IsInMythicDungeon()) then
-        addon.SetDB("maxContentHeightOverworld", contentH)
-    end
+    -- DB values already saved during drag; just finalize layout
     if addon.ApplyDimensions then addon.ApplyDimensions() end
     if addon.FullLayout and not InCombatLockdown() then addon.FullLayout() end
+    if addon.OptionsPanel_Refresh then addon.OptionsPanel_Refresh() end
 end)
 
 -- Sleek L-shaped corner grip (two thin strips)
