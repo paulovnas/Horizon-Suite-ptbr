@@ -12,7 +12,6 @@ All notable changes to Horizon Suite are documented here.
 
 ### 🔧 Improvements
 
-- **(Core) Beta addon uses separate SavedVariable** — Beta and release profiles stay separate; no cross-contamination when running both.
 - **(Insight) Suppress tooltip fade-in when refreshing unit tooltips** — Prevents animation flicker when the tooltip is refreshed programmatically rather than shown from scratch.
 
 ---
