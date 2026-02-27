@@ -6,6 +6,7 @@ on:
       - main
     paths-ignore:
       - '.github/**'
+      - 'CHANGELOG.md'
   workflow_dispatch:
 
 permissions:
@@ -35,19 +36,6 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Package addon (build only)
-        if: steps.check.outputs.skip != 'true'
-        uses: BigWigsMods/packager@v2.5.1
-        with:
-          args: -d
-
-      - name: Prepare zip for rolling release
-        if: steps.check.outputs.skip != 'true'
-        run: |
-          ZIP=$(ls .release/*.zip 2>/dev/null | head -1)
-          if [ -z "$ZIP" ]; then echo "No zip found in .release/"; exit 1; fi
-          cp "$ZIP" .release/HorizonSuite-beta.zip
-
       - name: Build beta changelog from closed issues
         if: steps.check.outputs.skip != 'true'
         id: extract_changelog
@@ -65,6 +53,9 @@ jobs:
           FEATURES=""
           IMPROVEMENTS=""
           FIXES=""
+          CHANGELOG_FEATURES=""
+          CHANGELOG_IMPROVEMENTS=""
+          CHANGELOG_FIXES=""
           while IFS= read -r line; do
             num=$(echo "$line" | jq -r '.number')
             title=$(echo "$line" | jq -r '.title')
@@ -80,12 +71,20 @@ jobs:
             [[ "$labels" =~ \bInsight\b ]] && module="(Insight) "
             [[ "$labels" =~ \bVerse\b ]] && module="(Verse) "
             bullet="- ${module}${title} (#${num})"
+            if [ -n "$module" ]; then
+              bullet_changelog="- **${module% }** ${title}."
+            else
+              bullet_changelog="- **${title}.**"
+            fi
             if [[ "$labels" =~ \bfeature\b ]]; then
               FEATURES="${FEATURES}${bullet}"$'\n'
+              CHANGELOG_FEATURES="${CHANGELOG_FEATURES}${bullet_changelog}"$'\n'
             elif [[ "$labels" =~ \bimprovement\b ]]; then
               IMPROVEMENTS="${IMPROVEMENTS}${bullet}"$'\n'
+              CHANGELOG_IMPROVEMENTS="${CHANGELOG_IMPROVEMENTS}${bullet_changelog}"$'\n'
             elif [[ "$labels" =~ \bbug\b ]]; then
               FIXES="${FIXES}${bullet}"$'\n'
+              CHANGELOG_FIXES="${CHANGELOG_FIXES}${bullet_changelog}"$'\n'
             fi
           done < <(gh issue list --state closed --search "closed:>=${TAG_DATE}" --json number,title,labels,closedAt --limit 100 2>/dev/null | jq -c --arg tagdate "$TAG_DATE" '.[] | select(.closedAt != null) | select(.closedAt >= ($tagdate + "T00:00:00Z")) | {number, title, labels}' 2>/dev/null || true)
           SECTIONS=""
@@ -103,10 +102,27 @@ jobs:
           printf '%s\n' "$BODY" >> $GITHUB_OUTPUT
           echo "CHANGELOG_EOF" >> $GITHUB_OUTPUT
 
-          # Write Discord webhook payload to avoid multiline YAML interpolation issues.
+          CHANGELOG_SECTIONS=""
+          [ -n "$CHANGELOG_FEATURES" ] && CHANGELOG_SECTIONS="${CHANGELOG_SECTIONS}### ✨ New Features"$'\n\n'"$CHANGELOG_FEATURES"$'\n'
+          [ -n "$CHANGELOG_IMPROVEMENTS" ] && CHANGELOG_SECTIONS="${CHANGELOG_SECTIONS}### 🔧 Improvements"$'\n\n'"$CHANGELOG_IMPROVEMENTS"$'\n'
+          [ -n "$CHANGELOG_FIXES" ] && CHANGELOG_SECTIONS="${CHANGELOG_SECTIONS}### 🐛 Fixes"$'\n\n'"$CHANGELOG_FIXES"$'\n'
+          if [ -n "$CHANGELOG_SECTIONS" ]; then
+            printf '%s' "$CHANGELOG_SECTIONS" > /tmp/unreleased-body.txt
+          else
+            printf '%s' "<!-- Changelog entries are generated from closed GitHub Issues at release time. -->" > /tmp/unreleased-body.txt
+          fi
+          python3 -c "
+          import re
+          unreleased = open('/tmp/unreleased-body.txt').read().rstrip()
+          content = open('CHANGELOG.md').read()
+          pattern = r'(## \[Unreleased\])\s*\n\n.*?(?=\n---\n)'
+          repl = r'\1\n\n' + unreleased + '\n\n'
+          result = re.sub(pattern, repl, content, flags=re.DOTALL)
+          open('CHANGELOG.md', 'w').write(result)
+          "
+
           printf '%s' "$BODY" | jq -Rs 'if length > 4096 then .[0:4096] else . end' > /tmp/changelog-desc.json
           REPO_NAME="${GITHUB_REPOSITORY##*/}"
-          # Use // fallback in case slurpfile yields null; ensure description is never empty
           jq -n \
             --arg user "Addon Beta Bot" \
             --arg avatar "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" \
@@ -115,7 +131,21 @@ jobs:
             --arg fallback "Rolling beta from **main**. Download the zip below." \
             --slurpfile desc /tmp/changelog-desc.json \
             '{username: $user, avatar_url: $avatar, embeds: [{title: $title, url: $url, description: (if $desc[0] then $desc[0] else $fallback end)}]}' \
-            > .release/discord-payload.json
+            > /tmp/discord-payload.json
+
+      - name: Package addon (build only)
+        if: steps.check.outputs.skip != 'true'
+        uses: BigWigsMods/packager@v2.5.1
+        with:
+          args: -d
+
+      - name: Prepare zip and Discord payload for rolling release
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          ZIP=$(ls .release/*.zip 2>/dev/null | head -1)
+          if [ -z "$ZIP" ]; then echo "No zip found in .release/"; exit 1; fi
+          cp "$ZIP" .release/HorizonSuite-beta.zip
+          cp /tmp/discord-payload.json .release/discord-payload.json
 
       - name: Create or update Beta release
         if: steps.check.outputs.skip != 'true'
@@ -145,3 +175,16 @@ jobs:
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_BETA }}
           raw-data: .release/discord-payload.json
+
+      - name: Commit and push CHANGELOG.md
+        if: success() && steps.check.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet CHANGELOG.md && echo "No CHANGELOG changes" || (
+            git add CHANGELOG.md
+            git commit -m "chore: update [Unreleased] from beta"
+            git push origin main
+          )
