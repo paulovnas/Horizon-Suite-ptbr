@@ -25,6 +25,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Check if building beta (skip when HEAD is at a release tag)
@@ -188,5 +189,5 @@ jobs:
           git diff --quiet CHANGELOG.md && echo "No CHANGELOG changes" || (
             git add CHANGELOG.md
             git commit -m "chore: update [Unreleased] from beta"
-            git push origin main
+            git push origin HEAD:main
           )
