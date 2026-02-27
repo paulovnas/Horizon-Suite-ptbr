@@ -176,8 +176,10 @@ jobs:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_BETA }}
           raw-data: .release/discord-payload.json
 
+      # Push may fail if main has "Require pull request" protection. Add github-actions[bot] to bypass list to enable.
       - name: Commit and push CHANGELOG.md
         if: success() && steps.check.outputs.skip != 'true'
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
