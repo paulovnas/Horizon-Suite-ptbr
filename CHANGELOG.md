@@ -8,11 +8,14 @@ All notable changes to Horizon Suite are documented here.
 
 ### ✨ New Features
 
+- **(Core) Unified slash command system with /h as primary shortcut** — Use /h, /hopt, and /hedit for help, options, and edit screen; module subcommands under /h focus, /h presence, and similar.
 - **Beta can install alongside release** — Install both stable and beta versions simultaneously for testing without overwriting each other.
 
 ### 🔧 Improvements
 
-- **(Insight) Suppress tooltip fade-in when refreshing unit tooltips** — Prevents animation flicker when the tooltip is refreshed programmatically rather than shown from scratch.
+- **(Focus) Events in Zone section label and event quest colour continuity** — Section renamed from "Available in Zone"; event quests keep their distinct colour when accepted and move to Current Zone.
+- **(Core) Beta uses separate SavedVariable** — Profiles and settings stay separate between beta and release when running both.
+- **(Insight) Suppress tooltip fade-in when refreshing unit tooltips** — Prevents animation flicker when the tooltip updates.
 
 ---
 
