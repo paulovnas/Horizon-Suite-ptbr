@@ -6,7 +6,9 @@ All notable changes to Horizon Suite are documented here.
 
 ## [Unreleased]
 
-<!-- Changelog entries are generated from closed GitHub Issues at release time. -->
+### 🔧 Improvements
+
+- **(Insight) Suppress tooltip fade-in when refreshing unit tooltips** — Prevents animation flicker when the tooltip is refreshed programmatically rather than shown from scratch.
 
 ---
 
