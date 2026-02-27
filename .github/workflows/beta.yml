@@ -104,13 +104,15 @@ jobs:
           # Write Discord webhook payload to avoid multiline YAML interpolation issues.
           printf '%s' "$BODY" | jq -Rs 'if length > 4096 then .[0:4096] else . end' > /tmp/changelog-desc.json
           REPO_NAME="${GITHUB_REPOSITORY##*/}"
+          # Use // fallback in case slurpfile yields null; ensure description is never empty
           jq -n \
             --arg user "Addon Beta Bot" \
             --arg avatar "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" \
             --arg title "New Beta Build: ${REPO_NAME}" \
             --arg url "https://github.com/${GITHUB_REPOSITORY}/releases/tag/beta" \
+            --arg fallback "Rolling beta from **main**. Download the zip below." \
             --slurpfile desc /tmp/changelog-desc.json \
-            '{username: $user, avatar_url: $avatar, embeds: [{title: $title, url: $url, description: $desc[0]}]}' \
+            '{username: $user, avatar_url: $avatar, embeds: [{title: $title, url: $url, description: (if $desc[0] then $desc[0] else $fallback end)}]}' \
             > .release/discord-payload.json
 
       - name: Create or update Beta release
@@ -126,6 +128,13 @@ jobs:
           gh release delete beta -y || true
           printf '%s' "$CHANGELOG" > /tmp/changelog.md
           gh release create beta .release/HorizonSuite-beta.zip --title "Beta" --notes-file /tmp/changelog.md --prerelease
+
+      - name: Debug Discord payload
+        if: success() && steps.check.outputs.skip != 'true'
+        run: |
+          echo "Payload file exists: $(test -f .release/discord-payload.json && echo yes || echo no)"
+          echo "Description length: $(jq -r '.embeds[0].description | length' .release/discord-payload.json 2>/dev/null || echo 0)"
+          echo "Description preview (first 120 chars): $(jq -r '.embeds[0].description | .[0:120]' .release/discord-payload.json 2>/dev/null || echo '(none)')"
 
       - name: Post to Discord
         if: success() && steps.check.outputs.skip != 'true'
