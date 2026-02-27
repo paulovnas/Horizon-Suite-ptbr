@@ -6,6 +6,12 @@ All notable changes to Horizon Suite are documented here.
 
 ## [Unreleased]
 
+<!-- Changelog entries are generated from closed GitHub Issues at release time. -->
+
+---
+
+## [3.3.0] – 2026-02-27
+
 ### ✨ New Features
 
 - **(Core) Unified slash command system with /h as primary shortcut** — Use /h, /hopt, and /hedit for help, options, and edit screen; module subcommands under /h focus, /h presence, and similar.
