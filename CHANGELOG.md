@@ -10,6 +10,44 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [3.2.0] – 2026-02-27
+
+### ✨ New Features
+
+- **(Focus) Inline timer display mode and urgency-based timer coloring** — Show countdown timers beside quest titles or as bars; optionally color by remaining time (green, yellow, red).
+- **(Focus) Alpha slider for progress bar and Mythic+ bar colors** — Make progress bars and M+ bars semi-transparent.
+- **(Focus) Option to hide Focus tracker only in Mythic+** — Hide the tracker during Mythic+ runs while keeping it visible in normal, heroic, or mythic dungeons.
+- **(Focus) Per-difficulty instance visibility** — Choose which dungeon and raid difficulties show the Focus tracker (normal, heroic, mythic, Mythic+ separately).
+- **(Focus) Section dividers between categories** — Optional dividers with configurable color between tracker sections.
+- **(Presence) Zone title color by zone type** — Zone text changes color by affiliation: green friendly, red enemy, yellow neutral, light blue sanctuary; toggle to enable.
+- **(Presence) Option to disable Presence in battlegrounds** — Turn off zone and notification toasts during PvP matches.
+- **(Core) Improve Brazilian Portuguese localization and enUS base template** — Additional ptBR translations; enUS template for creating new locale files.
+
+### 🔧 Improvements
+
+- **(Focus) Compact timer format for quests and scenarios** — Human-readable format (e.g. 2d 5h 30m, 45m 12s) instead of raw MM:SS.
+- **(Focus) Backdrop opacity and shadow alpha sliders use 0–100%** — Finer control with integer steps while storing values internally.
+- **(Focus) Untrack quest by re-clicking** — Defocus by clicking the same quest again.
+- **(Focus) Options to desaturate or adjust alpha for dimmed non-focused quests** — Additional dimming controls beyond color.
+- **(Focus) Completed nearby quests respect "Show nearby quests in their own group"** — Setting now applies consistently.
+- **(Vista) Restore flash when unlocking mouseover bar** — Brief flash helps find the bar when repositioning.
+- **(Insight) Tooltip polish** — Class-coloured separator lines, number formatting with commas, cursor tooltip clamping.
+- **(Core) Options panel reorganization and Focus combat refresh** — Refined categories; tracker refreshes achievements, endeavors, decor, rares in combat.
+- **(Core) Align core defaults and beta changelog sourcing** — Consistent out-of-box experience; beta workflow uses closed-issue filtering.
+
+### 🐛 Fixes
+
+- **(Focus) Typography shadow applies to section headers and quest titles** — Shadow on/off and X/Y offsets now affect all tracker text.
+- **(Focus) Shadow offsets work with section headers and quest titles** — Typography shadow options apply correctly.
+- **(Focus) Active Quest Highlight alpha, alignment, and outline** — Alpha slider has fine control; Highlight, Soft Glow, and Outline align with text.
+- **(Focus) Section header text no longer clips at large font sizes** — Headers display fully when section font size is 16 or 18.
+- **(Focus) LFG queue green eye shows and hides reliably** — Queue indicator visibility correct after moving tracker.
+- **(Focus) Quest list height persists** — Vertical size setting no longer resets to default.
+- **(Presence) Quest update text spacing** — Spacing matches other objective lines.
+- **Missing scenario event timers** — World Soul Memory, Nightfall, Theater Troupe, Midnight Pre-Patch Rares now appear in tracker.
+
+---
+
 ## [3.1.5] – 2026-02-25
 
 ### 🔧 Improvements
