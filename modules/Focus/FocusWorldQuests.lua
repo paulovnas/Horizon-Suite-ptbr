@@ -432,10 +432,15 @@ local function GetWorldAndCallingQuestIDsToShow(nearbySet, taskQuestOnlySet)
                           end
                       elseif isCalling then
                           ids[#ids + 1] = questID
-                     elseif isWorld then
-                         if IsTaskQuestCurrentlyActive(questID) then
-                             ids[#ids + 1] = questID
-                         end
+                      elseif isWorld then
+                          if IsTaskQuestCurrentlyActive(questID) then
+                              ids[#ids + 1] = questID
+                          end
+                      elseif fromTaskQuestMap then
+                          -- Fallback: task/event quests from map APIs that don't match world/calling/campaign/recurring.
+                          if IsTaskQuestCurrentlyActive(questID) then
+                              ids[#ids + 1] = questID
+                          end
                       end
                  end
               end
