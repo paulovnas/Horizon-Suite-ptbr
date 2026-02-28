@@ -10,6 +10,19 @@ All notable changes to Horizon Suite are documented here.
 
 ---
 
+## [3.3.1] – 2026-02-28
+
+### 🔧 Improvements
+
+- **(Core) Add Spanish (esES) locale for options panel** — Options panel now fully translated into Spanish; checkmark-for-completed option uses a texture icon for reliable display across locales and fonts.
+- **(Insight) Strip health/power text and redundant Hero Talent line from unit tooltips** — Tooltip clutter reduced; Insight shows reaction and class info without duplicating stats; redundant Hero Talent line removed.
+
+### 🐛 Fixes
+
+- **(Focus) Quests in Ready to turn in section cannot be left-clicked to focus** — Left-click on turn-in quests now sets focus correctly so you get a waypoint to the turn-in NPC.
+
+---
+
 ## [3.3.0] – 2026-02-27
 
 ### ✨ New Features
